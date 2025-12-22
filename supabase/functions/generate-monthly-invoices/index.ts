@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
             quantity: activeVehicles,
             unit_price: org.monthly_fee_per_vehicle,
             line_total: subtotal,
-            item_type: 'monthly_fee',
+            item_type: 'Vehicle Fee',
           });
 
         if (lineItemError) throw lineItemError;

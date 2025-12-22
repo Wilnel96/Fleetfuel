@@ -10,6 +10,7 @@ interface Vehicle {
   model: string;
   license_disk_expiry: string;
   vin_number?: string;
+  license_code_required?: string;
 }
 
 interface DrawVehicleProps {
@@ -79,6 +80,14 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
     const { vehicle } = result;
 
+    // Check if driver's license qualifies for this vehicle
+    const isQualified = await checkDriverLicenseQualifies(driverId, vehicle);
+    if (!isQualified) {
+      const requiredLicense = vehicle.license_code_required || 'Code B';
+      setError(`You are not qualified to drive this vehicle. Required license: ${requiredLicense}`);
+      return;
+    }
+
     const hasActiveDrawing = await checkActiveDrawing(vehicle.id, driverId);
     if (hasActiveDrawing) {
       setError('This vehicle is already drawn by you. Please return it before drawing again.');
@@ -129,6 +138,34 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       .maybeSingle();
 
     return !returnTransaction;
+  };
+
+  const checkDriverLicenseQualifies = async (driverId: string, vehicle: Vehicle): Promise<boolean> => {
+    // Get driver's license type
+    const { data: driver } = await supabase
+      .from('drivers')
+      .select('license_type')
+      .eq('id', driverId)
+      .maybeSingle();
+
+    if (!driver) return false;
+
+    const driverLicenseCode = driver.license_type;
+    const vehicleLicenseRequired = vehicle.license_code_required || 'Code B';
+
+    // Call the database function to check if driver qualifies
+    const { data, error } = await supabase
+      .rpc('check_driver_license_qualifies', {
+        p_driver_license_code: driverLicenseCode,
+        p_vehicle_license_required: vehicleLicenseRequired
+      });
+
+    if (error) {
+      console.error('Error checking license qualification:', error);
+      return false;
+    }
+
+    return data === true;
   };
 
   const findVehicleByLicenseDisk = async (barcodeData: string): Promise<{ vehicle: Vehicle } | null> => {

@@ -15,6 +15,7 @@ interface Vehicle {
   tank_capacity?: number;
   vin_number?: string;
   vehicle_type?: string;
+  license_code_required?: string;
   last_service_date?: string;
   service_interval_km?: number;
   last_service_km_reading?: number;
@@ -56,6 +57,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
     vin_number: '',
     vehicle_type: 'ULP',
     fuel_type: 'ULP-95',
+    license_code_required: 'Code B',
     status: 'active',
     initial_odometer_reading: 0,
     average_fuel_consumption_per_100km: 10,
@@ -278,6 +280,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       vin_number: vehicle.vin_number || '',
       vehicle_type: vehicle.vehicle_type || 'ULP',
       fuel_type: (vehicle as any).fuel_type || 'ULP-95',
+      license_code_required: vehicle.license_code_required || 'Code B',
       status: vehicle.status,
       initial_odometer_reading: vehicle.initial_odometer_reading,
       average_fuel_consumption_per_100km: vehicle.average_fuel_consumption_per_100km,
@@ -330,6 +333,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       vin_number: '',
       vehicle_type: 'ULP',
       fuel_type: 'ULP-95',
+      license_code_required: 'Code B',
       status: 'active',
       initial_odometer_reading: 0,
       average_fuel_consumption_per_100km: 10,
@@ -561,7 +565,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
               </div>
 
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b pb-1">Status</h3>
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b pb-1">Status & Requirements</h3>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">Status</label>
@@ -573,6 +577,24 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       <option value="active">Active</option>
                       <option value="maintenance">Maintenance</option>
                       <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">License Code Required</label>
+                    <select
+                      value={formData.license_code_required}
+                      onChange={(e) => setFormData({ ...formData, license_code_required: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                      required
+                    >
+                      <option value="Code A1">Code A1 (Motorcycle - Learner)</option>
+                      <option value="Code A">Code A (Motorcycle)</option>
+                      <option value="Code B">Code B (Light Vehicle)</option>
+                      <option value="Code EB">Code EB (Light Vehicle + Trailer)</option>
+                      <option value="Code C1">Code C1 (Light Truck)</option>
+                      <option value="Code EC1">Code EC1 (Light Truck + Trailer)</option>
+                      <option value="Code C">Code C (Heavy Truck)</option>
+                      <option value="Code EC">Code EC (Heavy Truck + Trailer)</option>
                     </select>
                   </div>
                 </div>

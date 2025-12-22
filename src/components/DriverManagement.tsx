@@ -23,6 +23,10 @@ interface Driver {
   license_issue_date: string;
   license_expiry_date: string;
   license_restrictions: string | null;
+  has_prdp: boolean;
+  prdp_type: string | null;
+  prdp_expiry_date: string | null;
+  medical_certificate_on_file: boolean;
   status: string;
   deleted_at?: string | null;
   created_at: string;
@@ -52,6 +56,10 @@ interface DriverFormData {
   driver_restriction: string;
   vehicle_restriction: string;
   prpd_restriction: string;
+  has_prdp: boolean;
+  prdp_type: string;
+  prdp_expiry_date: string;
+  medical_certificate_on_file: boolean;
   status: string;
   organization_id?: string;
 }
@@ -101,6 +109,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     driver_restriction: '',
     vehicle_restriction: '',
     prpd_restriction: '',
+    has_prdp: false,
+    prdp_type: '',
+    prdp_expiry_date: '',
+    medical_certificate_on_file: false,
     status: 'active',
     organization_id: '',
   });
@@ -265,6 +277,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
         driver_restriction: restrictions.driver_restriction,
         vehicle_restriction: restrictions.vehicle_restriction,
         prpd_restriction: restrictions.prpd_restriction,
+        has_prdp: driver.has_prdp,
+        prdp_type: driver.prdp_type || '',
+        prdp_expiry_date: driver.prdp_expiry_date || '',
+        medical_certificate_on_file: driver.medical_certificate_on_file,
         status: driver.status,
       });
     } else {
@@ -289,6 +305,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
         driver_restriction: '',
         vehicle_restriction: '',
         prpd_restriction: '',
+        has_prdp: false,
+        prdp_type: '',
+        prdp_expiry_date: '',
+        medical_certificate_on_file: false,
         status: 'active',
         organization_id: orgId || '',
       });
@@ -374,6 +394,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             license_issue_date: formData.license_issue_date,
             license_expiry_date: formData.license_expiry_date,
             license_restrictions: restrictionString,
+            has_prdp: formData.has_prdp,
+            prdp_type: formData.has_prdp ? formData.prdp_type : null,
+            prdp_expiry_date: formData.has_prdp ? formData.prdp_expiry_date : null,
+            medical_certificate_on_file: formData.medical_certificate_on_file,
             status: formData.status,
             updated_at: new Date().toISOString(),
           })
@@ -410,6 +434,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             license_issue_date: formData.license_issue_date,
             license_expiry_date: formData.license_expiry_date,
             license_restrictions: restrictionString,
+            has_prdp: formData.has_prdp,
+            prdp_type: formData.has_prdp ? formData.prdp_type : null,
+            prdp_expiry_date: formData.has_prdp ? formData.prdp_expiry_date : null,
+            medical_certificate_on_file: formData.medical_certificate_on_file,
             status: formData.status,
             organization_id: orgId,
           });
@@ -975,6 +1003,66 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                       </select>
                     </div>
                   </div>
+                </div>
+
+                <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide pt-4">Professional Driving Permit (PrDP)</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Has PrDP? *</label>
+                    <select
+                      required
+                      value={formData.has_prdp ? 'yes' : 'no'}
+                      onChange={(e) => setFormData({ ...formData, has_prdp: e.target.value === 'yes' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </div>
+
+                  {formData.has_prdp && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">PrDP Type *</label>
+                        <select
+                          required={formData.has_prdp}
+                          value={formData.prdp_type}
+                          onChange={(e) => setFormData({ ...formData, prdp_type: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Select PrDP Type</option>
+                          <option value="PrDP - Passengers">PrDP - Passengers</option>
+                          <option value="PrDP - Goods">PrDP - Goods</option>
+                          <option value="PrDP - Dangerous Goods">PrDP - Dangerous Goods</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">PrDP Expiry Date *</label>
+                        <input
+                          type="date"
+                          required={formData.has_prdp}
+                          value={formData.prdp_expiry_date}
+                          onChange={(e) => setFormData({ ...formData, prdp_expiry_date: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Medical Certificate on File *</label>
+                  <select
+                    required
+                    value={formData.medical_certificate_on_file ? 'yes' : 'no'}
+                    onChange={(e) => setFormData({ ...formData, medical_certificate_on_file: e.target.value === 'yes' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
                 </div>
 
                 <div>

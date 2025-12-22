@@ -894,14 +894,14 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                       onChange={(e) => setFormData({ ...formData, license_type: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
+                      <option value="Code A1">Code A1 (Light Motorcycle &lt; 125cc)</option>
                       <option value="Code A">Code A (Motorcycle)</option>
-                      <option value="Code A1">Code A1 (Light Motorcycle)</option>
                       <option value="Code B">Code B (Light Vehicle)</option>
-                      <option value="Code C">Code C (Heavy Vehicle)</option>
-                      <option value="Code C1">Code C1 (Heavy Vehicle)</option>
                       <option value="Code EB">Code EB (Light Vehicle with Trailer)</option>
-                      <option value="Code EC">Code EC (Heavy Vehicle with Trailer)</option>
-                      <option value="Code EC1">Code EC1 (Heavy Vehicle with Trailer)</option>
+                      <option value="Code C1">Code C1 (Light Truck)</option>
+                      <option value="Code EC1">Code EC1 (Light Truck with Trailer)</option>
+                      <option value="Code C">Code C (Heavy Truck)</option>
+                      <option value="Code EC">Code EC (Heavy Truck with Trailer)</option>
                     </select>
                   </div>
                 </div>

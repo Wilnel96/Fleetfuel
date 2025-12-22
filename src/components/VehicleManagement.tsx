@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, Plus, Edit2, Trash2, X, Search, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Truck, Plus, Edit2, Trash2, X, Search, RotateCcw, ArrowLeft, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Vehicle {
@@ -47,6 +47,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   const [userRole, setUserRole] = useState<string>('');
   const [showOrgSelector, setShowOrgSelector] = useState(false);
   const [loadingOrganizations, setLoadingOrganizations] = useState(true);
+  const [showLicenseExplanation, setShowLicenseExplanation] = useState(false);
 
   const [formData, setFormData] = useState({
     registration_number: '',
@@ -596,6 +597,14 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       <option value="Code C">Code C (Heavy Truck)</option>
                       <option value="Code EC">Code EC (Heavy Truck + Trailer)</option>
                     </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowLicenseExplanation(true)}
+                      className="mt-1 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                    >
+                      <Info size={14} />
+                      License Code Detail Explanation
+                    </button>
                   </div>
                 </div>
               </div>
@@ -858,6 +867,166 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
         </table>
         </div>
       </div>
+
+      {showLicenseExplanation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8">
+            <div className="p-6 border-b flex items-center justify-between sticky top-0 bg-white z-10 rounded-t-lg">
+              <h2 className="text-xl font-semibold text-gray-900">License Code Detail Explanation</h2>
+              <button
+                onClick={() => setShowLicenseExplanation(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <p className="text-sm text-gray-600 mb-4">
+                South African driver's licenses are categorized by codes. Each code qualifies the driver to operate specific types of vehicles.
+                Higher-level licenses typically include the privileges of lower-level licenses (e.g., Code C allows you to drive vehicles requiring Code B).
+              </p>
+
+              <div className="space-y-4">
+                <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code A1 - Motorcycle (Learner)</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Motorcycles and motor tricycles up to 125cc
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    This is a learner's license for motorcycles. Allows operation of small motorcycles under supervision.
+                    Must be accompanied by a licensed motorcyclist.
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code A - Motorcycle (Full License)</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> All motorcycles and motor tricycles
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Full motorcycle license with no restrictions on engine capacity. Allows independent operation of any motorcycle.
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code B - Light Motor Vehicle</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Light motor vehicles with tare weight not exceeding 3,500 kg
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Standard car license. Includes sedans, SUVs, light bakkies (pickup trucks), and panel vans.
+                    This is the most common license code and covers most personal and light commercial vehicles.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Examples:</strong> Toyota Corolla, VW Polo, Ford Ranger (single cab), Nissan NP200
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code EB - Light Vehicle with Trailer</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Code B vehicles towing a trailer (combined weight may exceed 3,500 kg)
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Extension of Code B that allows towing trailers with light vehicles. Required when the combined weight
+                    of vehicle and trailer exceeds 3,500 kg.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Examples:</strong> Car towing a caravan, bakkie towing a trailer with equipment or materials
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code C1 - Light Truck/Goods Vehicle</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Vehicles with GVM (Gross Vehicle Mass) between 3,500 kg and 16,000 kg
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Medium-sized trucks and delivery vehicles. Includes larger delivery trucks, small moving trucks,
+                    and medium commercial vehicles. Does not include articulated vehicles.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Examples:</strong> Isuzu NPR, Mercedes-Benz Atego, Ford F-450, medium delivery trucks,
+                    box trucks, medium furniture removal trucks
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code EC1 - Light Truck with Trailer</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Code C1 vehicles towing a trailer with combined weight not exceeding 16,000 kg
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Allows drivers to operate medium trucks (3,500-16,000 kg) while towing trailers.
+                    The total combination must not exceed 16,000 kg.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Examples:</strong> Medium delivery truck with trailer, light truck hauling equipment on a trailer
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code C - Heavy Truck/Goods Vehicle</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Vehicles with GVM exceeding 16,000 kg (non-articulated)
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Heavy goods vehicles and large trucks. Includes large rigid trucks, heavy-duty delivery vehicles,
+                    and construction vehicles. This does not include semi-trailers or articulated vehicles.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Examples:</strong> Large rigid trucks, 8-wheel tipper trucks, large cement mixers,
+                    heavy construction vehicles, large furniture removal trucks
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
+                  <h3 className="font-semibold text-gray-900 mb-1">Code EC - Heavy Truck with Trailer / Articulated Vehicles</h3>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>Vehicle Types:</strong> Heavy vehicles exceeding 16,000 kg with trailers, and all articulated vehicles
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    The highest level commercial driving license. Required for operating large semi-trucks, road trains,
+                    and any heavy vehicle with articulation (fifth wheel connection). This includes all large commercial
+                    hauling operations.
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    <strong>Examples:</strong> 18-wheeler semi-trucks, 22-wheel road trains, articulated tankers,
+                    long-haul freight trucks, interlink trucks, B-double configurations
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t">
+                <h3 className="font-semibold text-gray-900 mb-2">License Hierarchy</h3>
+                <p className="text-sm text-gray-600 mb-2">
+                  Higher-level licenses generally include the privileges of lower-level licenses within their category:
+                </p>
+                <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
+                  <li><strong>Code C</strong> holders can drive vehicles requiring Code C1 and Code B</li>
+                  <li><strong>Code EC</strong> holders can drive vehicles requiring Code EC1, Code C, Code C1, Code EB, and Code B</li>
+                  <li>Motorcycle licenses (Code A, A1) are separate and do not overlap with vehicle licenses</li>
+                </ul>
+              </div>
+
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-sm text-gray-700">
+                  <strong>Important:</strong> Always verify that drivers have the appropriate license code for the vehicles they will operate.
+                  Operating a vehicle without the proper license code is illegal and may void insurance coverage in the event of an accident.
+                </p>
+              </div>
+            </div>
+            <div className="p-6 border-t bg-gray-50 rounded-b-lg">
+              <button
+                onClick={() => setShowLicenseExplanation(false)}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

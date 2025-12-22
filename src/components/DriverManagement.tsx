@@ -122,11 +122,12 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (d) =>
-          d.first_name.toLowerCase().includes(term) ||
-          d.last_name.toLowerCase().includes(term) ||
-          d.id_number.toLowerCase().includes(term) ||
-          d.license_number.toLowerCase().includes(term) ||
-          d.phone_number.toLowerCase().includes(term) ||
+          d.first_name?.toLowerCase().includes(term) ||
+          d.last_name?.toLowerCase().includes(term) ||
+          d.id_number?.toLowerCase().includes(term) ||
+          d.license_number?.toLowerCase().includes(term) ||
+          d.phone_number?.toLowerCase().includes(term) ||
+          (d.email || '')?.toLowerCase().includes(term) ||
           (d.organizations?.name || '').toLowerCase().includes(term)
       );
     }
@@ -538,7 +539,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search drivers by name, ID, license, or phone..."
+              placeholder="Search drivers by first name, surname, ID, license, phone, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

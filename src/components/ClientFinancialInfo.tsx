@@ -57,8 +57,8 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       const term = searchTerm.toLowerCase();
       const filtered = organizations.filter((org) =>
         org.name.toLowerCase().includes(term) ||
-        org.bank_account_holder?.toLowerCase().includes(term) ||
-        org.bank_account_holder_2?.toLowerCase().includes(term)
+        (org.bank_account_holder || '').toLowerCase().includes(term) ||
+        (org.bank_account_holder_2 || '').toLowerCase().includes(term)
       );
       setFilteredOrganizations(filtered);
     }

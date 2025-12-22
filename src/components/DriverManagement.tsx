@@ -122,12 +122,12 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (d) =>
-          d.first_name?.toLowerCase().includes(term) ||
-          d.last_name?.toLowerCase().includes(term) ||
-          d.id_number?.toLowerCase().includes(term) ||
-          d.license_number?.toLowerCase().includes(term) ||
-          d.phone_number?.toLowerCase().includes(term) ||
-          (d.email || '')?.toLowerCase().includes(term) ||
+          (d.first_name || '').toLowerCase().includes(term) ||
+          (d.last_name || '').toLowerCase().includes(term) ||
+          (d.id_number || '').toLowerCase().includes(term) ||
+          (d.license_number || '').toLowerCase().includes(term) ||
+          (d.phone_number || '').toLowerCase().includes(term) ||
+          (d.email || '').toLowerCase().includes(term) ||
           (d.organizations?.name || '').toLowerCase().includes(term)
       );
     }

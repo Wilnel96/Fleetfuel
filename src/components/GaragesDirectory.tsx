@@ -72,7 +72,7 @@ export default function GaragesDirectory() {
         const cityMatch = garage.city && garage.city.toLowerCase().includes(term);
         const provinceMatch = garage.province && garage.province.toLowerCase().includes(term);
         const contactMatch = garage.contact_person.toLowerCase().includes(term);
-        const brandMatch = garage.fuel_brand?.toLowerCase().includes(term);
+        const brandMatch = (garage.fuel_brand || '').toLowerCase().includes(term);
 
         let offeringsMatch = false;
         if (garage.other_offerings) {

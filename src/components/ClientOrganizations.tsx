@@ -189,11 +189,11 @@ export default function ClientOrganizations() {
       const term = searchTerm.toLowerCase();
       const filtered = organizations.filter((org) =>
         org.name.toLowerCase().includes(term) ||
-        org.company_registration_number?.toLowerCase().includes(term) ||
-        org.vat_number?.toLowerCase().includes(term) ||
-        org.contact_person?.toLowerCase().includes(term) ||
-        org.email?.toLowerCase().includes(term) ||
-        org.phone_number?.toLowerCase().includes(term)
+        (org.company_registration_number || '').toLowerCase().includes(term) ||
+        (org.vat_number || '').toLowerCase().includes(term) ||
+        (org.contact_person || '').toLowerCase().includes(term) ||
+        (org.email || '').toLowerCase().includes(term) ||
+        (org.phone_number || '').toLowerCase().includes(term)
       );
       setFilteredOrganizations(filtered);
     }

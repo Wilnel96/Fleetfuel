@@ -128,7 +128,7 @@ export default function MobileGarageDirectory({ onBack }: MobileGarageDirectoryP
       const nameMatch = garage.name.toLowerCase().includes(term);
       const cityMatch = garage.city.toLowerCase().includes(term);
       const provinceMatch = garage.province.toLowerCase().includes(term);
-      const brandMatch = garage.fuel_brand?.toLowerCase().includes(term);
+      const brandMatch = (garage.fuel_brand || '').toLowerCase().includes(term);
 
       let offeringsMatch = false;
       if (garage.other_offerings) {

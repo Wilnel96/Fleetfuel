@@ -683,7 +683,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       'make': 'Make',
       'model': 'Model',
       'first_name': 'First Name',
-      'last_name': 'Last Name',
+      'last_name': 'Surname',
       'date_of_birth': 'Date of Birth',
       'fuel_type': 'Fuel Type',
       'price_per_gallon': 'Price per Liter',

@@ -749,7 +749,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Surname *</label>
                     <input
                       type="text"
                       required

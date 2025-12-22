@@ -470,6 +470,8 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       >
                         <option value="">-- Select --</option>
+                        <option value="Immediate">Immediate</option>
+                        <option value="Next Day">Next Day</option>
                         <option value="7-Days">7-Days</option>
                         <option value="14-Days">14-Days</option>
                         <option value="30-Days">30-Days</option>

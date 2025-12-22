@@ -1,0 +1,597 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { DollarSign, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft } from 'lucide-react';
+
+interface Organization {
+  id: string;
+  name: string;
+  monthly_fee_per_vehicle: number | null;
+  daily_spending_limit: number | null;
+  monthly_spending_limit: number | null;
+  month_end_day: number | null;
+  year_end_month: number | null;
+  year_end_day: number | null;
+  bank_name: string | null;
+  bank_account_holder: string | null;
+  bank_account_number: string | null;
+  bank_branch_code: string | null;
+  bank_account_type: string | null;
+  bank_name_2: string | null;
+  bank_account_holder_2: string | null;
+  bank_account_number_2: string | null;
+  bank_branch_code_2: string | null;
+  bank_account_type_2: string | null;
+  payment_method: string | null;
+  payment_terms: string | null;
+  payment_date: number | null;
+  debit_order_lead_days: number | null;
+  late_payment_interest_rate: number | null;
+  enable_prorata_billing: boolean | null;
+  vat_reporting_basis: string | null;
+  credit_control_enabled: boolean | null;
+  suspend_services_after_days: number | null;
+}
+
+interface ClientFinancialInfoProps {
+  onNavigate?: (view: string) => void;
+}
+
+export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoProps) {
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [filteredOrganizations, setFilteredOrganizations] = useState<Organization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [editForm, setEditForm] = useState<Partial<Organization>>({});
+
+  useEffect(() => {
+    loadOrganizations();
+  }, []);
+
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredOrganizations(organizations);
+    } else {
+      const term = searchTerm.toLowerCase();
+      const filtered = organizations.filter((org) =>
+        org.name.toLowerCase().includes(term) ||
+        org.bank_account_holder?.toLowerCase().includes(term) ||
+        org.bank_account_holder_2?.toLowerCase().includes(term)
+      );
+      setFilteredOrganizations(filtered);
+    }
+  }, [searchTerm, organizations]);
+
+  const loadOrganizations = async () => {
+    try {
+      setLoading(true);
+      const { data: orgs, error: orgsError } = await supabase
+        .from('organizations')
+        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days')
+        .neq('name', 'My Organization')
+        .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
+        .order('name');
+
+      if (orgsError) throw orgsError;
+      setOrganizations(orgs || []);
+      setFilteredOrganizations(orgs || []);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEdit = (org: Organization) => {
+    setEditingId(org.id);
+    setEditForm(org);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditForm({});
+  };
+
+  const handleSave = async () => {
+    if (!editingId) return;
+
+    try {
+      setError('');
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({
+          monthly_fee_per_vehicle: editForm.monthly_fee_per_vehicle,
+          daily_spending_limit: editForm.daily_spending_limit,
+          monthly_spending_limit: editForm.monthly_spending_limit,
+          month_end_day: editForm.month_end_day,
+          year_end_month: editForm.year_end_month,
+          year_end_day: editForm.year_end_day,
+          bank_name: editForm.bank_name,
+          bank_account_holder: editForm.bank_account_holder,
+          bank_account_number: editForm.bank_account_number,
+          bank_branch_code: editForm.bank_branch_code,
+          bank_account_type: editForm.bank_account_type,
+          bank_name_2: editForm.bank_name_2,
+          bank_account_holder_2: editForm.bank_account_holder_2,
+          bank_account_number_2: editForm.bank_account_number_2,
+          bank_branch_code_2: editForm.bank_branch_code_2,
+          bank_account_type_2: editForm.bank_account_type_2,
+          payment_method: editForm.payment_method,
+          payment_terms: editForm.payment_terms,
+          payment_date: editForm.payment_date,
+          debit_order_lead_days: editForm.debit_order_lead_days,
+          late_payment_interest_rate: editForm.late_payment_interest_rate,
+          enable_prorata_billing: editForm.enable_prorata_billing,
+          vat_reporting_basis: editForm.vat_reporting_basis,
+          credit_control_enabled: editForm.credit_control_enabled,
+          suspend_services_after_days: editForm.suspend_services_after_days,
+        })
+        .eq('id', editingId);
+
+      if (updateError) throw updateError;
+
+      setSuccess('Financial information updated successfully');
+      setTimeout(() => setSuccess(''), 3000);
+      setEditingId(null);
+      setEditForm({});
+      loadOrganizations();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading financial information...</div>;
+  }
+
+  return (
+    <div className="-my-6">
+      <div className="sticky top-0 z-10 bg-white -mx-4 px-4 py-6 pb-4 border-b border-gray-200 mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-6 h-6 text-emerald-600" />
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                {editingId ? 'Changing Client Financial Info' : 'Client Financial Info'}
+              </h2>
+              <p className="text-gray-600 text-sm">
+                {editingId ? 'Update banking and financial details' : 'Manage banking and financial details'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {editingId ? (
+              <>
+                <button
+                  onClick={handleCancelEdit}
+                  className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  <Save className="w-5 h-5" />
+                  Save Changes
+                </button>
+              </>
+            ) : (
+              onNavigate && (
+                <button
+                  onClick={() => onNavigate('client-organizations-menu')}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back to Client Organization Info
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="text-red-800 text-sm">{error}</div>
+        </div>
+      )}
+
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="text-green-800 text-sm">{success}</div>
+        </div>
+      )}
+
+      {!editingId && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search organizations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          />
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {filteredOrganizations.map((org) => {
+          if (editingId && editingId !== org.id) return null;
+
+          return (
+          <div key={org.id} className="bg-white border border-gray-200 rounded-lg p-3">
+            {editingId === org.id ? (
+              <div className="space-y-2">
+                <h3 className="text-base font-semibold text-gray-900 pb-2 border-b">{org.name}</h3>
+
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Monthly Fee Per Vehicle (R)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editForm.monthly_fee_per_vehicle || 0}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, monthly_fee_per_vehicle: parseFloat(e.target.value) })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Daily Spending Limit (R)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="No limit"
+                      value={editForm.daily_spending_limit ?? ''}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, daily_spending_limit: e.target.value ? parseFloat(e.target.value) : null })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Monthly Spending Limit (R)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="No limit"
+                      value={editForm.monthly_spending_limit ?? ''}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, monthly_spending_limit: e.target.value ? parseFloat(e.target.value) : null })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Month End Day
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={editForm.month_end_day || ''}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, month_end_day: e.target.value ? parseInt(e.target.value) : null })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      placeholder="1-31"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Year End Month
+                    </label>
+                    <select
+                      value={editForm.year_end_month || ''}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, year_end_month: e.target.value ? parseInt(e.target.value) : null })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    >
+                      <option value="">Select Month</option>
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Year End Day
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={editForm.year_end_day || ''}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, year_end_day: e.target.value ? parseInt(e.target.value) : null })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      placeholder="1-31"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Primary Bank Account</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Account Holder</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_account_holder || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_account_holder: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Account Number</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_account_number || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_account_number: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Bank Name</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_name: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Branch Code</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_branch_code || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_branch_code: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Account Type</label>
+                      <select
+                        value={editForm.bank_account_type || 'cheque'}
+                        onChange={(e) => setEditForm({ ...editForm, bank_account_type: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="cheque">Cheque</option>
+                        <option value="savings">Savings</option>
+                        <option value="transmission">Transmission</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Secondary Bank Account (Optional)</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Account Holder</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_account_holder_2 || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_account_holder_2: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Account Number</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_account_number_2 || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_account_number_2: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Bank Name</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_name_2 || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_name_2: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Branch Code</label>
+                      <input
+                        type="text"
+                        value={editForm.bank_branch_code_2 || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_branch_code_2: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Account Type</label>
+                      <select
+                        value={editForm.bank_account_type_2 || ''}
+                        onChange={(e) => setEditForm({ ...editForm, bank_account_type_2: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="cheque">Cheque</option>
+                        <option value="savings">Savings</option>
+                        <option value="transmission">Transmission</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Invoicing Configuration</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Payment Method</label>
+                      <select
+                        value={editForm.payment_method || ''}
+                        onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="Client Pay">Client Pay</option>
+                        <option value="Direct Debit">Direct Debit</option>
+                        <option value="EFT">EFT</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Payment Terms</label>
+                      <select
+                        value={editForm.payment_terms || ''}
+                        onChange={(e) => setEditForm({ ...editForm, payment_terms: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="7-Days">7-Days</option>
+                        <option value="14-Days">14-Days</option>
+                        <option value="30-Days">30-Days</option>
+                        <option value="60-Days">60-Days</option>
+                        <option value="90-Days">90-Days</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Payment Date (Day of Month)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        value={editForm.payment_date || ''}
+                        onChange={(e) => setEditForm({ ...editForm, payment_date: e.target.value ? parseInt(e.target.value) : null })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="1-31"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Debit Order Lead Days</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.debit_order_lead_days || ''}
+                        onChange={(e) => setEditForm({ ...editForm, debit_order_lead_days: e.target.value ? parseInt(e.target.value) : null })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="e.g. 5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Late Payment Interest Rate (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editForm.late_payment_interest_rate || ''}
+                        onChange={(e) => setEditForm({ ...editForm, late_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="e.g. 2.5"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">VAT Reporting Basis</label>
+                      <select
+                        value={editForm.vat_reporting_basis || ''}
+                        onChange={(e) => setEditForm({ ...editForm, vat_reporting_basis: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="Accrual">Accrual</option>
+                        <option value="Cash">Cash</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`prorata-${editingId}`}
+                        checked={editForm.enable_prorata_billing || false}
+                        onChange={(e) => setEditForm({ ...editForm, enable_prorata_billing: e.target.checked })}
+                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                      />
+                      <label htmlFor={`prorata-${editingId}`} className="text-xs font-medium text-gray-700">
+                        Enable Pro-rata Billing
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`credit-control-${editingId}`}
+                        checked={editForm.credit_control_enabled || false}
+                        onChange={(e) => setEditForm({ ...editForm, credit_control_enabled: e.target.checked })}
+                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                      />
+                      <label htmlFor={`credit-control-${editingId}`} className="text-xs font-medium text-gray-700">
+                        Enable Credit Control
+                      </label>
+                    </div>
+                    {editForm.credit_control_enabled && (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">Suspend Services After (Days)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editForm.suspend_services_after_days || ''}
+                          onChange={(e) => setEditForm({ ...editForm, suspend_services_after_days: e.target.value ? parseInt(e.target.value) : null })}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                          placeholder="e.g. 30"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">{org.name}</h3>
+                  <p className="text-xs text-gray-500">
+                    Fee: R{org.monthly_fee_per_vehicle?.toFixed(2) || '0.00'}/vehicle • Month End: {org.month_end_day || 'N/A'}
+                    {org.payment_method && ` • ${org.payment_method}`}
+                    {org.payment_terms && ` (${org.payment_terms})`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleEdit(org)}
+                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1.5"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Edit
+                </button>
+              </div>
+            )}
+          </div>
+          );
+        })}
+
+        {filteredOrganizations.length === 0 && (
+          <div className="text-center py-8 text-gray-500">No organizations found</div>
+        )}
+      </div>
+      </div>
+    </div>
+  );
+}

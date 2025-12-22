@@ -1,0 +1,1305 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { getFuelTypeDisplayName } from '../lib/fuelTypes';
+import { BarChart3, Download, Calendar, TrendingUp, AlertTriangle, FileText, ArrowLeft, Wrench, AlertCircle } from 'lucide-react';
+
+interface ReportType {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+}
+
+interface ReportsDashboardProps {
+  onNavigate?: (view: string | null) => void;
+}
+
+export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) {
+  const [selectedReport, setSelectedReport] = useState<string>('overview');
+  const [startDate, setStartDate] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState<any>(null);
+  const [orgSettings, setOrgSettings] = useState<any>(null);
+  const [error, setError] = useState<string>('');
+
+  const reportTypes: ReportType[] = [
+    { id: 'overview', name: 'Overview Summary', description: 'General fuel purchase statistics', icon: BarChart3 },
+    { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
+    { id: 'vehicle', name: 'Vehicle Reports', description: 'Efficiency and usage by vehicle', icon: TrendingUp },
+    { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
+    { id: 'service-due', name: 'Next Service Due Date', description: 'Estimated service due dates for vehicles', icon: Wrench },
+    { id: 'vehicles-to-service', name: 'Vehicles to be Serviced', description: 'Vehicles within 1000 km of service', icon: Wrench },
+    { id: 'vehicles-overdue-service', name: 'Vehicles Overdue for Service', description: 'Vehicles that exceeded service interval', icon: AlertCircle },
+    { id: 'monthly', name: 'Monthly Summary', description: 'Month-end consolidated reports', icon: Calendar },
+    { id: 'annual', name: 'Annual Summary', description: 'Year-end consolidated reports', icon: Calendar },
+  ];
+
+
+  useEffect(() => {
+    setReportData(null);
+    setError('');
+    loadOrganizationSettings();
+  }, []);
+
+  const loadOrganizationSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Not authenticated');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        setError('Failed to load profile');
+        return;
+      }
+
+      if (!profile) {
+        setError('No profile found');
+        return;
+      }
+
+      const { data: org, error: orgError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', profile.organization_id)
+        .maybeSingle();
+
+      if (orgError) {
+        console.error('Organization error:', orgError);
+        setError('Failed to load organization');
+        return;
+      }
+
+      console.log('Organization Settings RAW:', org);
+      console.log('is_management_org VALUE:', org?.is_management_org);
+      console.log('is_management_org TYPE:', typeof org?.is_management_org);
+      console.log('Truthy check:', !!org?.is_management_org);
+      setOrgSettings(org || {});
+    } catch (err: any) {
+      console.error('Error loading organization settings:', err);
+      setError(err.message);
+    }
+  };
+
+  const loadReportData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('No user found');
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        setError('Error loading profile: ' + profileError.message);
+        return;
+      }
+
+      if (!profile) {
+        setError('No profile found');
+        return;
+      }
+
+      switch (selectedReport) {
+        case 'overview':
+          await loadOverviewData(profile.organization_id);
+          break;
+        case 'driver':
+          await loadDriverData(profile.organization_id);
+          break;
+        case 'vehicle':
+          await loadVehicleData(profile.organization_id);
+          break;
+        case 'fuel-theft':
+          await loadFuelTheftData(profile.organization_id);
+          break;
+        case 'service-due':
+          await loadServiceDueData(profile.organization_id);
+          break;
+        case 'vehicles-to-service':
+          await loadVehiclesToServiceData(profile.organization_id);
+          break;
+        case 'vehicles-overdue-service':
+          await loadVehiclesOverdueServiceData(profile.organization_id);
+          break;
+        case 'monthly':
+          await loadMonthlyData(profile.organization_id);
+          break;
+        case 'annual':
+          await loadAnnualData(profile.organization_id);
+          break;
+      }
+    } catch (err: any) {
+      setError('Error loading report: ' + err.message);
+      console.error('Report loading error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOverviewData = async (orgId: string) => {
+    const { data: transactions } = await supabase
+      .from('fuel_transactions')
+      .select(`
+        *,
+        vehicles (registration_number, make, model),
+        drivers (first_name, last_name),
+        garages (name)
+      `)
+      .eq('organization_id', orgId)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
+      .order('transaction_date', { ascending: false });
+
+    const totalTransactions = transactions?.length || 0;
+    const totalLiters = transactions?.reduce((sum, t) => sum + parseFloat(t.liters || 0), 0) || 0;
+    const totalSpent = transactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || 0), 0) || 0;
+    const totalCommission = transactions?.reduce((sum, t) => sum + parseFloat(t.commission_amount || 0), 0) || 0;
+
+    const formattedTransactions = transactions?.map(t => ({
+      date: t.transaction_date,
+      vehicle: t.vehicles ? `${t.vehicles.registration_number} (${t.vehicles.make} ${t.vehicles.model})` : 'Unknown',
+      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+      garage: t.garages?.name || 'Unknown',
+      fuel_type: getFuelTypeDisplayName(t.fuel_type),
+      liters: parseFloat(t.liters || 0),
+      price_per_liter: parseFloat(t.price_per_liter || 0),
+      amount: parseFloat(t.total_amount || 0),
+      commission: parseFloat(t.commission_amount || 0),
+      odometer: t.odometer_reading,
+    }));
+
+    setReportData({
+      totalTransactions,
+      totalLiters,
+      totalSpent,
+      totalCommission,
+      averagePerTransaction: (totalSpent / totalTransactions || 0),
+      transactions: formattedTransactions,
+    });
+  };
+
+  const loadDriverData = async (orgId: string) => {
+    const { data: transactions } = await supabase
+      .from('fuel_transactions')
+      .select(`
+        *,
+        drivers (first_name, last_name),
+        vehicles (registration_number)
+      `)
+      .eq('organization_id', orgId)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate);
+
+    const driverStats: any = {};
+
+    transactions?.forEach((t: any) => {
+      const driverId = t.driver_id;
+      if (!driverId || !t.drivers) return;
+
+      if (!driverStats[driverId]) {
+        driverStats[driverId] = {
+          first_name: t.drivers.first_name,
+          last_name: t.drivers.last_name,
+          total_transactions: 0,
+          vehicles_driven: new Set(),
+          total_liters: 0,
+          total_spent: 0,
+        };
+      }
+
+      driverStats[driverId].total_transactions += 1;
+      driverStats[driverId].vehicles_driven.add(t.vehicle_id);
+      driverStats[driverId].total_liters += parseFloat(t.liters || 0);
+      driverStats[driverId].total_spent += parseFloat(t.total_amount || 0);
+    });
+
+    const drivers = Object.values(driverStats).map((d: any) => ({
+      ...d,
+      vehicles_driven: d.vehicles_driven.size,
+      average_transaction_amount: d.total_transactions > 0 ? d.total_spent / d.total_transactions : 0,
+    }));
+
+    setReportData({ drivers });
+  };
+
+  const loadVehicleData = async (orgId: string) => {
+    // Get all vehicles for the organization
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('organization_id', orgId);
+
+    // Get all transactions with vehicle and driver details
+    const { data: transactions } = await supabase
+      .from('fuel_transactions')
+      .select(`
+        *,
+        vehicles (registration_number, make, model),
+        drivers (first_name, last_name),
+        garages (name)
+      `)
+      .eq('organization_id', orgId)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
+      .order('vehicle_id')
+      .order('transaction_date', { ascending: false });
+
+    // Group transactions by vehicle
+    const vehicleData: any = {};
+
+    transactions?.forEach((t: any) => {
+      const vehicleId = t.vehicle_id;
+      if (!vehicleData[vehicleId]) {
+        vehicleData[vehicleId] = {
+          vehicle_id: vehicleId,
+          license_plate: t.vehicles?.registration_number || 'Unknown',
+          make: t.vehicles?.make || '',
+          model: t.vehicles?.model || '',
+          transactions: [],
+          total_liters: 0,
+          total_amount: 0,
+          total_commission: 0,
+          transaction_count: 0,
+          odometers: [],
+        };
+      }
+
+      const liters = parseFloat(t.liters || 0);
+      const amount = parseFloat(t.total_amount || 0);
+      const commission = parseFloat(t.commission_amount || 0);
+
+      vehicleData[vehicleId].transactions.push({
+        date: t.transaction_date,
+        driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+        garage: t.garages?.name || 'Unknown',
+        fuel_type: getFuelTypeDisplayName(t.fuel_type),
+        liters: liters,
+        price_per_liter: parseFloat(t.price_per_liter || 0),
+        amount: amount,
+        commission: commission,
+        odometer: t.odometer_reading,
+      });
+
+      vehicleData[vehicleId].total_liters += liters;
+      vehicleData[vehicleId].total_amount += amount;
+      vehicleData[vehicleId].total_commission += commission;
+      vehicleData[vehicleId].transaction_count += 1;
+
+      if (t.odometer_reading) {
+        vehicleData[vehicleId].odometers.push(parseInt(t.odometer_reading));
+      }
+    });
+
+    // Calculate km travelled and consumption for each vehicle
+    Object.keys(vehicleData).forEach(vehicleId => {
+      const vData = vehicleData[vehicleId];
+      if (vData.odometers.length > 0) {
+        const maxOdometer = Math.max(...vData.odometers);
+        const minOdometer = Math.min(...vData.odometers);
+        vData.km_travelled = maxOdometer - minOdometer;
+
+        if (vData.km_travelled > 0) {
+          vData.consumption_per_100km = (vData.total_liters / vData.km_travelled) * 100;
+        } else {
+          vData.consumption_per_100km = 0;
+        }
+      } else {
+        vData.km_travelled = 0;
+        vData.consumption_per_100km = 0;
+      }
+    });
+
+    setReportData({ vehicleData: Object.values(vehicleData) });
+  };
+
+  const loadFuelTheftData = async (orgId: string) => {
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('*')
+      .eq('organization_id', orgId)
+      .is('deleted_at', null);
+
+    const { data: transactions } = await supabase
+      .from('fuel_transactions')
+      .select('*')
+      .eq('organization_id', orgId)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
+      .not('odometer_reading', 'is', null)
+      .not('previous_odometer_reading', 'is', null);
+
+    const vehicleStats: any = {};
+
+    transactions?.forEach((t: any) => {
+      const vehicleId = t.vehicle_id;
+      if (!vehicleStats[vehicleId]) {
+        const vehicle = vehicles?.find(v => v.id === vehicleId);
+        if (!vehicle) return;
+
+        vehicleStats[vehicleId] = {
+          license_plate: vehicle.registration_number,
+          make: vehicle.make,
+          model: vehicle.model,
+          expected_consumption: parseFloat(vehicle.average_fuel_consumption_per_100km || 10),
+          total_liters: 0,
+          total_km: 0,
+        };
+      }
+
+      const km = parseInt(t.odometer_reading) - parseInt(t.previous_odometer_reading);
+      if (km > 0) {
+        vehicleStats[vehicleId].total_liters += parseFloat(t.liters || 0);
+        vehicleStats[vehicleId].total_km += km;
+      }
+    });
+
+    const alerts = Object.values(vehicleStats)
+      .filter((v: any) => v.total_km > 0)
+      .map((v: any) => {
+        const actual = (v.total_liters / v.total_km) * 100;
+        const variance = ((actual - v.expected_consumption) / v.expected_consumption) * 100;
+        return {
+          vehicle: `${v.license_plate} (${v.make} ${v.model})`,
+          expected: v.expected_consumption,
+          actual: actual,
+          variance: variance,
+          severity: Math.abs(variance) > 50 ? 'High' : 'Medium',
+        };
+      })
+      .filter((alert: any) => Math.abs(alert.variance) > 30);
+
+    setReportData({ alerts });
+  };
+
+  const loadMonthlyData = async (orgId: string) => {
+    const monthEnd = orgSettings?.month_end_day || 31;
+    const { data: transactions } = await supabase
+      .from('fuel_transactions')
+      .select(`
+        *,
+        vehicles (registration_number, make, model),
+        drivers (first_name, last_name),
+        garages (name)
+      `)
+      .eq('organization_id', orgId)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate);
+
+    const formattedTransactions = transactions?.map(t => ({
+      date: t.transaction_date,
+      vehicle: t.vehicles ? `${t.vehicles.registration_number}` : 'Unknown',
+      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+      location: t.garages?.name || t.location || '-',
+      fuel_type: getFuelTypeDisplayName(t.fuel_type),
+      liters: t.liters,
+      total_amount: t.total_amount,
+    }));
+
+    setReportData({ transactions: formattedTransactions, monthEnd });
+  };
+
+  const loadAnnualData = async (orgId: string) => {
+    const yearEndMonth = orgSettings?.year_end_month || 12;
+    const yearEndDay = orgSettings?.year_end_day || 31;
+
+    const { data: transactions } = await supabase
+      .from('fuel_transactions')
+      .select(`
+        *,
+        vehicles (registration_number, make, model),
+        drivers (first_name, last_name),
+        garages (name)
+      `)
+      .eq('organization_id', orgId)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate);
+
+    const formattedTransactions = transactions?.map(t => ({
+      date: t.transaction_date,
+      vehicle: t.vehicles ? `${t.vehicles.registration_number}` : 'Unknown',
+      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+      location: t.garages?.name || t.location || '-',
+      fuel_type: getFuelTypeDisplayName(t.fuel_type),
+      liters: t.liters,
+      total_amount: t.total_amount,
+    }));
+
+    setReportData({ transactions: formattedTransactions, yearEndMonth, yearEndDay });
+  };
+
+  const loadServiceDueData = async (orgId: string) => {
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('id, registration_number, make, model, last_service_date, service_interval_km')
+      .eq('organization_id', orgId)
+      .is('deleted_at', null)
+      .not('last_service_date', 'is', null)
+      .not('service_interval_km', 'is', null)
+      .gt('service_interval_km', 0);
+
+    if (!vehicles || vehicles.length === 0) {
+      setReportData({ serviceDue: [] });
+      return;
+    }
+
+    const serviceDueData = [];
+
+    for (const vehicle of vehicles) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: recentTransactions } = await supabase
+        .from('fuel_transactions')
+        .select('odometer_reading, transaction_date')
+        .eq('vehicle_id', vehicle.id)
+        .not('odometer_reading', 'is', null)
+        .gte('transaction_date', thirtyDaysAgo.toISOString().split('T')[0])
+        .order('transaction_date', { ascending: false });
+
+      if (!recentTransactions || recentTransactions.length < 2) {
+        continue;
+      }
+
+      const { data: serviceTransaction } = await supabase
+        .from('fuel_transactions')
+        .select('odometer_reading')
+        .eq('vehicle_id', vehicle.id)
+        .not('odometer_reading', 'is', null)
+        .lte('transaction_date', vehicle.last_service_date)
+        .order('transaction_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let lastServiceOdometer = serviceTransaction?.odometer_reading;
+
+      if (!lastServiceOdometer) {
+        const { data: firstTransaction } = await supabase
+          .from('fuel_transactions')
+          .select('odometer_reading')
+          .eq('vehicle_id', vehicle.id)
+          .not('odometer_reading', 'is', null)
+          .order('transaction_date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        lastServiceOdometer = firstTransaction?.odometer_reading;
+      }
+
+      if (!lastServiceOdometer) {
+        continue;
+      }
+
+      const currentOdometer = parseInt(recentTransactions[0].odometer_reading);
+      const oldestOdometer = parseInt(recentTransactions[recentTransactions.length - 1].odometer_reading);
+
+      const daysBetween = Math.ceil(
+        (new Date(recentTransactions[0].transaction_date).getTime() -
+         new Date(recentTransactions[recentTransactions.length - 1].transaction_date).getTime()) /
+        (1000 * 60 * 60 * 24)
+      );
+
+      if (daysBetween === 0) {
+        continue;
+      }
+
+      const kmTravelled = currentOdometer - oldestOdometer;
+      const avgKmPerDay = kmTravelled / daysBetween;
+
+      const targetOdometer = parseInt(lastServiceOdometer) + (vehicle.service_interval_km * 0.9);
+      const remainingKm = targetOdometer - currentOdometer;
+      const daysUntilService = Math.ceil(remainingKm / avgKmPerDay);
+
+      const estimatedDueDate = new Date();
+      estimatedDueDate.setDate(estimatedDueDate.getDate() + daysUntilService);
+
+      serviceDueData.push({
+        vehicle: `${vehicle.registration_number} (${vehicle.make} ${vehicle.model})`,
+        license_plate: vehicle.registration_number,
+        last_service_date: vehicle.last_service_date,
+        last_service_odometer: parseInt(lastServiceOdometer),
+        current_odometer: currentOdometer,
+        service_interval_km: vehicle.service_interval_km,
+        target_odometer: targetOdometer,
+        remaining_km: remainingKm,
+        avg_km_per_day: avgKmPerDay,
+        days_until_service: daysUntilService,
+        estimated_due_date: estimatedDueDate.toISOString().split('T')[0],
+        is_overdue: remainingKm < 0,
+      });
+    }
+
+    serviceDueData.sort((a, b) => a.days_until_service - b.days_until_service);
+
+    setReportData({ serviceDue: serviceDueData });
+  };
+
+  const loadVehiclesToServiceData = async (orgId: string) => {
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('id, registration_number, make, model, last_service_km_reading, service_interval_km')
+      .eq('organization_id', orgId)
+      .is('deleted_at', null)
+      .not('last_service_km_reading', 'is', null)
+      .not('service_interval_km', 'is', null)
+      .gt('service_interval_km', 0);
+
+    if (!vehicles || vehicles.length === 0) {
+      setReportData({ vehiclesToService: [] });
+      return;
+    }
+
+    const vehiclesToServiceData = [];
+
+    for (const vehicle of vehicles) {
+      const { data: latestTransaction } = await supabase
+        .from('fuel_transactions')
+        .select('odometer_reading')
+        .eq('vehicle_id', vehicle.id)
+        .not('odometer_reading', 'is', null)
+        .order('transaction_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!latestTransaction) {
+        continue;
+      }
+
+      const currentOdometer = parseInt(latestTransaction.odometer_reading);
+      const lastServiceKm = vehicle.last_service_km_reading;
+      const serviceIntervalKm = vehicle.service_interval_km;
+
+      const nextServiceKm = lastServiceKm + serviceIntervalKm;
+      const kmUntilService = nextServiceKm - currentOdometer;
+
+      if (kmUntilService > 0 && kmUntilService <= 1000) {
+        vehiclesToServiceData.push({
+          vehicle: `${vehicle.registration_number} (${vehicle.make} ${vehicle.model})`,
+          license_plate: vehicle.registration_number,
+          last_service_km: lastServiceKm,
+          current_odometer: currentOdometer,
+          service_interval_km: serviceIntervalKm,
+          next_service_km: nextServiceKm,
+          km_until_service: kmUntilService,
+          km_since_service: currentOdometer - lastServiceKm,
+        });
+      }
+    }
+
+    vehiclesToServiceData.sort((a, b) => a.km_until_service - b.km_until_service);
+
+    setReportData({ vehiclesToService: vehiclesToServiceData });
+  };
+
+  const loadVehiclesOverdueServiceData = async (orgId: string) => {
+    const { data: vehicles } = await supabase
+      .from('vehicles')
+      .select('id, registration_number, make, model, last_service_km_reading, service_interval_km')
+      .eq('organization_id', orgId)
+      .is('deleted_at', null)
+      .not('last_service_km_reading', 'is', null)
+      .not('service_interval_km', 'is', null)
+      .gt('service_interval_km', 0);
+
+    if (!vehicles || vehicles.length === 0) {
+      setReportData({ vehiclesOverdueService: [] });
+      return;
+    }
+
+    const vehiclesOverdueServiceData = [];
+
+    for (const vehicle of vehicles) {
+      const { data: latestTransaction } = await supabase
+        .from('fuel_transactions')
+        .select('odometer_reading')
+        .eq('vehicle_id', vehicle.id)
+        .not('odometer_reading', 'is', null)
+        .order('transaction_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!latestTransaction) {
+        continue;
+      }
+
+      const currentOdometer = parseInt(latestTransaction.odometer_reading);
+      const lastServiceKm = vehicle.last_service_km_reading;
+      const serviceIntervalKm = vehicle.service_interval_km;
+
+      const nextServiceKm = lastServiceKm + serviceIntervalKm;
+      const kmOverdue = currentOdometer - nextServiceKm;
+
+      if (kmOverdue > 0) {
+        vehiclesOverdueServiceData.push({
+          vehicle: `${vehicle.registration_number} (${vehicle.make} ${vehicle.model})`,
+          license_plate: vehicle.registration_number,
+          last_service_km: lastServiceKm,
+          current_odometer: currentOdometer,
+          service_interval_km: serviceIntervalKm,
+          next_service_km: nextServiceKm,
+          km_overdue: kmOverdue,
+          km_since_service: currentOdometer - lastServiceKm,
+        });
+      }
+    }
+
+    vehiclesOverdueServiceData.sort((a, b) => b.km_overdue - a.km_overdue);
+
+    setReportData({ vehiclesOverdueService: vehiclesOverdueServiceData });
+  };
+
+  const exportToCSV = () => {
+    if (!reportData) return;
+
+    let csv = '';
+    let filename = `${selectedReport}-report-${startDate}-to-${endDate}.csv`;
+
+    switch (selectedReport) {
+      case 'overview':
+        csv = 'Date,Vehicle,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Commission,Odometer\n';
+        reportData.transactions?.forEach((t: any) => {
+          csv += `"${new Date(t.date).toLocaleDateString()}","${t.vehicle}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${(t.commission || 0).toFixed(2)},${t.odometer || ''}\n`;
+        });
+        csv += `\nTOTALS,,,,${(reportData.totalLiters || 0).toFixed(2)},,${(reportData.totalSpent || 0).toFixed(2)},${(reportData.totalCommission || 0).toFixed(2)}\n`;
+        break;
+
+      case 'driver':
+        csv = 'Driver,Transactions,Vehicles Driven,Total Liters,Total Spent,Avg Transaction\n';
+        reportData.drivers?.forEach((d: any) => {
+          csv += `${d.first_name} ${d.last_name},${d.total_transactions},${d.vehicles_driven},${d.total_liters},${d.total_spent},${d.average_transaction_amount}\n`;
+        });
+        break;
+
+      case 'vehicle':
+        csv = 'Vehicle,Date,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Commission,Odometer\n';
+        reportData.vehicleData?.forEach((v: any) => {
+          csv += `\n${v.license_plate} (${v.make} ${v.model})\n`;
+          v.transactions?.forEach((t: any) => {
+            csv += `,"${new Date(t.date).toLocaleDateString()}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${(t.commission || 0).toFixed(2)},${t.odometer || ''}\n`;
+          });
+          csv += `,,,TOTALS:,${(v.total_liters || 0).toFixed(2)},,${(v.total_amount || 0).toFixed(2)},${(v.total_commission || 0).toFixed(2)}\n`;
+          csv += `,,,KM Travelled: ${v.km_travelled} | L/100km: ${(v.consumption_per_100km || 0).toFixed(2)}\n`;
+        });
+        break;
+
+      case 'fuel-theft':
+        csv = 'Vehicle,Expected L/100km,Actual L/100km,Variance %,Severity\n';
+        reportData.alerts?.forEach((a: any) => {
+          csv += `${a.vehicle},${a.expected},${a.actual},${a.variance},${a.severity}\n`;
+        });
+        break;
+
+      case 'service-due':
+        csv = 'Vehicle,Last Service Date,Last Service Odometer,Current Odometer,Service Interval (km),Target Odometer,Remaining (km),Avg km/day,Days Until Service,Estimated Due Date,Status\n';
+        reportData.serviceDue?.forEach((s: any) => {
+          csv += `"${s.vehicle}","${new Date(s.last_service_date).toLocaleDateString()}",${s.last_service_odometer},${s.current_odometer},${s.service_interval_km},${s.target_odometer},${s.remaining_km},${s.avg_km_per_day.toFixed(1)},${s.days_until_service},"${new Date(s.estimated_due_date).toLocaleDateString()}",${s.is_overdue ? 'OVERDUE' : 'Upcoming'}\n`;
+        });
+        break;
+
+      case 'vehicles-to-service':
+        csv = 'Vehicle,Last Service KM,Current Odometer,Service Interval (km),Next Service KM,KM Until Service,KM Since Last Service\n';
+        reportData.vehiclesToService?.forEach((v: any) => {
+          csv += `"${v.vehicle}",${v.last_service_km},${v.current_odometer},${v.service_interval_km},${v.next_service_km},${v.km_until_service},${v.km_since_service}\n`;
+        });
+        break;
+
+      case 'vehicles-overdue-service':
+        csv = 'Vehicle,Last Service KM,Current Odometer,Service Interval (km),Next Service KM,KM Overdue,KM Since Last Service\n';
+        reportData.vehiclesOverdueService?.forEach((v: any) => {
+          csv += `"${v.vehicle}",${v.last_service_km},${v.current_odometer},${v.service_interval_km},${v.next_service_km},${v.km_overdue},${v.km_since_service}\n`;
+        });
+        break;
+
+      case 'monthly':
+      case 'annual':
+        csv = 'Date,Vehicle,Driver,Location,Fuel Type,Liters,Amount\n';
+        reportData.transactions?.forEach((t: any) => {
+          csv += `"${new Date(t.date).toLocaleDateString()}","${t.vehicle}","${t.driver}","${t.location}",${t.fuel_type},${(parseFloat(t.liters) || 0).toFixed(2)},${(parseFloat(t.total_amount) || 0).toFixed(2)}\n`;
+        });
+        break;
+    }
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div>
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 pb-4 mb-6 shadow-sm">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Reports Dashboard</h1>
+            <p className="text-gray-600">Comprehensive fuel usage analytics</p>
+          </div>
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('reports-menu')}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2 px-4 py-2 whitespace-nowrap"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Reports Menu
+            </button>
+          )}
+        </div>
+
+        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Date Range & Actions</h3>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-gray-600" />
+              <label className="text-sm font-medium text-gray-700">From:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">To:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="border border-gray-300 rounded-lg px-3 py-2"
+              />
+            </div>
+            <button
+              onClick={loadReportData}
+              disabled={!selectedReport || loading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 transition-colors text-sm ml-auto"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Generate
+            </button>
+            <button
+              onClick={exportToCSV}
+              disabled={!reportData}
+              className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 transition-colors text-sm"
+            >
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-6">
+
+
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Type</h3>
+        <div className="space-y-2 mb-6">
+          {reportTypes.map((type) => {
+            const Icon = type.icon;
+            return (
+              <button
+                key={type.id}
+                onClick={() => setSelectedReport(type.id)}
+                className={`w-full p-4 rounded-lg border-2 transition-all text-left flex items-center gap-4 ${
+                  selectedReport === type.id
+                    ? 'border-blue-600 bg-blue-50'
+                    : 'border-gray-200 hover:border-blue-300'
+                }`}
+              >
+                <Icon className={`w-6 h-6 flex-shrink-0 ${selectedReport === type.id ? 'text-blue-600' : 'text-gray-600'}`} />
+                <div>
+                  <h4 className="font-semibold text-gray-900">{type.name}</h4>
+                  <p className="text-sm text-gray-600">{type.description}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 font-medium">Error loading reports</p>
+            <p className="text-red-600 text-sm mt-1">{error}</p>
+          </div>
+        ) : loading || !orgSettings ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : reportData ? (
+          <div className="space-y-4">
+            {selectedReport === 'overview' && (
+              <>
+                <div className={`grid grid-cols-1 gap-4 ${orgSettings?.is_management_org ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <p className="text-sm text-blue-900 font-medium">Total Transactions</p>
+                    <p className="text-2xl font-bold text-blue-900">{reportData.totalTransactions || 0}</p>
+                  </div>
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <p className="text-sm text-green-900 font-medium">Total Liters</p>
+                    <p className="text-2xl font-bold text-green-900">{(reportData.totalLiters || 0).toFixed(2)}</p>
+                  </div>
+                  <div className="bg-orange-50 rounded-lg p-4">
+                    <p className="text-sm text-orange-900 font-medium">Total Spent</p>
+                    <p className="text-2xl font-bold text-orange-900">R {(reportData.totalSpent || 0).toFixed(2)}</p>
+                  </div>
+                  {orgSettings?.is_management_org && (
+                    <div className="bg-purple-50 rounded-lg p-4">
+                      <p className="text-sm text-purple-900 font-medium">Commission</p>
+                      <p className="text-2xl font-bold text-purple-900">R {(reportData.totalCommission || 0).toFixed(2)}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="border border-gray-200 rounded-lg overflow-hidden mt-6">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-100 border-b border-gray-200">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Garage</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/L</th>
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                          {orgSettings?.is_management_org && (
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Commission</th>
+                          )}
+                          <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Odometer</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {reportData.transactions?.map((t: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              {new Date(t.date).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{t.vehicle}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{t.driver}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{t.garage}</td>
+                            <td className="px-4 py-3 text-sm text-gray-900">{t.fuel_type}</td>
+                            <td className="px-4 py-3 text-sm text-right text-gray-900">{(t.liters || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-right text-gray-900">R {(t.price_per_liter || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">R {(t.amount || 0).toFixed(2)}</td>
+                            {orgSettings?.is_management_org && (
+                              <td className="px-4 py-3 text-sm text-right text-orange-600">R {(t.commission || 0).toFixed(2)}</td>
+                            )}
+                            <td className="px-4 py-3 text-sm text-right text-gray-900">{t.odometer || '-'}</td>
+                          </tr>
+                        ))}
+                        <tr className="bg-gray-50 font-semibold">
+                          <td colSpan={4} className="px-4 py-3 text-sm text-gray-900 font-bold">TOTALS:</td>
+                          <td className="px-4 py-3"></td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900 font-bold">{(reportData.totalLiters || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900"></td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900 font-bold">R {(reportData.totalSpent || 0).toFixed(2)}</td>
+                          {orgSettings?.is_management_org && (
+                            <td className="px-4 py-3 text-sm text-right text-orange-600 font-bold">R {(reportData.totalCommission || 0).toFixed(2)}</td>
+                          )}
+                          <td className="px-4 py-3 text-sm text-right text-gray-900"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {selectedReport === 'driver' && reportData.drivers && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-100 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Transactions</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Vehicles Driven</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Liters</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Spent</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Avg Transaction</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {reportData.drivers.map((driver: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900 font-medium">
+                            {driver.first_name} {driver.last_name}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">{driver.total_transactions}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">{driver.vehicles_driven}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">{(driver.total_liters || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">R {(driver.total_spent || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">R {(driver.average_transaction_amount || 0).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {selectedReport === 'vehicle' && reportData.vehicleData && (
+              <div className="space-y-6">
+                {reportData.vehicleData.map((vehicle: any) => (
+                  <div key={vehicle.vehicle_id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        {vehicle.license_plate} - {vehicle.make} {vehicle.model}
+                      </h3>
+                      <div className="flex gap-6 mt-2 text-sm text-gray-600">
+                        <span>Transactions: {vehicle.transaction_count}</span>
+                        <span>KM Travelled: {vehicle.km_travelled}</span>
+                        <span>L/100km: {(vehicle.consumption_per_100km || 0).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Garage</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel Type</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/L</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Commission</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Odometer</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {vehicle.transactions.map((t: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {new Date(t.date).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{t.driver}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{t.garage}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{t.fuel_type}</td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">{(t.liters || 0).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">R {(t.price_per_liter || 0).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">R {(t.amount || 0).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-sm text-right text-orange-600">R {(t.commission || 0).toFixed(2)}</td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">{t.odometer || '-'}</td>
+                            </tr>
+                          ))}
+                          <tr className="bg-gray-50 font-semibold">
+                            <td colSpan={4} className="px-4 py-3 text-sm text-gray-900">TOTALS</td>
+                            <td className="px-4 py-3 text-sm text-right text-gray-900">{(vehicle.total_liters || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3"></td>
+                            <td className="px-4 py-3 text-sm text-right text-gray-900">R {(vehicle.total_amount || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3 text-sm text-right text-orange-600">R {(vehicle.total_commission || 0).toFixed(2)}</td>
+                            <td className="px-4 py-3"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedReport === 'fuel-theft' && reportData.alerts && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-red-600">Fuel Consumption Alerts</h3>
+                {reportData.alerts.length === 0 ? (
+                  <p className="text-gray-600">No anomalies detected</p>
+                ) : (
+                  <div className="space-y-2">
+                    {reportData.alerts.map((alert: any, idx: number) => (
+                      <div key={idx} className={`p-4 rounded-lg ${alert.severity === 'High' ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-semibold text-gray-900">{alert.vehicle}</p>
+                            <p className="text-sm text-gray-600">
+                              Expected: {(parseFloat(alert.expected) || 0).toFixed(2)} L/100km |
+                              Actual: {(parseFloat(alert.actual) || 0).toFixed(2)} L/100km |
+                              Variance: {(parseFloat(alert.variance) || 0).toFixed(1)}%
+                            </p>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${alert.severity === 'High' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'}`}>
+                            {alert.severity}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedReport === 'service-due' && reportData.serviceDue && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-blue-900">Next Service Due Dates</h3>
+                {reportData.serviceDue.length === 0 ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+                    <p className="text-gray-600">No vehicles with service information found.</p>
+                    <p className="text-sm text-gray-500 mt-2">Ensure vehicles have both Last Service Date and Service Interval configured.</p>
+                  </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-100 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Service</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Last Svc Odo</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Current Odo</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Target Odo</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Remaining (km)</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Avg km/day</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Days Until</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Est. Due Date</th>
+                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {reportData.serviceDue.map((service: any, idx: number) => (
+                            <tr key={idx} className={`hover:bg-gray-50 ${service.is_overdue ? 'bg-red-50' : service.days_until_service <= 7 ? 'bg-yellow-50' : ''}`}>
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{service.vehicle}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {new Date(service.last_service_date).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {service.last_service_odometer.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {service.current_odometer.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {service.target_odometer.toLocaleString()}
+                              </td>
+                              <td className={`px-4 py-3 text-sm text-right font-medium ${service.is_overdue ? 'text-red-600' : service.remaining_km < 500 ? 'text-orange-600' : 'text-gray-900'}`}>
+                                {service.remaining_km.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {service.avg_km_per_day.toFixed(1)}
+                              </td>
+                              <td className={`px-4 py-3 text-sm text-right font-medium ${service.is_overdue ? 'text-red-600' : service.days_until_service <= 7 ? 'text-orange-600' : 'text-gray-900'}`}>
+                                {service.is_overdue ? 'OVERDUE' : service.days_until_service}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">
+                                {new Date(service.estimated_due_date).toLocaleDateString('en-GB', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                {service.is_overdue ? (
+                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-600 text-white">
+                                    OVERDUE
+                                  </span>
+                                ) : service.days_until_service <= 7 ? (
+                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-500 text-white">
+                                    URGENT
+                                  </span>
+                                ) : service.days_until_service <= 30 ? (
+                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500 text-white">
+                                    SOON
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    OK
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedReport === 'vehicles-to-service' && reportData.vehiclesToService && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-blue-900">Vehicles to be Serviced (Within 1000 km)</h3>
+                {reportData.vehiclesToService.length === 0 ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                    <p className="text-green-800 font-medium">No vehicles approaching service due!</p>
+                    <p className="text-sm text-green-700 mt-2">All vehicles are either serviced recently or have more than 1000 km before service.</p>
+                  </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-yellow-100 border-b border-gray-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Vehicle</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Last Service KM</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Current Odometer</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Service Interval</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Next Service KM</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">KM Until Service</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">KM Since Service</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {reportData.vehiclesToService.map((vehicle: any, idx: number) => (
+                            <tr key={idx} className={`hover:bg-gray-50 ${vehicle.km_until_service <= 500 ? 'bg-orange-50' : 'bg-yellow-50'}`}>
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{vehicle.vehicle}</td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.last_service_km.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.current_odometer.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.service_interval_km.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.next_service_km.toLocaleString()}
+                              </td>
+                              <td className={`px-4 py-3 text-sm text-right font-bold ${vehicle.km_until_service <= 500 ? 'text-orange-600' : 'text-yellow-600'}`}>
+                                {vehicle.km_until_service.toLocaleString()} km
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-700">
+                                {vehicle.km_since_service.toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedReport === 'vehicles-overdue-service' && reportData.vehiclesOverdueService && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-red-900">Vehicles Overdue for Service</h3>
+                {reportData.vehiclesOverdueService.length === 0 ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                    <p className="text-green-800 font-medium">No vehicles overdue for service!</p>
+                    <p className="text-sm text-green-700 mt-2">All vehicles are serviced on time.</p>
+                  </div>
+                ) : (
+                  <div className="border border-red-200 rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-red-100 border-b border-red-200">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Vehicle</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Last Service KM</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Current Odometer</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Service Interval</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Should've Serviced At</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">KM Overdue</th>
+                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">KM Since Service</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {reportData.vehiclesOverdueService.map((vehicle: any, idx: number) => (
+                            <tr key={idx} className="hover:bg-gray-50 bg-red-50">
+                              <td className="px-4 py-3 text-sm font-medium text-gray-900">{vehicle.vehicle}</td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.last_service_km.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.current_odometer.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.service_interval_km.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-900">
+                                {vehicle.next_service_km.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right font-bold text-red-600">
+                                {vehicle.km_overdue.toLocaleString()} km OVERDUE
+                              </td>
+                              <td className="px-4 py-3 text-sm text-right text-gray-700">
+                                {vehicle.km_since_service.toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {(selectedReport === 'monthly' || selectedReport === 'annual') && reportData.transactions && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900">
+                    {selectedReport === 'monthly' ? 'Monthly Summary' : 'Annual Summary'}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedReport === 'monthly'
+                      ? `Month-end day: ${reportData.monthEnd}`
+                      : `Year-end: ${reportData.yearEndMonth}/${reportData.yearEndDay}`
+                    }
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-100 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Location</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel Type</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {reportData.transactions.map((t: any, idx: number) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {new Date(t.date).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{t.vehicle}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{t.driver}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{t.location}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">{t.fuel_type}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">{(parseFloat(t.liters) || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">R {(parseFloat(t.total_amount) || 0).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-center text-gray-600 py-12">Select a date range and report type to view data</p>
+        )}
+      </div>
+    </div>
+  );
+}

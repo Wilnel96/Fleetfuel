@@ -1,0 +1,587 @@
+import { useEffect, useState, useRef } from 'react';
+import { supabase } from './lib/supabase';
+import Auth from './components/Auth';
+import DriverAuth from './components/DriverAuth';
+import GarageAuth from './components/GarageAuth';
+import GaragePortal from './components/GaragePortal';
+import DriverMobileApp from './components/DriverMobileApp';
+import MobileFuelPurchase from './components/MobileFuelPurchase';
+import VehicleManagement from './components/VehicleManagement';
+import GarageManagement from './components/GarageManagement';
+import EFTBatchProcessing from './components/EFTBatchProcessing';
+import DriverManagement from './components/DriverManagement';
+import OrganizationManagement from './components/OrganizationManagement';
+import ClientOrganizations from './components/ClientOrganizations';
+import ClientOrganizationsMenu from './components/ClientOrganizationsMenu';
+import ClientOrgInfo from './components/ClientOrgInfo';
+import UserManagement from './components/UserManagement';
+import ClientFinancialInfo from './components/ClientFinancialInfo';
+import CreateClientOrganization from './components/CreateClientOrganization';
+import ConsolidatedReports from './components/ConsolidatedReports';
+import ReportsDashboard from './components/ReportsDashboard';
+import ClientDashboard from './components/ClientDashboard';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
+import GaragesDirectory from './components/GaragesDirectory';
+import ClientGaragesView from './components/ClientGaragesView';
+import BackOffice from './components/BackOffice';
+import CustomReportBuilder from './components/CustomReportBuilder';
+import BackupManagement from './components/BackupManagement';
+import ClientInvoices from './components/ClientInvoices';
+import InvoiceManagement from './components/InvoiceManagement';
+import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
+import { DriverData } from './components/DriverAuth';
+
+type UserMode = 'admin' | 'driver' | 'garage' | null;
+
+function App() {
+  const [session, setSession] = useState<any>(null);
+  const [driverData, setDriverData] = useState<DriverData | null>(null);
+  const [garageId, setGarageId] = useState<string | null>(null);
+  const [garageName, setGarageName] = useState<string | null>(null);
+  const [userMode, setUserMode] = useState<UserMode>(null);
+  const [loading, setLoading] = useState(true);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
+  const [showModeSelection, setShowModeSelection] = useState(true);
+  const [userRole, setUserRole] = useState<string>('admin');
+  const [initialViewSet, setInitialViewSet] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const emergencyTimeout = setTimeout(() => {
+      console.warn('Emergency timeout: Showing UI after 10 seconds');
+      setLoading(false);
+    }, 10000);
+
+    return () => clearTimeout(emergencyTimeout);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const storedDriverToken = localStorage.getItem('driverToken');
+    const storedDriverData = localStorage.getItem('driverData');
+
+    if (storedDriverToken && storedDriverData) {
+      try {
+        const driver = JSON.parse(storedDriverData);
+        setDriverData({ ...driver, token: storedDriverToken });
+        setUserMode('driver');
+        setShowModeSelection(false);
+        setLoading(false);
+        console.log('Driver session restored from localStorage');
+        return;
+      } catch (e) {
+        console.error('Failed to restore driver session:', e);
+        localStorage.removeItem('driverToken');
+        localStorage.removeItem('driverData');
+      }
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log('Auth state changed:', _event, 'Session:', !!session, 'Mounted:', mounted);
+
+      if (!mounted) {
+        console.log('Component unmounted, ignoring auth state change');
+        return;
+      }
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      if (session) {
+        setSession(session);
+        setUserMode('admin');
+        setShowModeSelection(false);
+        setLoading(false);
+
+        const profileTimeout = setTimeout(() => {
+          console.warn('Profile load timeout, using defaults');
+          if (!mounted) return;
+          setUserRole('admin');
+          setCurrentView('organization');
+        }, 3000);
+
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .maybeSingle()
+          .then(({ data: profile, error: profileError }) => {
+            clearTimeout(profileTimeout);
+
+            if (!mounted) return;
+
+            if (profileError) {
+              console.error('Auth state - Profile error:', profileError);
+              setUserRole('admin');
+              setCurrentView('organization');
+              return;
+            }
+
+            console.log('Auth state - Profile loaded:', profile);
+
+            if (profile) {
+              setUserRole(profile.role);
+              setCurrentView(null);
+              setInitialViewSet(true);
+            } else {
+              console.warn('Auth state - No profile found, using defaults');
+              setUserRole('admin');
+              setCurrentView('organization');
+            }
+          })
+          .catch((err) => {
+            clearTimeout(profileTimeout);
+            console.error('Auth state - Exception loading profile:', err);
+            if (!mounted) return;
+            setUserRole('admin');
+            setCurrentView('organization');
+          });
+      } else if (_event === 'SIGNED_OUT') {
+        console.log('User signed out event');
+        setSession(null);
+        setDriverData(null);
+        setGarageId(null);
+        setGarageName(null);
+        setCurrentView(null);
+        setUserRole('admin');
+        setUserMode(null);
+        setShowModeSelection(true);
+        setLoading(false);
+      } else if (_event === 'INITIAL_SESSION' && !session) {
+        console.log('Initial session check - no session found');
+        if (!mounted) return;
+        setLoading(false);
+      }
+    });
+
+    console.log('Checking session... Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+
+      if (currentSession) {
+        console.log('Existing session found on mount');
+        setSession(currentSession);
+        setUserMode('admin');
+        setShowModeSelection(false);
+        setLoading(false);
+      } else {
+        console.log('No existing session on mount');
+      }
+    });
+
+    timeoutRef.current = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Initial load timeout after 2 seconds, showing UI');
+        setLoading(false);
+      }
+    }, 2000);
+
+    return () => {
+      mounted = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleAdminSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      setDriverData(null);
+      setGarageId(null);
+      setGarageName(null);
+      setUserMode(null);
+      setUserRole('admin');
+      setCurrentView(null);
+      setShowModeSelection(true);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      setSession(null);
+      setDriverData(null);
+      setGarageId(null);
+      setGarageName(null);
+      setUserMode(null);
+      setUserRole('admin');
+      setCurrentView(null);
+      setShowModeSelection(true);
+    }
+  };
+
+  const handleDriverLogin = (driver: DriverData) => {
+    setDriverData(driver);
+    setUserMode('driver');
+    setShowModeSelection(false);
+  };
+
+  const handleDriverLogout = async () => {
+    console.log('Driver logout initiated');
+    localStorage.removeItem('driverToken');
+    localStorage.removeItem('driverData');
+
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error clearing Supabase session:', error);
+    }
+
+    setDriverData(null);
+    setSession(null);
+    setGarageId(null);
+    setGarageName(null);
+    setUserMode(null);
+    setShowModeSelection(true);
+    console.log('Driver logout complete, state reset');
+  };
+
+  const handleGarageLogin = (id: string, name: string) => {
+    setGarageId(id);
+    setGarageName(name);
+    setUserMode('garage');
+    setShowModeSelection(false);
+  };
+
+  const handleGarageLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error clearing Supabase session:', error);
+    }
+
+    setGarageId(null);
+    setGarageName(null);
+    setSession(null);
+    setDriverData(null);
+    setUserMode(null);
+    setShowModeSelection(true);
+  };
+
+  console.log('Render state:', { loading, showModeSelection, hasSession: !!session, hasDriverData: !!driverData, userMode, userRole, currentView });
+
+  if (!loading && userMode && showModeSelection) {
+    console.log('FIXING STATE: userMode is set but showModeSelection is true, fixing...');
+    setShowModeSelection(false);
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (showModeSelection && !session && !driverData && !garageId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+          <div className="bg-blue-600 text-white p-6 text-center">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Fuel className="w-10 h-10" />
+              <h1 className="text-2xl font-bold">FleetFuel</h1>
+            </div>
+            <p className="text-blue-100 text-sm">Mobile Fuel Management</p>
+          </div>
+
+          <div className="p-6 space-y-3">
+            <h2 className="text-xl font-semibold text-gray-900 text-center mb-4">
+              Select Login Type
+            </h2>
+
+            <button
+              onClick={() => {
+                setUserMode('driver');
+                setShowModeSelection(false);
+              }}
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-6 h-6" />
+                <div className="text-left flex-1">
+                  <div className="font-bold">Driver Login</div>
+                  <div className="text-xs text-blue-100">For drivers using mobile app</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                console.log('Client Portal clicked! Setting userMode to admin');
+                setUserMode('admin');
+                setShowModeSelection(false);
+                console.log('State updated: userMode=admin, showModeSelection=false');
+              }}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <Building2 className="w-6 h-6" />
+                <div className="text-left flex-1">
+                  <div className="font-bold">Client Portal</div>
+                  <div className="text-xs text-green-100">For organization administrators</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                console.log('Garage Portal clicked! Setting userMode to garage');
+                setUserMode('garage');
+                setShowModeSelection(false);
+                console.log('State updated: userMode=garage, showModeSelection=false');
+              }}
+              className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <Store className="w-6 h-6" />
+                <div className="text-left flex-1">
+                  <div className="font-bold">Garage Portal</div>
+                  <div className="text-xs text-orange-100">For garage managers</div>
+                </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                console.log('System Admin clicked! Setting userMode to admin');
+                setUserMode('admin');
+                setShowModeSelection(false);
+                console.log('State updated: userMode=admin, showModeSelection=false');
+              }}
+              className="w-full bg-gradient-to-r from-gray-700 to-gray-800 text-white py-3 px-4 rounded-lg font-semibold hover:from-gray-800 hover:to-gray-900 transition-all shadow-md hover:shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <Settings className="w-6 h-6" />
+                <div className="text-left flex-1">
+                  <div className="font-bold">System Admin</div>
+                  <div className="text-xs text-gray-300">For management company</div>
+                </div>
+              </div>
+            </button>
+
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-600 text-center leading-relaxed">
+                <strong>Drivers:</strong> First name and date of birth
+                <br />
+                <strong>Garages:</strong> Contact email and password
+                <br />
+                <strong>Admins:</strong> Email and password
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (userMode === 'driver' && !driverData) {
+    console.log('RENDERING: Driver Auth (no driver data)');
+    return <DriverAuth onLogin={handleDriverLogin} onBack={() => {
+      setUserMode(null);
+      setShowModeSelection(true);
+    }} />;
+  }
+
+  if (userMode === 'driver' && driverData) {
+    console.log('RENDERING: Driver Mobile App');
+    return <DriverMobileApp driver={driverData} onLogout={handleDriverLogout} />;
+  }
+
+  if (userMode === 'garage' && !garageId) {
+    console.log('RENDERING: Garage Auth (no garage data)');
+    return <GarageAuth onLogin={handleGarageLogin} onBack={() => {
+      setUserMode(null);
+      setShowModeSelection(true);
+    }} />;
+  }
+
+  if (userMode === 'garage' && garageId && garageName) {
+    console.log('RENDERING: Garage Portal');
+    return <GaragePortal garageId={garageId} garageName={garageName} onLogout={handleGarageLogout} />;
+  }
+
+  if (userMode === 'admin' && !session) {
+    console.log('RENDERING: Admin Auth (no session)');
+    return <Auth onBack={() => {
+      setUserMode(null);
+      setShowModeSelection(true);
+    }} />;
+  }
+
+  if (userMode === 'admin' && session) {
+    const showNavigation = true;
+
+    return (
+      <div className="h-screen flex flex-col bg-gray-50">
+      {showNavigation && (
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-40 flex-shrink-0">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            <button
+              onClick={() => setCurrentView(null)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <Fuel className="w-8 h-8 text-blue-600" />
+              <div>
+                {userRole === 'super_admin' ? (
+                  <>
+                    <div className="text-sm font-semibold text-gray-700">Fuel Empowerment Systems (Pty) Ltd</div>
+                    <h1 className="text-lg font-bold text-gray-900">FleetFuel System</h1>
+                  </>
+                ) : (
+                  <h1 className="text-xl font-bold text-gray-900 text-left">FleetFuel</h1>
+                )}
+              </div>
+            </button>
+
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setCurrentView(null)}
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Main Menu
+              </button>
+              <button
+                onClick={handleAdminSignOut}
+                className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+      )}
+
+      <main className="flex-1 overflow-auto">
+        <div className={`max-w-7xl mx-auto h-full ${(currentView === 'garages' && userRole !== 'super_admin') || (currentView === 'reports' && userRole !== 'super_admin') ? 'px-4' : 'px-4 py-6'}`}>
+        {!showNavigation && (
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Fuel className="w-8 h-8 text-blue-600" />
+              <div>
+                {userRole === 'super_admin' ? (
+                  <>
+                    <div className="text-sm font-semibold text-gray-700">Fuel Empowerment Systems (Pty) Ltd</div>
+                    <h1 className="text-lg font-bold text-gray-900">FleetFuel System</h1>
+                  </>
+                ) : (
+                  <h1 className="text-xl font-bold text-gray-900">FleetFuel</h1>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={handleAdminSignOut}
+              className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              Sign Out
+            </button>
+          </div>
+        )}
+
+        {!currentView ? (
+          userRole === 'super_admin' ? (
+            <SuperAdminDashboard key="dashboard-super" onNavigate={setCurrentView} />
+          ) : (
+            <ClientDashboard key="dashboard-client" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} />
+          )
+        ) : currentView === 'organization' ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => setCurrentView(null)}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Main Menu
+            </button>
+            <OrganizationManagement key="organization" />
+          </div>
+        ) : currentView === 'clients' ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => setCurrentView(null)}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Main Menu
+            </button>
+            <ClientOrganizations key="clients" />
+          </div>
+        ) : currentView === 'client-organizations-menu' ? (
+          <ClientOrganizationsMenu key="client-organizations-menu" onNavigate={setCurrentView} />
+        ) : currentView === 'create-client-org' ? (
+          <CreateClientOrganization key="create-client-org" onNavigate={setCurrentView} />
+        ) : currentView === 'client-org-info' ? (
+          <ClientOrgInfo key="client-org-info" onNavigate={setCurrentView} />
+        ) : currentView === 'client-user-info' ? (
+          <UserManagement key="client-user-info" onNavigate={setCurrentView} />
+        ) : currentView === 'client-financial-info' ? (
+          <ClientFinancialInfo key="client-financial-info" onNavigate={setCurrentView} />
+        ) : currentView === 'vehicles' ? (
+          <VehicleManagement key="vehicles" onNavigate={setCurrentView} />
+        ) : currentView === 'garages' ? (
+          userRole === 'super_admin' ? <GarageManagement key="garages" onNavigate={setCurrentView} /> : <ClientGaragesView key="garages" onNavigate={setCurrentView} />
+        ) : currentView === 'drivers' ? (
+          <DriverManagement key="drivers" onNavigate={setCurrentView} />
+        ) : currentView === 'invoices' ? (
+          userRole === 'super_admin' ? <InvoiceManagement key="invoices" /> : <ClientInvoices key="invoices" />
+        ) : currentView === 'reports-menu' ? (
+          <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" />
+        ) : currentView === 'reports' ? (
+          userRole === 'super_admin' ? <ConsolidatedReports key="reports" onNavigate={setCurrentView} /> : <ReportsDashboard key="reports" onNavigate={setCurrentView} />
+        ) : currentView === 'backoffice' ? (
+          <BackOffice key="backoffice" userRole={userRole} onNavigateToMain={() => setCurrentView(null)} />
+        ) : currentView === 'custom-reports' ? (
+          <CustomReportBuilder key="custom-reports" onNavigate={setCurrentView} />
+        ) : currentView === 'backup' ? (
+          <BackupManagement key="backup" />
+        ) : null}
+        </div>
+      </main>
+    </div>
+    );
+  }
+
+  console.log('RENDERING: Fallback - returning null!', { userMode, session: !!session, driverData: !!driverData, showModeSelection });
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow p-6 max-w-md">
+        <h2 className="text-xl font-bold text-red-600 mb-4">Debug: Unexpected State</h2>
+        <pre className="text-sm bg-gray-100 p-4 rounded overflow-auto">
+          {JSON.stringify({
+            userMode,
+            hasSession: !!session,
+            hasDriverData: !!driverData,
+            showModeSelection,
+            loading
+          }, null, 2)}
+        </pre>
+        <button
+          onClick={() => {
+            setUserMode(null);
+            setShowModeSelection(true);
+            setSession(null);
+            setDriverData(null);
+          }}
+          className="mt-4 w-full bg-blue-600 text-white py-2 rounded"
+        >
+          Reset to Mode Selection
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default App;

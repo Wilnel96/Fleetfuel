@@ -1,0 +1,343 @@
+import { useState, useEffect } from 'react';
+import { FileText, Eye, Download, Calendar, DollarSign, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  invoice_date: string;
+  billing_period_start: string;
+  billing_period_end: string;
+  subtotal: number;
+  vat_amount: number;
+  total_amount: number;
+  amount_paid: number;
+  amount_outstanding: number;
+  payment_terms: string;
+  payment_due_date: string;
+  status: string;
+}
+
+interface InvoiceLineItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+  item_type: string;
+}
+
+export default function ClientInvoices() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadInvoices();
+  }, []);
+
+  const loadInvoices = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile?.organization_id) throw new Error('Organization not found');
+
+      const { data, error: invoicesError } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('organization_id', profile.organization_id)
+        .order('invoice_date', { ascending: false });
+
+      if (invoicesError) throw invoicesError;
+
+      setInvoices(data || []);
+    } catch (err: any) {
+      setError('Failed to load invoices: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const viewInvoiceDetails = async (invoice: Invoice) => {
+    try {
+      setSelectedInvoice(invoice);
+
+      const { data, error: lineItemsError } = await supabase
+        .from('invoice_line_items')
+        .select('*')
+        .eq('invoice_id', invoice.id);
+
+      if (lineItemsError) throw lineItemsError;
+
+      setLineItems(data || []);
+    } catch (err: any) {
+      setError('Failed to load invoice details: ' + err.message);
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return `R ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-ZA');
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig: Record<string, { bg: string; text: string; icon: any }> = {
+      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Calendar },
+      paid: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
+      overdue: { bg: 'bg-red-100', text: 'text-red-800', icon: AlertCircle },
+      cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', icon: XCircle },
+    };
+
+    const config = statusConfig[status] || statusConfig.pending;
+    const Icon = config.icon;
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+        <Icon className="w-3 h-3" />
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
+  };
+
+  const calculateTotals = () => {
+    const totalOutstanding = invoices.reduce((sum, inv) => sum + inv.amount_outstanding, 0);
+    const totalPaid = invoices.reduce((sum, inv) => sum + inv.amount_paid, 0);
+    const totalAmount = invoices.reduce((sum, inv) => sum + inv.total_amount, 0);
+
+    return { totalOutstanding, totalPaid, totalAmount };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading invoices...</div>
+      </div>
+    );
+  }
+
+  if (selectedInvoice) {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setSelectedInvoice(null)}
+          className="text-blue-600 hover:text-blue-700 font-medium"
+        >
+          ← Back to Invoices
+        </button>
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">{selectedInvoice.invoice_number}</h2>
+                <p className="text-gray-600 mt-1">Invoice Date: {formatDate(selectedInvoice.invoice_date)}</p>
+              </div>
+              <div className="text-right">
+                {getStatusBadge(selectedInvoice.status)}
+                <p className="text-sm text-gray-600 mt-2">
+                  Due: {formatDate(selectedInvoice.payment_due_date)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900">Billing Period</h3>
+                <p className="text-sm text-gray-600">
+                  {formatDate(selectedInvoice.billing_period_start)} - {formatDate(selectedInvoice.billing_period_end)}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="font-semibold text-gray-900">Payment Terms</h3>
+                <p className="text-sm text-gray-600">{selectedInvoice.payment_terms}</p>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Line Items</h3>
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase">Description</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Quantity</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Unit Price</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-700 uppercase">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {lineItems.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-4 py-3 text-sm text-gray-900">{item.description}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right">{formatCurrency(item.unit_price)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 text-right">{formatCurrency(item.line_total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="border-t border-gray-200 pt-6">
+              <div className="space-y-2 max-w-xs ml-auto">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">{formatCurrency(selectedInvoice.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">VAT (15%):</span>
+                  <span className="font-medium">{formatCurrency(selectedInvoice.vat_amount)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <span>Total:</span>
+                  <span>{formatCurrency(selectedInvoice.total_amount)}</span>
+                </div>
+                {selectedInvoice.amount_paid > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span>Amount Paid:</span>
+                    <span>{formatCurrency(selectedInvoice.amount_paid)}</span>
+                  </div>
+                )}
+                {selectedInvoice.amount_outstanding > 0 && (
+                  <div className="flex justify-between text-sm text-red-600 font-medium">
+                    <span>Amount Outstanding:</span>
+                    <span>{formatCurrency(selectedInvoice.amount_outstanding)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const totals = calculateTotals();
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <FileText className="w-6 h-6 text-blue-600" />
+        <div>
+          <h2 className="text-lg font-bold text-gray-900">Invoices</h2>
+          <p className="text-sm text-gray-600">View your monthly invoices and payment history</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-3 text-red-800">
+            <AlertCircle className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {invoices.length > 0 && (
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-blue-500 text-white p-2 rounded-lg">
+                <DollarSign className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Total Invoiced</h4>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.totalAmount)}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-green-500 text-white p-2 rounded-lg">
+                <CheckCircle className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Total Paid</h4>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.totalPaid)}</p>
+          </div>
+
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="bg-orange-500 text-white p-2 rounded-lg">
+                <AlertCircle className="w-4 h-4" />
+              </div>
+              <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Outstanding</h4>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{formatCurrency(totals.totalOutstanding)}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Invoice #</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Billing Period</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Due Date</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Total</th>
+                <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Outstanding</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {invoices.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    No invoices found
+                  </td>
+                </tr>
+              ) : (
+                invoices.map((invoice) => (
+                  <tr key={invoice.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{invoice.invoice_number}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(invoice.invoice_date)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      {formatDate(invoice.billing_period_start)} - {formatDate(invoice.billing_period_end)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{formatDate(invoice.payment_due_date)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                      {formatCurrency(invoice.total_amount)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                      {formatCurrency(invoice.amount_outstanding)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">{getStatusBadge(invoice.status)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <button
+                        onClick={() => viewInvoiceDetails(invoice)}
+                        className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                      >
+                        <Eye className="w-4 h-4" />
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}

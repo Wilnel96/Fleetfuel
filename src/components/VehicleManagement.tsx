@@ -589,13 +589,13 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       required
                     >
                       <option value="Code A1">Code A1 (Light Motorcycle &lt; 125cc)</option>
-                      <option value="Code A">Code A (Motorcycle)</option>
-                      <option value="Code B">Code B (Light Vehicle)</option>
-                      <option value="Code EB">Code EB (Light Vehicle with Trailer)</option>
-                      <option value="Code C1">Code C1 (Light Truck)</option>
-                      <option value="Code EC1">Code EC1 (Light Truck with Trailer)</option>
-                      <option value="Code C">Code C (Heavy Truck)</option>
-                      <option value="Code EC">Code EC (Heavy Truck with Trailer)</option>
+                      <option value="Code A">Code A (Motorcycle &gt; 125cc)</option>
+                      <option value="Code B">Code B (Light Vehicle + Trailer &lt; 750kg GVM)</option>
+                      <option value="Code EB">Code EB (Light Vehicle + Trailer &gt; 750kg GVM)</option>
+                      <option value="Code C1">Code C1 (Vehicle &lt; 16000kg GVM + Trailer &lt; 750kg GVM)</option>
+                      <option value="Code EC1">Code EC1 (Vehicle &lt; 16000kg GVM + Trailer &gt; 750kg GVM)</option>
+                      <option value="Code C">Code C (Vehicle &gt; 16000kg GVM + Trailer &lt; 750kg GVM)</option>
+                      <option value="Code EC">Code EC (Any Size Vehicle + Trailer &gt; 750kg GVM)</option>
                     </select>
                     <button
                       type="button"

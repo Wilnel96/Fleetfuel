@@ -630,6 +630,8 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
           processedRow['organization_id'] = row.organizations.name || 'N/A';
         } else if (key === 'fuel_types' && Array.isArray(row[key])) {
           processedRow[key] = row[key].join(', ');
+        } else if (typeof row[key] === 'boolean') {
+          processedRow[key] = row[key] ? 'Yes' : 'No';
         } else {
           processedRow[key] = row[key];
         }

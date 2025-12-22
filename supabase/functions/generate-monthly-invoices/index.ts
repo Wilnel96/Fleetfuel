@@ -47,8 +47,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const invoiceDate = new Date().toISOString().split('T')[0];
-    const paymentDueDate = new Date();
-    paymentDueDate.setDate(paymentDueDate.getDate() + payment_due_days);
+
+    // Calculate payment due date as last day of the month following the billing period end
+    const billingEndDate = new Date(billing_period_end);
+    const paymentDueDate = new Date(billingEndDate.getFullYear(), billingEndDate.getMonth() + 2, 0);
     const paymentDueDateStr = paymentDueDate.toISOString().split('T')[0];
 
     const VAT_RATE = 0.15;

@@ -880,139 +880,291 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <p className="text-sm text-gray-600 mb-4">
-                South African driver's licenses are categorized by codes. Each code qualifies the driver to operate specific types of vehicles.
-                Higher-level licenses typically include the privileges of lower-level licenses (e.g., Code C allows you to drive vehicles requiring Code B).
-              </p>
-
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code A1 - Light Motorcycle &lt; 125cc</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Motorcycles and motor tricycles up to 125cc
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    This is a learner's license for motorcycles. Allows operation of small motorcycles under supervision.
-                    Must be accompanied by a licensed motorcyclist.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code A - Motorcycle (Full License)</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> All motorcycles and motor tricycles
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Full motorcycle license with no restrictions on engine capacity. Allows independent operation of any motorcycle.
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code B - Light Motor Vehicle</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Light motor vehicles with tare weight not exceeding 3,500 kg
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Standard car license. Includes sedans, SUVs, light bakkies (pickup trucks), and panel vans.
-                    This is the most common license code and covers most personal and light commercial vehicles.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Examples:</strong> Toyota Corolla, VW Polo, Ford Ranger (single cab), Nissan NP200
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code EB - Light Vehicle with Trailer</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Code B vehicles towing a trailer (combined weight may exceed 3,500 kg)
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Extension of Code B that allows towing trailers with light vehicles. Required when the combined weight
-                    of vehicle and trailer exceeds 3,500 kg.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Examples:</strong> Car towing a caravan, bakkie towing a trailer with equipment or materials
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code C1 - Light Truck/Goods Vehicle</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Vehicles with GVM (Gross Vehicle Mass) between 3,500 kg and 16,000 kg
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Medium-sized trucks and delivery vehicles. Includes larger delivery trucks, small moving trucks,
-                    and medium commercial vehicles. Does not include articulated vehicles.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Examples:</strong> Isuzu NPR, Mercedes-Benz Atego, Ford F-450, medium delivery trucks,
-                    box trucks, medium furniture removal trucks
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code EC1 - Light Truck with Trailer</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Code C1 vehicles towing a trailer with combined weight not exceeding 16,000 kg
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Allows drivers to operate medium trucks (3,500-16,000 kg) while towing trailers.
-                    The total combination must not exceed 16,000 kg.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Examples:</strong> Medium delivery truck with trailer, light truck hauling equipment on a trailer
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code C - Heavy Truck/Goods Vehicle</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Vehicles with GVM exceeding 16,000 kg (non-articulated)
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Heavy goods vehicles and large trucks. Includes large rigid trucks, heavy-duty delivery vehicles,
-                    and construction vehicles. This does not include semi-trailers or articulated vehicles.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Examples:</strong> Large rigid trucks, 8-wheel tipper trucks, large cement mixers,
-                    heavy construction vehicles, large furniture removal trucks
-                  </p>
-                </div>
-
-                <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
-                  <h3 className="font-semibold text-gray-900 mb-1">Code EC - Heavy Truck with Trailer / Articulated Vehicles</h3>
-                  <p className="text-sm text-gray-700 mb-2">
-                    <strong>Vehicle Types:</strong> Heavy vehicles exceeding 16,000 kg with trailers, and all articulated vehicles
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    The highest level commercial driving license. Required for operating large semi-trucks, road trains,
-                    and any heavy vehicle with articulation (fifth wheel connection). This includes all large commercial
-                    hauling operations.
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    <strong>Examples:</strong> 18-wheeler semi-trucks, 22-wheel road trains, articulated tankers,
-                    long-haul freight trucks, interlink trucks, B-double configurations
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t">
-                <h3 className="font-semibold text-gray-900 mb-2">License Hierarchy</h3>
-                <p className="text-sm text-gray-600 mb-2">
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-bold text-blue-900 mb-2">License Hierarchy</h3>
+                <p className="text-sm text-blue-800 mb-2">
                   Higher-level licenses generally include the privileges of lower-level licenses within their category:
                 </p>
-                <ul className="text-sm text-gray-600 list-disc pl-5 space-y-1">
+                <ul className="text-sm text-blue-800 list-disc pl-5 space-y-1">
                   <li><strong>Code C</strong> holders can drive vehicles requiring Code C1 and Code B</li>
                   <li><strong>Code EC</strong> holders can drive vehicles requiring Code EC1, Code C, Code C1, Code EB, and Code B</li>
                   <li>Motorcycle licenses (Code A, A1) are separate and do not overlap with vehicle licenses</li>
                 </ul>
               </div>
 
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 border-b-2 border-blue-500 pb-2">Motorcycle Licences</h3>
+
+                <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code A1</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Motorcycles up to 125cc, Power output ≤ 11 kW
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Light scooters and small commuter bikes. Minimum age: 16</p>
+                  <p className="text-xs text-gray-500">
+                    <strong>Includes:</strong> Delivery scooters, light courier bikes
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code A</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> All motorcycles, any engine size or power
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 18</p>
+                  <p className="text-xs text-gray-500">
+                    <strong>Includes:</strong> Touring bikes, large-capacity motorcycles
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 border-b-2 border-green-500 pb-2">Light Motor Vehicles</h3>
+
+                <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code B</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Motor vehicles ≤ 3,500 kg GVM, Maximum 8 passengers + driver, Towing a light trailer ≤ 750 kg (GVM)
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 18</p>
+                  <p className="text-xs text-gray-500 mb-2">
+                    <strong>Includes:</strong> Sedans, Bakkies, SUVs, Small delivery vans
+                  </p>
+                  <p className="text-xs text-red-600 font-semibold">
+                    Important: If the trailer exceeds 750 kg, Code B is NOT sufficient.
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code EB</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Same as Code B but may tow heavy trailers & caravans &gt; 750 kg (GVM)
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 18</p>
+                  <p className="text-xs text-gray-500 mb-1">
+                    <strong>Includes:</strong> Double-axle trailers, Caravans, Boat trailers
+                  </p>
+                  <p className="text-xs text-blue-600">
+                    <strong>Note:</strong> Required for towing equipment or cargo trailers
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 border-b-2 border-orange-500 pb-2">Minibus & Medium Vehicles</h3>
+
+                <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code C1</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Vehicles 3,500 kg – 16,000 kg GVM, ≤ 16 passengers, Trailer ≤ 750 kg
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 18</p>
+                  <p className="text-xs text-gray-500 mb-1">
+                    <strong>Includes:</strong> 15-seater minibuses, Medium delivery trucks, Small box trucks
+                  </p>
+                  <p className="text-xs text-blue-600">Common in logistics, shuttle services, construction</p>
+                </div>
+
+                <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code EC1</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Code C1 vehicle, Trailer &gt; 750 kg
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 18</p>
+                  <p className="text-xs text-gray-500">
+                    <strong>Includes:</strong> Medium trucks towing equipment or machinery
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 border-b-2 border-red-500 pb-2">Heavy Vehicles</h3>
+
+                <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code C</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Vehicles over 16,000 kg GVM, Trailer ≤ 750 kg
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 21. Requires professional driving competence</p>
+                  <p className="text-xs text-gray-500">
+                    <strong>Includes:</strong> Large rigid trucks, Refuse trucks, Fire engines
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 rounded">
+                  <h4 className="font-semibold text-gray-900 mb-1">Code EC (Highest Code)</h4>
+                  <p className="text-sm text-gray-700 mb-2">
+                    <strong>What you may drive:</strong> Any vehicle combination, Articulated trucks, Horse-and-trailer / interlink rigs
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Minimum age: 21. Requires professional driving competence</p>
+                  <p className="text-xs text-gray-500">
+                    <strong>Includes:</strong> Semi-trailers, Tankers, Abnormal loads (with permits)
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">
+                <h3 className="font-bold text-gray-900 mb-3">Quick Comparison Table</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-200">
+                      <tr>
+                        <th className="px-2 py-1 text-left">Code</th>
+                        <th className="px-2 py-1 text-left">Max Weight</th>
+                        <th className="px-2 py-1 text-left">Trailer</th>
+                        <th className="px-2 py-1 text-left">Typical Vehicles</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      <tr><td className="px-2 py-1">A1</td><td className="px-2 py-1">≤125cc</td><td className="px-2 py-1">-</td><td className="px-2 py-1">Scooters</td></tr>
+                      <tr><td className="px-2 py-1">A</td><td className="px-2 py-1">All bikes</td><td className="px-2 py-1">-</td><td className="px-2 py-1">Any bike</td></tr>
+                      <tr><td className="px-2 py-1">B</td><td className="px-2 py-1">≤3,500 kg</td><td className="px-2 py-1">≤750 kg</td><td className="px-2 py-1">Cars, bakkies</td></tr>
+                      <tr><td className="px-2 py-1">EB</td><td className="px-2 py-1">≤3,500 kg</td><td className="px-2 py-1">&gt;750 kg</td><td className="px-2 py-1">Car + trailer</td></tr>
+                      <tr><td className="px-2 py-1">C1</td><td className="px-2 py-1">≤16,000 kg</td><td className="px-2 py-1">≤750 kg</td><td className="px-2 py-1">Minibus, medium truck</td></tr>
+                      <tr><td className="px-2 py-1">EC1</td><td className="px-2 py-1">≤16,000 kg</td><td className="px-2 py-1">&gt;750 kg</td><td className="px-2 py-1">Medium truck + trailer</td></tr>
+                      <tr><td className="px-2 py-1">C</td><td className="px-2 py-1">&gt;16,000 kg</td><td className="px-2 py-1">≤750 kg</td><td className="px-2 py-1">Heavy rigid truck</td></tr>
+                      <tr><td className="px-2 py-1">EC</td><td className="px-2 py-1">Any</td><td className="px-2 py-1">Any</td><td className="px-2 py-1">Articulated truck</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4">
+                <h3 className="font-bold text-red-900 mb-2">Common Compliance Mistakes</h3>
+                <ul className="text-sm text-red-800 space-y-1">
+                  <li>✗ Code B driving a 15-seater minibus → Illegal</li>
+                  <li>✗ Code B towing a heavy trailer → Illegal</li>
+                  <li>✗ Code C without EC pulling a semi-trailer → Illegal</li>
+                  <li>✗ Insurance may be void if licence code is incorrect</li>
+                </ul>
+              </div>
+
+              <div className="bg-green-50 border border-green-300 rounded-lg p-4">
+                <h3 className="font-bold text-green-900 mb-2">Fleet & Operations Guidance</h3>
+                <p className="text-sm text-green-800 mb-2">For fleet compliance:</p>
+                <ul className="text-sm text-green-800 list-disc pl-5 space-y-1">
+                  <li>Cars / bakkies: Code B</li>
+                  <li>Vehicles towing equipment: Code EB</li>
+                  <li>15-seaters / medium trucks: Code C1</li>
+                  <li>Heavy rigid trucks: Code C</li>
+                  <li>Articulated / interlinks: Code EC</li>
+                </ul>
+              </div>
+
+              <div className="border-t-4 border-purple-500 pt-4">
+                <h3 className="text-xl font-bold text-purple-900 mb-3">Professional Driving Permit (PrDP)</h3>
+
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                  <h4 className="font-bold text-purple-900 mb-2">What is a PrDP?</h4>
+                  <p className="text-sm text-purple-800 mb-2">
+                    A PrDP (Professional Driving Permit) is a mandatory legal endorsement added to a South African driver's licence
+                    for anyone who drives certain vehicles professionally or transports people or goods for reward.
+                  </p>
+                  <p className="text-sm text-purple-900 font-semibold">
+                    A driver can have the correct licence code and still be illegal to drive without a PrDP.
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  <h4 className="font-bold text-gray-900">Who MUST have a PrDP?</h4>
+
+                  <div className="bg-blue-50 rounded p-3">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Passenger Transport</p>
+                    <p className="text-xs text-blue-800">Minibus taxis, Staff transport, School transport, Shuttle services, Tour buses</p>
+                    <p className="text-xs text-blue-700 mt-1">Even if passengers are employees (not paying)</p>
+                  </div>
+
+                  <div className="bg-blue-50 rounded p-3">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Goods Transport</p>
+                    <p className="text-xs text-blue-800">Trucks or delivery vehicles over 3,500 kg GVM, Vehicles carrying goods for commercial purposes, Fleet vehicles used as part of a business</p>
+                  </div>
+
+                  <div className="bg-blue-50 rounded p-3">
+                    <p className="text-sm font-semibold text-blue-900 mb-1">Public / Commercial Services</p>
+                    <p className="text-xs text-blue-800">Ride-hailing drivers (e.g. Uber, Bolt), Chauffeur services, Driving schools, Metered taxis</p>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-amber-900 font-semibold mb-1">Even if:</p>
+                  <ul className="text-xs text-amber-800 list-disc pl-5 space-y-1">
+                    <li>The driver is not paid per trip</li>
+                    <li>The vehicle is company-owned</li>
+                    <li>The driver already holds Code C or CE</li>
+                  </ul>
+                  <p className="text-sm text-amber-900 font-bold mt-2">A PrDP is still required.</p>
+                </div>
+
+                <div className="space-y-3 mb-4">
+                  <h4 className="font-bold text-gray-900">PrDP Categories</h4>
+
+                  <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50">
+                    <p className="text-sm font-semibold text-purple-900">PrDP-P (Passengers)</p>
+                    <p className="text-xs text-purple-800">Required if transporting people: Minibus taxis, Buses, Staff shuttles, Tour vehicles</p>
+                  </div>
+
+                  <div className="border-l-4 border-purple-500 pl-3 py-2 bg-purple-50">
+                    <p className="text-sm font-semibold text-purple-900">PrDP-G (Goods)</p>
+                    <p className="text-xs text-purple-800">Required if transporting goods: Trucks, Delivery vehicles &gt;3,500 kg, Logistics and freight vehicles</p>
+                  </div>
+
+                  <div className="border-l-4 border-red-500 pl-3 py-2 bg-red-50">
+                    <p className="text-sm font-semibold text-red-900">PrDP-D (Dangerous Goods)</p>
+                    <p className="text-xs text-red-800">Required if transporting: Fuel, Chemicals, Gas, Explosives</p>
+                    <p className="text-xs text-red-700 font-semibold mt-1">Requires special HazMat training and certification</p>
+                  </div>
+                </div>
+
+                <div className="bg-gray-100 rounded-lg p-3 mb-4">
+                  <h4 className="font-bold text-gray-900 mb-2 text-sm">PrDP Application Requirements</h4>
+                  <ol className="text-xs text-gray-800 space-y-1 list-decimal pl-5">
+                    <li><strong>Hold the correct licence code</strong> (Code C1/C/EC or relevant category)</li>
+                    <li><strong>Medical Certificate</strong> (Valid for 24 months)</li>
+                    <li><strong>Criminal Record Check</strong> (Fingerprints taken at traffic department or SAPS)</li>
+                    <li><strong>Age Requirements:</strong> PrDP-G: 18, PrDP-P: 21, PrDP-D: 21</li>
+                    <li><strong>Valid ID / Proof of Residence</strong></li>
+                  </ol>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mb-4">
+                  <h4 className="font-bold text-yellow-900 mb-1 text-sm">Validity Periods</h4>
+                  <p className="text-xs text-yellow-800">PrDP-P & PrDP-G: 24 months | PrDP-D: 12 months</p>
+                  <p className="text-xs text-yellow-900 font-semibold mt-1">A standard driver's licence validity does NOT extend the PrDP.</p>
+                </div>
+
+                <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4">
+                  <h4 className="font-bold text-red-900 mb-2">Legal & Insurance Consequences</h4>
+                  <p className="text-sm text-red-800 mb-2">Driving without a required PrDP:</p>
+                  <ul className="text-sm text-red-800 space-y-1">
+                    <li>✗ Is a criminal offence</li>
+                    <li>✗ Can result in vehicle impoundment</li>
+                    <li>✗ Invalidates insurance claims</li>
+                    <li>✗ Exposes employer to vicarious liability</li>
+                  </ul>
+                  <p className="text-xs text-red-900 font-semibold mt-2">
+                    In fleet audits, missing PrDPs are one of the most common compliance failures.
+                  </p>
+                </div>
+
+                <div className="bg-green-50 border border-green-300 rounded-lg p-3">
+                  <h4 className="font-bold text-green-900 mb-2 text-sm">Fleet Compliance Best Practice</h4>
+                  <ul className="text-xs text-green-800 list-disc pl-5 space-y-1">
+                    <li>Maintain a PrDP expiry register</li>
+                    <li>Renew at least 60 days before expiry</li>
+                    <li>Keep medical certificates on file</li>
+                    <li>Match vehicle GVM + use case → licence + PrDP</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded">
+                <p className="text-sm text-gray-900 font-bold mb-1">
+                  Critical Reminder:
+                </p>
                 <p className="text-sm text-gray-700">
-                  <strong>Important:</strong> Always verify that drivers have the appropriate license code for the vehicles they will operate.
-                  Operating a vehicle without the proper license code is illegal and may void insurance coverage in the event of an accident.
+                  Always verify that drivers have the appropriate license code AND PrDP (if required) for the vehicles they will operate.
+                  Operating a vehicle without the proper credentials is illegal and may void insurance coverage in the event of an accident.
                 </p>
               </div>
             </div>

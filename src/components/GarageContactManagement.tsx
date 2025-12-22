@@ -181,7 +181,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Phone *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
                 <input
                   type="tel"
                   value={newContact.mobile_phone}
@@ -191,7 +191,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Office Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
                 <input
                   type="tel"
                   value={newContact.phone}
@@ -276,7 +276,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Phone *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
                   <input
                     type="tel"
                     value={editContact.mobile_phone}
@@ -286,7 +286,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Office Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
                   <input
                     type="tel"
                     value={editContact.phone}

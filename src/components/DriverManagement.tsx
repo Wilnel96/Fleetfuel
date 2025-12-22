@@ -112,6 +112,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
 
 
   useEffect(() => {
+    console.log('Driver filter useEffect running', { searchTerm, driversCount: drivers.length });
     let filtered = drivers;
 
     if (selectedOrgId !== 'all') {
@@ -120,6 +121,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
 
     if (searchTerm.trim() !== '') {
       const term = searchTerm.toLowerCase();
+      console.log('Filtering with term:', term);
       filtered = filtered.filter(
         (d) =>
           (d.first_name || '').toLowerCase().includes(term) ||
@@ -130,6 +132,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
           (d.email || '').toLowerCase().includes(term) ||
           (d.organizations?.name || '').toLowerCase().includes(term)
       );
+      console.log('Filtered count:', filtered.length);
     }
 
     setFilteredDrivers(filtered);
@@ -541,7 +544,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
               type="text"
               placeholder="Search drivers by first name, surname, ID, license, phone, or email..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                console.log('Search input changed to:', e.target.value);
+                setSearchTerm(e.target.value);
+              }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>

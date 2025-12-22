@@ -228,7 +228,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
                 <input
                   type="text"
                   value={editForm.phone_number || ''}
@@ -321,7 +321,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <p className="text-gray-900">{organization.email || '-'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Phone Number</p>
+                <p className="text-sm font-medium text-gray-500">Office Number</p>
                 <p className="text-gray-900">{organization.phone_number || '-'}</p>
               </div>
               <div>

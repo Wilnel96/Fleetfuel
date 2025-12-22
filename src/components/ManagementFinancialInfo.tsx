@@ -446,7 +446,7 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Office Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
               {isEditing ? (
                 <input
                   type="tel"
@@ -461,7 +461,7 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
               {isEditing ? (
                 <input
                   type="tel"

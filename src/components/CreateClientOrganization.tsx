@@ -395,7 +395,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone Number - Office</label>
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">Office Number</label>
               <input
                 type="text"
                 value={mainUser.phone_office}
@@ -404,7 +404,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone Number - Mobile</label>
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">Mobile Number</label>
               <input
                 type="text"
                 value={mainUser.phone_mobile}
@@ -472,7 +472,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone Number - Office</label>
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">Office Number</label>
               <input
                 type="text"
                 value={billingContact.phone_office}
@@ -481,7 +481,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone Number - Mobile</label>
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">Mobile Number</label>
               <input
                 type="text"
                 value={billingContact.phone_mobile}

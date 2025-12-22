@@ -1140,7 +1140,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone Number - Office</label>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">Office Number</label>
                 <input
                   type="tel"
                   value={newUser.phone_office}
@@ -1149,7 +1149,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-0.5">Phone Number - Mobile</label>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">Mobile Number</label>
                 <input
                   type="tel"
                   value={newUser.phone_mobile}
@@ -1493,7 +1493,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
             <div className="grid md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Office Phone</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Office Number</label>
                 <input
                   type="tel"
                   value={editingUser.phone_office || ''}
@@ -1503,7 +1503,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Mobile Phone</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Mobile Number</label>
                 <input
                   type="tel"
                   value={editingUser.phone_mobile || ''}
@@ -1917,7 +1917,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tel No-Office</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
                       <input
                         type="tel"
                         value={user.phone_office || ''}
@@ -1927,7 +1927,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tel No-Mobile</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                       <input
                         type="tel"
                         value={user.phone_mobile || ''}

@@ -538,7 +538,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search drivers by name, ID, license, phone, or email..."
+              placeholder="Search drivers by name, ID, license, mobile, or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -571,7 +571,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Organization</th>
                 )}
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ID Number</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Phone</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Mobile Number</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">License Number</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">License Type</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">License Expiry</th>
@@ -785,7 +785,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
                     <input
                       type="tel"
                       required

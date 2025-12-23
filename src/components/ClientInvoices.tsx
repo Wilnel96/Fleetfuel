@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Eye, Download, Calendar, DollarSign, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Eye, Download, Calendar, DollarSign, AlertCircle, CheckCircle, XCircle, FileSpreadsheet, Printer } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {
@@ -122,6 +122,68 @@ export default function ClientInvoices() {
     return { totalOutstanding, totalPaid, totalAmount };
   };
 
+  const exportInvoiceToCSV = (invoice: Invoice, items: InvoiceLineItem[]) => {
+    let csv = `Invoice Number,${invoice.invoice_number}\n`;
+    csv += `Invoice Date,${formatDate(invoice.invoice_date)}\n`;
+    csv += `Billing Period,"${formatDate(invoice.billing_period_start)} - ${formatDate(invoice.billing_period_end)}"\n`;
+    csv += `Payment Terms,${invoice.payment_terms}\n`;
+    csv += `Payment Due Date,${formatDate(invoice.payment_due_date)}\n`;
+    csv += `Status,${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}\n`;
+    csv += `\n`;
+    csv += `Line Items\n`;
+    csv += `Description,Quantity,Unit Price,Total\n`;
+
+    items.forEach((item) => {
+      csv += `"${item.description}",${item.quantity},${item.unit_price.toFixed(2)},${item.line_total.toFixed(2)}\n`;
+    });
+
+    csv += `\n`;
+    csv += `Subtotal,,${invoice.subtotal.toFixed(2)}\n`;
+    csv += `VAT (15%),,${invoice.vat_amount.toFixed(2)}\n`;
+    csv += `Total,,${invoice.total_amount.toFixed(2)}\n`;
+    csv += `Amount Paid,,${invoice.amount_paid.toFixed(2)}\n`;
+    csv += `Amount Outstanding,,${invoice.amount_outstanding.toFixed(2)}\n`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${invoice.invoice_number}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportAllInvoicesToCSV = () => {
+    let csv = 'Invoice Number,Date,Billing Period Start,Billing Period End,Payment Terms,Due Date,Subtotal,VAT,Total,Amount Paid,Amount Outstanding,Status\n';
+
+    invoices.forEach((invoice) => {
+      csv += `${invoice.invoice_number},`;
+      csv += `${formatDate(invoice.invoice_date)},`;
+      csv += `${formatDate(invoice.billing_period_start)},`;
+      csv += `${formatDate(invoice.billing_period_end)},`;
+      csv += `"${invoice.payment_terms}",`;
+      csv += `${formatDate(invoice.payment_due_date)},`;
+      csv += `${invoice.subtotal.toFixed(2)},`;
+      csv += `${invoice.vat_amount.toFixed(2)},`;
+      csv += `${invoice.total_amount.toFixed(2)},`;
+      csv += `${invoice.amount_paid.toFixed(2)},`;
+      csv += `${invoice.amount_outstanding.toFixed(2)},`;
+      csv += `${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoices-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const printInvoice = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -132,15 +194,50 @@ export default function ClientInvoices() {
 
   if (selectedInvoice) {
     return (
-      <div className="space-y-4">
-        <button
-          onClick={() => setSelectedInvoice(null)}
-          className="text-blue-600 hover:text-blue-700 font-medium"
-        >
-          ← Back to Invoices
-        </button>
+      <>
+        <style>{`
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            body {
+              margin: 0;
+              padding: 20px;
+            }
+            #invoice-detail {
+              box-shadow: none !important;
+            }
+          }
+        `}</style>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between no-print">
+            <button
+              onClick={() => setSelectedInvoice(null)}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              ← Back to Invoices
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => exportInvoiceToCSV(selectedInvoice, lineItems)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Export CSV
+              </button>
+              <button
+                onClick={printInvoice}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Print/PDF
+              </button>
+            </div>
+          </div>
+
+        <div className="bg-white rounded-lg shadow-md overflow-hidden" id="invoice-detail">
           <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
             <div className="flex justify-between items-start">
               <div>
@@ -225,7 +322,8 @@ export default function ClientInvoices() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -233,12 +331,24 @@ export default function ClientInvoices() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <FileText className="w-6 h-6 text-blue-600" />
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Invoices</h2>
-          <p className="text-sm text-gray-600">View your monthly invoices and payment history</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <FileText className="w-6 h-6 text-blue-600" />
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Invoices</h2>
+            <p className="text-sm text-gray-600">View your monthly invoices and payment history</p>
+          </div>
         </div>
+
+        {invoices.length > 0 && (
+          <button
+            onClick={exportAllInvoicesToCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Export All to CSV
+          </button>
+        )}
       </div>
 
       {error && (
@@ -323,13 +433,15 @@ export default function ClientInvoices() {
                     </td>
                     <td className="px-4 py-3 text-sm">{getStatusBadge(invoice.status)}</td>
                     <td className="px-4 py-3 text-sm">
-                      <button
-                        onClick={() => viewInvoiceDetails(invoice)}
-                        className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => viewInvoiceDetails(invoice)}
+                          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

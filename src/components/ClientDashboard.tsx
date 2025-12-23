@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Truck, Users, FileText, Store, Settings, BarChart3, LogOut, ArrowLeft, DollarSign } from 'lucide-react';
 
 interface ClientDashboardProps {
   onNavigate: (view: string) => void;
   onSignOut: () => void;
   initialView?: 'main' | 'reports';
+  resetSubmenu?: boolean;
 }
 
-export default function ClientDashboard({ onNavigate, onSignOut, initialView = 'main' }: ClientDashboardProps) {
+export default function ClientDashboard({ onNavigate, onSignOut, initialView = 'main', resetSubmenu }: ClientDashboardProps) {
   const [showReportsMenu, setShowReportsMenu] = useState(initialView === 'reports');
+
+  // Reset submenu when parent requests it
+  useEffect(() => {
+    if (resetSubmenu) {
+      setShowReportsMenu(false);
+    }
+  }, [resetSubmenu]);
 
   if (showReportsMenu) {
     const reportsMenuItems = [
@@ -104,6 +112,7 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
             onClick={() => {
               if (item.id === 'reports-menu') {
                 setShowReportsMenu(true);
+                onNavigate(item.id);
               } else {
                 onNavigate(item.id);
               }

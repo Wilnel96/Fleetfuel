@@ -264,10 +264,7 @@ function App() {
     setShowModeSelection(true);
   };
 
-  console.log('Render state:', { loading, showModeSelection, hasSession: !!session, hasDriverData: !!driverData, userMode, userRole, currentView });
-
   if (!loading && userMode && showModeSelection) {
-    console.log('FIXING STATE: userMode is set but showModeSelection is true, fixing...');
     setShowModeSelection(false);
   }
 
@@ -317,10 +314,8 @@ function App() {
 
             <button
               onClick={() => {
-                console.log('Client Portal clicked! Setting userMode to admin');
                 setUserMode('admin');
                 setShowModeSelection(false);
-                console.log('State updated: userMode=admin, showModeSelection=false');
               }}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
             >
@@ -335,10 +330,8 @@ function App() {
 
             <button
               onClick={() => {
-                console.log('Garage Portal clicked! Setting userMode to garage');
                 setUserMode('garage');
                 setShowModeSelection(false);
-                console.log('State updated: userMode=garage, showModeSelection=false');
               }}
               className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg"
             >
@@ -353,10 +346,8 @@ function App() {
 
             <button
               onClick={() => {
-                console.log('System Admin clicked! Setting userMode to admin');
                 setUserMode('admin');
                 setShowModeSelection(false);
-                console.log('State updated: userMode=admin, showModeSelection=false');
               }}
               className="w-full bg-gradient-to-r from-gray-700 to-gray-800 text-white py-3 px-4 rounded-lg font-semibold hover:from-gray-800 hover:to-gray-900 transition-all shadow-md hover:shadow-lg"
             >
@@ -385,7 +376,6 @@ function App() {
   }
 
   if (userMode === 'driver' && !driverData) {
-    console.log('RENDERING: Driver Auth (no driver data)');
     return <DriverAuth onLogin={handleDriverLogin} onBack={() => {
       setUserMode(null);
       setShowModeSelection(true);
@@ -393,12 +383,10 @@ function App() {
   }
 
   if (userMode === 'driver' && driverData) {
-    console.log('RENDERING: Driver Mobile App');
     return <DriverMobileApp driver={driverData} onLogout={handleDriverLogout} />;
   }
 
   if (userMode === 'garage' && !garageId) {
-    console.log('RENDERING: Garage Auth (no garage data)');
     return <GarageAuth onLogin={handleGarageLogin} onBack={() => {
       setUserMode(null);
       setShowModeSelection(true);
@@ -406,12 +394,10 @@ function App() {
   }
 
   if (userMode === 'garage' && garageId && garageName) {
-    console.log('RENDERING: Garage Portal');
     return <GaragePortal garageId={garageId} garageName={garageName} onLogout={handleGarageLogout} />;
   }
 
   if (userMode === 'admin' && !session) {
-    console.log('RENDERING: Admin Auth (no session)');
     return <Auth onBack={() => {
       setUserMode(null);
       setShowModeSelection(true);
@@ -446,10 +432,7 @@ function App() {
 
             <div className="flex items-center gap-4">
               <button
-                onClick={() => {
-                  console.log('Main Menu clicked, current view:', currentView);
-                  setCurrentView(null);
-                }}
+                onClick={() => setCurrentView(null)}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Main Menu
@@ -557,7 +540,6 @@ function App() {
     );
   }
 
-  console.log('RENDERING: Fallback - returning null!', { userMode, session: !!session, driverData: !!driverData, showModeSelection });
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow p-6 max-w-md">

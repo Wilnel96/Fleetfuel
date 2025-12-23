@@ -10,4 +10,17 @@
   body {
     background: white !important;
   }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .h-screen, .flex-col {
+    height: auto !important;
+  }
+
+  main {
+    overflow: visible !important;
+  }
 }

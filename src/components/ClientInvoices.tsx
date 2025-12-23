@@ -239,8 +239,20 @@ export default function ClientInvoices() {
               margin: 0;
               padding: 20px;
             }
+            html, body {
+              height: auto !important;
+              overflow: visible !important;
+            }
             #invoice-detail {
               box-shadow: none !important;
+              page-break-after: avoid !important;
+            }
+            .space-y-4 {
+              height: auto !important;
+            }
+            @page {
+              margin: 1cm;
+              size: A4;
             }
           }
         `}</style>

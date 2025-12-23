@@ -27,10 +27,24 @@ interface InvoiceLineItem {
   item_type: string;
 }
 
+interface ManagementOrganization {
+  name: string;
+  vat_number: string;
+  address_line1: string;
+  address_line2: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  country: string;
+  phone_number: string;
+  company_registration_number: string;
+}
+
 export default function ClientInvoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
+  const [managementOrg, setManagementOrg] = useState<ManagementOrganization | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -74,14 +88,23 @@ export default function ClientInvoices() {
     try {
       setSelectedInvoice(invoice);
 
-      const { data, error: lineItemsError } = await supabase
-        .from('invoice_line_items')
-        .select('*')
-        .eq('invoice_id', invoice.id);
+      const [lineItemsResult, managementOrgResult] = await Promise.all([
+        supabase
+          .from('invoice_line_items')
+          .select('*')
+          .eq('invoice_id', invoice.id),
+        supabase
+          .from('organizations')
+          .select('name, vat_number, address_line1, address_line2, city, province, postal_code, country, phone_number, company_registration_number')
+          .eq('is_management_org', true)
+          .single()
+      ]);
 
-      if (lineItemsError) throw lineItemsError;
+      if (lineItemsResult.error) throw lineItemsResult.error;
+      if (managementOrgResult.error) throw managementOrgResult.error;
 
-      setLineItems(data || []);
+      setLineItems(lineItemsResult.data || []);
+      setManagementOrg(managementOrgResult.data);
     } catch (err: any) {
       setError('Failed to load invoice details: ' + err.message);
     }
@@ -123,7 +146,19 @@ export default function ClientInvoices() {
   };
 
   const exportInvoiceToCSV = (invoice: Invoice, items: InvoiceLineItem[]) => {
-    let csv = `Invoice Number,${invoice.invoice_number}\n`;
+    let csv = '';
+
+    if (managementOrg) {
+      csv += `${managementOrg.name}\n`;
+      csv += `${managementOrg.address_line1}${managementOrg.address_line2 ? ', ' + managementOrg.address_line2 : ''}\n`;
+      csv += `${managementOrg.city}, ${managementOrg.province} ${managementOrg.postal_code}\n`;
+      if (managementOrg.phone_number) csv += `Phone: ${managementOrg.phone_number}\n`;
+      if (managementOrg.vat_number) csv += `VAT No: ${managementOrg.vat_number}`;
+      if (managementOrg.company_registration_number) csv += ` | Reg No: ${managementOrg.company_registration_number}`;
+      csv += `\n\n`;
+    }
+
+    csv += `Invoice Number,${invoice.invoice_number}\n`;
     csv += `Invoice Date,${formatDate(invoice.invoice_date)}\n`;
     csv += `Billing Period,"${formatDate(invoice.billing_period_start)} - ${formatDate(invoice.billing_period_end)}"\n`;
     csv += `Payment Terms,${invoice.payment_terms}\n`;
@@ -238,33 +273,41 @@ export default function ClientInvoices() {
           </div>
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden" id="invoice-detail">
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-            <div className="flex justify-between items-start">
+          {managementOrg && (
+            <div className="p-8 border-b border-gray-300">
+              <div className="max-w-4xl">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
+                <div className="text-sm text-gray-600 space-y-0.5">
+                  <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
+                  <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
+                  {managementOrg.country && <p>{managementOrg.country}</p>}
+                  {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
+                  <div className="flex gap-4 mt-2 font-medium">
+                    {managementOrg.vat_number && <p>VAT No: {managementOrg.vat_number}</p>}
+                    {managementOrg.company_registration_number && <p>Reg No: {managementOrg.company_registration_number}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="p-8">
+            <div className="flex justify-between items-start mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{selectedInvoice.invoice_number}</h2>
-                <p className="text-gray-600 mt-1">Invoice Date: {formatDate(selectedInvoice.invoice_date)}</p>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">INVOICE</h2>
+                <div className="space-y-1 text-sm">
+                  <p><span className="font-semibold">Invoice Number:</span> {selectedInvoice.invoice_number}</p>
+                  <p><span className="font-semibold">Invoice Date:</span> {formatDate(selectedInvoice.invoice_date)}</p>
+                  <p><span className="font-semibold">Billing Period:</span> {formatDate(selectedInvoice.billing_period_start)} - {formatDate(selectedInvoice.billing_period_end)}</p>
+                </div>
               </div>
               <div className="text-right">
                 {getStatusBadge(selectedInvoice.status)}
-                <p className="text-sm text-gray-600 mt-2">
-                  Due: {formatDate(selectedInvoice.payment_due_date)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-6 space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Billing Period</h3>
-                <p className="text-sm text-gray-600">
-                  {formatDate(selectedInvoice.billing_period_start)} - {formatDate(selectedInvoice.billing_period_end)}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Payment Terms</h3>
-                <p className="text-sm text-gray-600">{selectedInvoice.payment_terms}</p>
+                <div className="mt-4 space-y-1 text-sm">
+                  <p className="font-semibold text-gray-900">Payment Terms:</p>
+                  <p className="text-gray-600">{selectedInvoice.payment_terms}</p>
+                  <p className="text-red-600 font-bold mt-2">Payment Due: {formatDate(selectedInvoice.payment_due_date)}</p>
+                </div>
               </div>
             </div>
 

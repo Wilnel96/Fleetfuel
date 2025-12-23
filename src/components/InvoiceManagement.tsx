@@ -19,6 +19,14 @@ interface Invoice {
   status: string;
   organization?: {
     name: string;
+    vat_number?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    province?: string;
+    postal_code?: string;
+    country?: string;
+    company_registration_number?: string;
   };
 }
 
@@ -78,7 +86,17 @@ export default function InvoiceManagement() {
         .from('invoices')
         .select(`
           *,
-          organization:organizations(name)
+          organization:organizations(
+            name,
+            vat_number,
+            address_line1,
+            address_line2,
+            city,
+            province,
+            postal_code,
+            country,
+            company_registration_number
+          )
         `)
         .order('invoice_date', { ascending: false });
 
@@ -228,6 +246,19 @@ export default function InvoiceManagement() {
     csv += `Payment Terms: ${invoice.payment_terms}\n`;
     csv += `Payment Due: ${formatDate(invoice.payment_due_date)}\n`;
     csv += `Status: ${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}\n\n`;
+
+    csv += `Bill To:\n`;
+    csv += `${invoice.organization?.name || ''}\n`;
+    if (invoice.organization?.address_line1) {
+      csv += `${invoice.organization.address_line1}${invoice.organization.address_line2 ? ', ' + invoice.organization.address_line2 : ''}\n`;
+    }
+    if (invoice.organization?.city) {
+      csv += `${invoice.organization.city}, ${invoice.organization.province} ${invoice.organization.postal_code}\n`;
+    }
+    if (invoice.organization?.country) csv += `${invoice.organization.country}\n`;
+    if (invoice.organization?.vat_number) csv += `VAT No: ${invoice.organization.vat_number}`;
+    if (invoice.organization?.company_registration_number) csv += ` | Reg No: ${invoice.organization.company_registration_number}`;
+    csv += `\n\n`;
 
     csv += `Line Items\n`;
     csv += `Description,Quantity,Unit Price,Total\n`;
@@ -409,7 +440,6 @@ export default function InvoiceManagement() {
                   <p><span className="font-semibold">Invoice Number:</span> {selectedInvoice.invoice_number}</p>
                   <p><span className="font-semibold">Invoice Date:</span> {formatDate(selectedInvoice.invoice_date)}</p>
                   <p><span className="font-semibold">Billing Period:</span> {formatDate(selectedInvoice.billing_period_start)} - {formatDate(selectedInvoice.billing_period_end)}</p>
-                  <p><span className="font-semibold">Customer:</span> {selectedInvoice.organization?.name}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -418,6 +448,24 @@ export default function InvoiceManagement() {
                   <p className="font-semibold text-gray-900">Payment Terms:</p>
                   <p className="text-gray-600">{selectedInvoice.payment_terms}</p>
                   <p className="text-red-600 font-bold mt-2">Payment Due: {formatDate(selectedInvoice.payment_due_date)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-2">Bill To:</h3>
+              <div className="text-sm text-gray-700 space-y-0.5">
+                <p className="font-medium text-gray-900">{selectedInvoice.organization?.name}</p>
+                {selectedInvoice.organization?.address_line1 && (
+                  <p>{selectedInvoice.organization.address_line1}{selectedInvoice.organization.address_line2 && `, ${selectedInvoice.organization.address_line2}`}</p>
+                )}
+                {selectedInvoice.organization?.city && (
+                  <p>{selectedInvoice.organization.city}, {selectedInvoice.organization.province} {selectedInvoice.organization.postal_code}</p>
+                )}
+                {selectedInvoice.organization?.country && <p>{selectedInvoice.organization.country}</p>}
+                <div className="flex gap-4 mt-2 font-medium">
+                  {selectedInvoice.organization?.vat_number && <p>VAT No: {selectedInvoice.organization.vat_number}</p>}
+                  {selectedInvoice.organization?.company_registration_number && <p>Reg No: {selectedInvoice.organization.company_registration_number}</p>}
                 </div>
               </div>
             </div>

@@ -410,7 +410,7 @@ function App() {
     return (
       <div className="h-screen flex flex-col bg-gray-50">
       {showNavigation && (
-      <nav className="bg-white shadow-sm border-b sticky top-0 z-40 flex-shrink-0">
+      <nav className="bg-white shadow-sm border-b sticky top-0 z-40 flex-shrink-0 no-print">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <button
@@ -453,7 +453,7 @@ function App() {
       <main className="flex-1 overflow-auto">
         <div className={`max-w-7xl mx-auto h-full ${(currentView === 'garages' && userRole !== 'super_admin') || (currentView === 'reports' && userRole !== 'super_admin') ? 'px-4' : 'px-4 py-6'}`}>
         {!showNavigation && (
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 no-print">
             <div className="flex items-center gap-2">
               <Fuel className="w-8 h-8 text-blue-600" />
               <div>

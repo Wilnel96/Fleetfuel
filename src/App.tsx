@@ -446,7 +446,10 @@ function App() {
 
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setCurrentView(null)}
+                onClick={() => {
+                  console.log('Main Menu clicked, current view:', currentView);
+                  setCurrentView(null);
+                }}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 Main Menu

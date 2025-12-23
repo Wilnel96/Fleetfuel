@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {
@@ -31,11 +31,25 @@ interface InvoiceLineItem {
   item_type: string;
 }
 
+interface ManagementOrganization {
+  name: string;
+  vat_number: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  province: string;
+  postal_code: string;
+  country?: string;
+  phone_number?: string;
+  company_registration_number?: string;
+}
+
 export default function InvoiceManagement() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
+  const [managementOrg, setManagementOrg] = useState<ManagementOrganization | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -100,14 +114,23 @@ export default function InvoiceManagement() {
     try {
       setSelectedInvoice(invoice);
 
-      const { data, error: lineItemsError } = await supabase
-        .from('invoice_line_items')
-        .select('*')
-        .eq('invoice_id', invoice.id);
+      const [lineItemsResult, managementOrgResult] = await Promise.all([
+        supabase
+          .from('invoice_line_items')
+          .select('*')
+          .eq('invoice_id', invoice.id),
+        supabase
+          .from('organizations')
+          .select('name, vat_number, address_line1, address_line2, city, province, postal_code, country, phone_number, company_registration_number')
+          .eq('is_management_org', true)
+          .single()
+      ]);
 
-      if (lineItemsError) throw lineItemsError;
+      if (lineItemsResult.error) throw lineItemsResult.error;
+      if (managementOrgResult.error) throw managementOrgResult.error;
 
-      setLineItems(data || []);
+      setLineItems(lineItemsResult.data || []);
+      setManagementOrg(managementOrgResult.data);
     } catch (err: any) {
       setError('Failed to load invoice details: ' + err.message);
     }
@@ -181,6 +204,85 @@ export default function InvoiceManagement() {
     }
   };
 
+  const printInvoice = () => {
+    window.print();
+  };
+
+  const exportInvoiceToCSV = (invoice: Invoice, items: InvoiceLineItem[]) => {
+    let csv = '';
+
+    if (managementOrg) {
+      csv += `${managementOrg.name}\n`;
+      csv += `${managementOrg.address_line1}${managementOrg.address_line2 ? ', ' + managementOrg.address_line2 : ''}\n`;
+      csv += `${managementOrg.city}, ${managementOrg.province} ${managementOrg.postal_code}\n`;
+      if (managementOrg.phone_number) csv += `Phone: ${managementOrg.phone_number}\n`;
+      if (managementOrg.vat_number) csv += `VAT No: ${managementOrg.vat_number}`;
+      if (managementOrg.company_registration_number) csv += ` | Reg No: ${managementOrg.company_registration_number}`;
+      csv += `\n\n`;
+    }
+
+    csv += `INVOICE\n`;
+    csv += `Invoice Number: ${invoice.invoice_number}\n`;
+    csv += `Invoice Date: ${formatDate(invoice.invoice_date)}\n`;
+    csv += `Billing Period: ${formatDate(invoice.billing_period_start)} - ${formatDate(invoice.billing_period_end)}\n`;
+    csv += `Payment Terms: ${invoice.payment_terms}\n`;
+    csv += `Payment Due: ${formatDate(invoice.payment_due_date)}\n`;
+    csv += `Status: ${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}\n\n`;
+
+    csv += `Line Items\n`;
+    csv += `Description,Quantity,Unit Price,Total\n`;
+    items.forEach((item) => {
+      csv += `"${item.description}",${item.quantity},${item.unit_price.toFixed(2)},${item.line_total.toFixed(2)}\n`;
+    });
+
+    csv += `\n`;
+    csv += `Subtotal,${invoice.subtotal.toFixed(2)}\n`;
+    csv += `VAT (15%),${invoice.vat_amount.toFixed(2)}\n`;
+    csv += `Total,${invoice.total_amount.toFixed(2)}\n`;
+    csv += `Amount Paid,${invoice.amount_paid.toFixed(2)}\n`;
+    csv += `Amount Outstanding,${invoice.amount_outstanding.toFixed(2)}\n`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `invoice_${invoice.invoice_number}_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
+  const exportAllInvoicesToCSV = () => {
+    let csv = 'Invoice Number,Date,Organization,Billing Period Start,Billing Period End,Payment Terms,Due Date,Subtotal,VAT,Total,Amount Paid,Amount Outstanding,Status\n';
+
+    filteredInvoices.forEach((invoice) => {
+      csv += `${invoice.invoice_number},`;
+      csv += `${formatDate(invoice.invoice_date)},`;
+      csv += `"${invoice.organization?.name || ''}",`;
+      csv += `${formatDate(invoice.billing_period_start)},`;
+      csv += `${formatDate(invoice.billing_period_end)},`;
+      csv += `"${invoice.payment_terms}",`;
+      csv += `${formatDate(invoice.payment_due_date)},`;
+      csv += `${invoice.subtotal.toFixed(2)},`;
+      csv += `${invoice.vat_amount.toFixed(2)},`;
+      csv += `${invoice.total_amount.toFixed(2)},`;
+      csv += `${invoice.amount_paid.toFixed(2)},`;
+      csv += `${invoice.amount_outstanding.toFixed(2)},`;
+      csv += `${invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `all_invoices_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
+
   const formatCurrency = (amount: number) => {
     return `R ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   };
@@ -218,54 +320,105 @@ export default function InvoiceManagement() {
 
   if (selectedInvoice) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => setSelectedInvoice(null)}
-            className="text-blue-600 hover:text-blue-700 font-medium"
-          >
-            ← Back to Invoices
-          </button>
-          <button
-            onClick={() => markAsPaid(selectedInvoice.id)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <CheckCircle className="w-4 h-4" />
-            Mark as Paid
-          </button>
-        </div>
+      <>
+        <style>{`
+          @media print {
+            .no-print {
+              display: none !important;
+            }
+            body {
+              margin: 0;
+              padding: 20px;
+            }
+            html, body {
+              height: auto !important;
+              overflow: visible !important;
+            }
+            #invoice-detail {
+              box-shadow: none !important;
+              page-break-after: avoid !important;
+            }
+            .space-y-4 {
+              height: auto !important;
+            }
+            @page {
+              margin: 1cm;
+              size: A4;
+            }
+          }
+        `}</style>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-blue-100">
-            <div className="flex justify-between items-start">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">{selectedInvoice.invoice_number}</h2>
-                <p className="text-gray-600 mt-1">{selectedInvoice.organization?.name}</p>
-              </div>
-              <div className="text-right">
-                {getStatusBadge(selectedInvoice.status)}
-                <p className="text-sm text-gray-600 mt-2">
-                  Invoice Date: {formatDate(selectedInvoice.invoice_date)}
-                </p>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between no-print">
+            <button
+              onClick={() => setSelectedInvoice(null)}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              ← Back to Invoices
+            </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => exportInvoiceToCSV(selectedInvoice, lineItems)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Export CSV
+              </button>
+              <button
+                onClick={printInvoice}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Print/PDF
+              </button>
+              <button
+                onClick={() => markAsPaid(selectedInvoice.id)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Mark as Paid
+              </button>
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Billing Period</h3>
-                <p className="text-sm text-gray-600">
-                  {formatDate(selectedInvoice.billing_period_start)} - {formatDate(selectedInvoice.billing_period_end)}
-                </p>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden" id="invoice-detail">
+          {managementOrg && (
+            <div className="p-8 border-b border-gray-300">
+              <div className="max-w-4xl">
+                <h1 className="text-3xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
+                <div className="text-sm text-gray-600 space-y-0.5">
+                  <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
+                  <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
+                  {managementOrg.country && <p>{managementOrg.country}</p>}
+                  {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
+                  <div className="flex gap-4 mt-2 font-medium">
+                    {managementOrg.vat_number && <p>VAT No: {managementOrg.vat_number}</p>}
+                    {managementOrg.company_registration_number && <p>Reg No: {managementOrg.company_registration_number}</p>}
+                  </div>
+                </div>
               </div>
+            </div>
+          )}
 
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-900">Payment Terms</h3>
-                <p className="text-sm text-gray-600">{selectedInvoice.payment_terms}</p>
-                <p className="text-sm text-gray-600">
-                  Due: {formatDate(selectedInvoice.payment_due_date)}
-                </p>
+          <div className="p-8">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">INVOICE</h2>
+                <div className="space-y-1 text-sm">
+                  <p><span className="font-semibold">Invoice Number:</span> {selectedInvoice.invoice_number}</p>
+                  <p><span className="font-semibold">Invoice Date:</span> {formatDate(selectedInvoice.invoice_date)}</p>
+                  <p><span className="font-semibold">Billing Period:</span> {formatDate(selectedInvoice.billing_period_start)} - {formatDate(selectedInvoice.billing_period_end)}</p>
+                  <p><span className="font-semibold">Customer:</span> {selectedInvoice.organization?.name}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                {getStatusBadge(selectedInvoice.status)}
+                <div className="mt-4 space-y-1 text-sm">
+                  <p className="font-semibold text-gray-900">Payment Terms:</p>
+                  <p className="text-gray-600">{selectedInvoice.payment_terms}</p>
+                  <p className="text-red-600 font-bold mt-2">Payment Due: {formatDate(selectedInvoice.payment_due_date)}</p>
+                </div>
               </div>
             </div>
 
@@ -307,19 +460,24 @@ export default function InvoiceManagement() {
                   <span>Total:</span>
                   <span>{formatCurrency(selectedInvoice.total_amount)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-green-600 font-medium">
-                  <span>Amount Paid:</span>
-                  <span>{formatCurrency(selectedInvoice.amount_paid)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-red-600 font-medium">
-                  <span>Amount Outstanding:</span>
-                  <span>{formatCurrency(selectedInvoice.amount_outstanding)}</span>
-                </div>
+                {selectedInvoice.amount_paid > 0 && (
+                  <div className="flex justify-between text-sm text-green-600 font-medium">
+                    <span>Amount Paid:</span>
+                    <span>{formatCurrency(selectedInvoice.amount_paid)}</span>
+                  </div>
+                )}
+                {selectedInvoice.amount_outstanding > 0 && (
+                  <div className="flex justify-between text-sm text-red-600 font-medium">
+                    <span>Amount Outstanding:</span>
+                    <span>{formatCurrency(selectedInvoice.amount_outstanding)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -333,13 +491,24 @@ export default function InvoiceManagement() {
             <p className="text-sm text-gray-600">Manage client invoices and billing</p>
           </div>
         </div>
-        <button
-          onClick={() => setShowGenerateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <Plus className="w-4 h-4" />
-          Generate Monthly Invoices
-        </button>
+        <div className="flex gap-2">
+          {filteredInvoices.length > 0 && (
+            <button
+              onClick={exportAllInvoicesToCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export All to CSV
+            </button>
+          )}
+          <button
+            onClick={() => setShowGenerateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4" />
+            Generate Monthly Invoices
+          </button>
+        </div>
       </div>
 
       {error && (

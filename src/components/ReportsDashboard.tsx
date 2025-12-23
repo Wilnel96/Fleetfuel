@@ -676,11 +676,19 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
     switch (selectedReport) {
       case 'overview':
-        csv = 'Date,Vehicle,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Commission,Odometer\n';
-        reportData.transactions?.forEach((t: any) => {
-          csv += `"${new Date(t.date).toLocaleDateString()}","${t.vehicle}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${(t.commission || 0).toFixed(2)},${t.odometer || ''}\n`;
-        });
-        csv += `\nTOTALS,,,,${(reportData.totalLiters || 0).toFixed(2)},,${(reportData.totalSpent || 0).toFixed(2)},${(reportData.totalCommission || 0).toFixed(2)}\n`;
+        if (orgSettings?.is_management_org) {
+          csv = 'Date,Vehicle,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Commission,Odometer\n';
+          reportData.transactions?.forEach((t: any) => {
+            csv += `"${new Date(t.date).toLocaleDateString()}","${t.vehicle}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${(t.commission || 0).toFixed(2)},${t.odometer || ''}\n`;
+          });
+          csv += `\nTOTALS,,,,${(reportData.totalLiters || 0).toFixed(2)},,${(reportData.totalSpent || 0).toFixed(2)},${(reportData.totalCommission || 0).toFixed(2)}\n`;
+        } else {
+          csv = 'Date,Vehicle,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Odometer\n';
+          reportData.transactions?.forEach((t: any) => {
+            csv += `"${new Date(t.date).toLocaleDateString()}","${t.vehicle}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${t.odometer || ''}\n`;
+          });
+          csv += `\nTOTALS,,,,${(reportData.totalLiters || 0).toFixed(2)},,${(reportData.totalSpent || 0).toFixed(2)}\n`;
+        }
         break;
 
       case 'driver':
@@ -691,15 +699,27 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         break;
 
       case 'vehicle':
-        csv = 'Vehicle,Date,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Commission,Odometer\n';
-        reportData.vehicleData?.forEach((v: any) => {
-          csv += `\n${v.license_plate} (${v.make} ${v.model})\n`;
-          v.transactions?.forEach((t: any) => {
-            csv += `,"${new Date(t.date).toLocaleDateString()}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${(t.commission || 0).toFixed(2)},${t.odometer || ''}\n`;
+        if (orgSettings?.is_management_org) {
+          csv = 'Vehicle,Date,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Commission,Odometer\n';
+          reportData.vehicleData?.forEach((v: any) => {
+            csv += `\n${v.license_plate} (${v.make} ${v.model})\n`;
+            v.transactions?.forEach((t: any) => {
+              csv += `,"${new Date(t.date).toLocaleDateString()}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${(t.commission || 0).toFixed(2)},${t.odometer || ''}\n`;
+            });
+            csv += `,,,TOTALS:,${(v.total_liters || 0).toFixed(2)},,${(v.total_amount || 0).toFixed(2)},${(v.total_commission || 0).toFixed(2)}\n`;
+            csv += `,,,KM Travelled: ${v.km_travelled} | L/100km: ${(v.consumption_per_100km || 0).toFixed(2)}\n`;
           });
-          csv += `,,,TOTALS:,${(v.total_liters || 0).toFixed(2)},,${(v.total_amount || 0).toFixed(2)},${(v.total_commission || 0).toFixed(2)}\n`;
-          csv += `,,,KM Travelled: ${v.km_travelled} | L/100km: ${(v.consumption_per_100km || 0).toFixed(2)}\n`;
-        });
+        } else {
+          csv = 'Vehicle,Date,Driver,Garage,Fuel Type,Liters,Price/L,Amount,Odometer\n';
+          reportData.vehicleData?.forEach((v: any) => {
+            csv += `\n${v.license_plate} (${v.make} ${v.model})\n`;
+            v.transactions?.forEach((t: any) => {
+              csv += `,"${new Date(t.date).toLocaleDateString()}","${t.driver}","${t.garage}",${t.fuel_type},${(t.liters || 0).toFixed(2)},${(t.price_per_liter || 0).toFixed(2)},${(t.amount || 0).toFixed(2)},${t.odometer || ''}\n`;
+            });
+            csv += `,,,TOTALS:,${(v.total_liters || 0).toFixed(2)},,${(v.total_amount || 0).toFixed(2)}\n`;
+            csv += `,,,KM Travelled: ${v.km_travelled} | L/100km: ${(v.consumption_per_100km || 0).toFixed(2)}\n`;
+          });
+        }
         break;
 
       case 'fuel-theft':
@@ -984,7 +1004,9 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/L</th>
                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Commission</th>
+                            {orgSettings?.is_management_org && (
+                              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Commission</th>
+                            )}
                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Odometer</th>
                           </tr>
                         </thead>
@@ -1000,7 +1022,9 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                               <td className="px-4 py-3 text-sm text-right text-gray-900">{(t.liters || 0).toFixed(2)}</td>
                               <td className="px-4 py-3 text-sm text-right text-gray-900">R {(t.price_per_liter || 0).toFixed(2)}</td>
                               <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">R {(t.amount || 0).toFixed(2)}</td>
-                              <td className="px-4 py-3 text-sm text-right text-orange-600">R {(t.commission || 0).toFixed(2)}</td>
+                              {orgSettings?.is_management_org && (
+                                <td className="px-4 py-3 text-sm text-right text-orange-600">R {(t.commission || 0).toFixed(2)}</td>
+                              )}
                               <td className="px-4 py-3 text-sm text-right text-gray-900">{t.odometer || '-'}</td>
                             </tr>
                           ))}
@@ -1009,7 +1033,9 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                             <td className="px-4 py-3 text-sm text-right text-gray-900">{(vehicle.total_liters || 0).toFixed(2)}</td>
                             <td className="px-4 py-3"></td>
                             <td className="px-4 py-3 text-sm text-right text-gray-900">R {(vehicle.total_amount || 0).toFixed(2)}</td>
-                            <td className="px-4 py-3 text-sm text-right text-orange-600">R {(vehicle.total_commission || 0).toFixed(2)}</td>
+                            {orgSettings?.is_management_org && (
+                              <td className="px-4 py-3 text-sm text-right text-orange-600">R {(vehicle.total_commission || 0).toFixed(2)}</td>
+                            )}
                             <td className="px-4 py-3"></td>
                           </tr>
                         </tbody>

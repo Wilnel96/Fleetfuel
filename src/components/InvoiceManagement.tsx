@@ -435,7 +435,7 @@ export default function InvoiceManagement() {
             <div className="p-8 border-b border-gray-300">
               <div className="flex justify-between items-start">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
                   <div className="text-sm text-gray-600 space-y-0.5">
                     <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
                     <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
@@ -448,14 +448,14 @@ export default function InvoiceManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(to bottom right, #2563eb, #1e40af)' }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 2v16a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2H3z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="white"/>
-                      <path d="M7 22v-4" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-                      <path d="M3 7h10" stroke="#1e40af" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M13 7l5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M18 2v8a2 2 0 0 0 2 2h1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="19" cy="12" r="1" fill="white"/>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: '#60a5fa', border: '3px solid #3b82f6' }}>
+                    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="8" y="6" width="14" height="24" rx="2" fill="white"/>
+                      <rect x="14" y="30" width="2" height="6" fill="white"/>
+                      <line x1="8" y1="14" x2="22" y2="14" stroke="#3b82f6" strokeWidth="2"/>
+                      <path d="M24 8 L32 0" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                      <path d="M32 0 L32 12 L36 14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                      <circle cx="34" cy="14" r="2" fill="white"/>
                     </svg>
                   </div>
                   <p className="mt-2 text-lg font-bold text-gray-900">MyFuelApp</p>

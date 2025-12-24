@@ -448,14 +448,45 @@ export default function InvoiceManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ backgroundColor: '#60a5fa' }}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M3 2v16c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2V2H3z" fill="white"/>
-                      <path d="M7 22v-4" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                      <path d="M3 7h10M13 7l5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M18 2v8c0 1.1.9 2 2 2h1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="19" cy="12" r="1" fill="white"/>
-                    </svg>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center relative" style={{ backgroundColor: '#3b82f6' }}>
+                    {/* Fuel pump body */}
+                    <div style={{
+                      width: '24px',
+                      height: '36px',
+                      backgroundColor: 'white',
+                      borderRadius: '3px',
+                      position: 'relative',
+                      marginBottom: '8px'
+                    }}>
+                      {/* Display screen */}
+                      <div style={{
+                        width: '18px',
+                        height: '8px',
+                        backgroundColor: '#3b82f6',
+                        margin: '6px auto 0',
+                        borderRadius: '1px'
+                      }}></div>
+                      {/* Nozzle holder */}
+                      <div style={{
+                        width: '8px',
+                        height: '12px',
+                        backgroundColor: 'white',
+                        position: 'absolute',
+                        top: '8px',
+                        right: '-10px',
+                        borderRadius: '2px'
+                      }}>
+                        {/* Nozzle */}
+                        <div style={{
+                          width: '14px',
+                          height: '3px',
+                          backgroundColor: 'white',
+                          position: 'absolute',
+                          top: '4px',
+                          right: '8px'
+                        }}></div>
+                      </div>
+                    </div>
                   </div>
                   <p className="mt-2 text-lg font-bold text-gray-900">FleetFuel</p>
                 </div>

@@ -448,8 +448,15 @@ export default function InvoiceManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
-                    <Fuel className="w-10 h-10 text-white" strokeWidth={2.5} />
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(to bottom right, #2563eb, #1e40af)' }}>
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M3 2v16a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V2H3z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="white"/>
+                      <path d="M7 22v-4" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M3 7h10" stroke="#1e40af" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M13 7l5-5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M18 2v8a2 2 0 0 0 2 2h1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="19" cy="12" r="1" fill="white"/>
+                    </svg>
                   </div>
                   <p className="mt-2 text-lg font-bold text-gray-900">MyFuelApp</p>
                 </div>

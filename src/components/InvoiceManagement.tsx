@@ -448,45 +448,8 @@ export default function InvoiceManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-full flex items-center justify-center relative" style={{ backgroundColor: '#3b82f6' }}>
-                    {/* Fuel pump body */}
-                    <div style={{
-                      width: '24px',
-                      height: '36px',
-                      backgroundColor: 'white',
-                      borderRadius: '3px',
-                      position: 'relative',
-                      marginBottom: '8px'
-                    }}>
-                      {/* Display screen */}
-                      <div style={{
-                        width: '18px',
-                        height: '8px',
-                        backgroundColor: '#3b82f6',
-                        margin: '6px auto 0',
-                        borderRadius: '1px'
-                      }}></div>
-                      {/* Nozzle holder */}
-                      <div style={{
-                        width: '8px',
-                        height: '12px',
-                        backgroundColor: 'white',
-                        position: 'absolute',
-                        top: '8px',
-                        right: '-10px',
-                        borderRadius: '2px'
-                      }}>
-                        {/* Nozzle */}
-                        <div style={{
-                          width: '14px',
-                          height: '3px',
-                          backgroundColor: 'white',
-                          position: 'absolute',
-                          top: '4px',
-                          right: '8px'
-                        }}></div>
-                      </div>
-                    </div>
+                  <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center">
+                    <Fuel className="w-12 h-12 text-white" strokeWidth={2} />
                   </div>
                   <p className="mt-2 text-lg font-bold text-gray-900">FleetFuel</p>
                 </div>

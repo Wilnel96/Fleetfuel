@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {
@@ -358,8 +358,8 @@ export default function InvoiceManagement() {
               display: none !important;
             }
             body {
-              margin: 0;
-              padding: 20px;
+              margin: 0 !important;
+              padding: 0 !important;
             }
             html, body {
               height: auto !important;
@@ -368,13 +368,30 @@ export default function InvoiceManagement() {
             #invoice-detail {
               box-shadow: none !important;
               page-break-after: avoid !important;
+              margin: 0 !important;
+              border-radius: 0 !important;
+            }
+            #invoice-detail > div {
+              padding: 1rem !important;
             }
             .space-y-4 {
               height: auto !important;
             }
+            .mb-8 {
+              margin-bottom: 1rem !important;
+            }
+            .p-8 {
+              padding: 1rem !important;
+            }
+            .pt-6 {
+              padding-top: 0.75rem !important;
+            }
             @page {
-              margin: 1cm;
+              margin: 0.5cm;
               size: A4;
+            }
+            table {
+              font-size: 0.875rem !important;
             }
           }
         `}</style>
@@ -416,17 +433,25 @@ export default function InvoiceManagement() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden" id="invoice-detail">
           {managementOrg && (
             <div className="p-8 border-b border-gray-300">
-              <div className="max-w-4xl">
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
-                <div className="text-sm text-gray-600 space-y-0.5">
-                  <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
-                  <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
-                  {managementOrg.country && <p>{managementOrg.country}</p>}
-                  {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
-                  <div className="flex gap-4 mt-2 font-medium">
-                    {managementOrg.vat_number && <p>VAT No: {managementOrg.vat_number}</p>}
-                    {managementOrg.company_registration_number && <p>Reg No: {managementOrg.company_registration_number}</p>}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
+                  <div className="text-sm text-gray-600 space-y-0.5">
+                    <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
+                    <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
+                    {managementOrg.country && <p>{managementOrg.country}</p>}
+                    {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
+                    <div className="flex gap-4 mt-2 font-medium">
+                      {managementOrg.vat_number && <p>VAT No: {managementOrg.vat_number}</p>}
+                      {managementOrg.company_registration_number && <p>Reg No: {managementOrg.company_registration_number}</p>}
+                    </div>
                   </div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center shadow-lg">
+                    <Fuel className="w-10 h-10 text-white" strokeWidth={2.5} />
+                  </div>
+                  <p className="mt-2 text-lg font-bold text-gray-900">MyFuelApp</p>
                 </div>
               </div>
             </div>

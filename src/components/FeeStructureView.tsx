@@ -86,8 +86,8 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
           <div className="flex items-center gap-3">
             <DollarSign className="w-6 h-6 text-orange-600" />
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Fee Structure, Spending Limits and Payment Terms (View only)</h2>
-              <p className="text-gray-600 text-sm">View your organization's fee structure, spending limits and payment terms</p>
+              <h2 className="text-lg font-bold text-gray-900">Fee Structure, Spending Limits and Payment Terms</h2>
+              <p className="text-gray-600 text-sm">(View Only)</p>
             </div>
           </div>
           {onNavigate && (

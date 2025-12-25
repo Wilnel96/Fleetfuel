@@ -479,11 +479,28 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadMonthlyData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
+    const monthEnd = orgSettings?.month_end_day || 31;
+
+    // Calculate month period based on selected end date and month_end_day
+    const selectedEndDate = new Date(endDate);
+    const monthEndDate = new Date(selectedEndDate.getFullYear(), selectedEndDate.getMonth(), monthEnd);
+
+    // If selected date is before the month end day, go to previous month's end
+    if (selectedEndDate.getDate() < monthEnd) {
+      monthEndDate.setMonth(monthEndDate.getMonth() - 1);
+    }
+
+    // Calculate start date (day after previous month end)
+    const monthStartDate = new Date(monthEndDate);
+    monthStartDate.setMonth(monthStartDate.getMonth() - 1);
+    monthStartDate.setDate(monthStartDate.getDate() + 1);
+
+    // Format dates for query (add one day to end date for inclusive range)
+    const startDateStr = monthStartDate.toISOString().split('T')[0];
+    const endDatePlusOne = new Date(monthEndDate);
     endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
     const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
 
-    const monthEnd = orgSettings?.month_end_day || 31;
     const { data: transactions } = await supabase
       .from('fuel_transactions')
       .select(`
@@ -493,7 +510,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDate)
+      .gte('transaction_date', startDateStr)
       .lt('transaction_date', endDateInclusive);
 
     const formattedTransactions = transactions?.map(t => ({
@@ -510,12 +527,28 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadAnnualData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
-
     const yearEndMonth = orgSettings?.year_end_month || 12;
     const yearEndDay = orgSettings?.year_end_day || 31;
+
+    // Calculate year period based on selected end date and year_end_month/day
+    const selectedEndDate = new Date(endDate);
+    const yearEndDate = new Date(selectedEndDate.getFullYear(), yearEndMonth - 1, yearEndDay);
+
+    // If selected date is before the year end date, go to previous year's end
+    if (selectedEndDate < yearEndDate) {
+      yearEndDate.setFullYear(yearEndDate.getFullYear() - 1);
+    }
+
+    // Calculate start date (day after previous year end)
+    const yearStartDate = new Date(yearEndDate);
+    yearStartDate.setFullYear(yearStartDate.getFullYear() - 1);
+    yearStartDate.setDate(yearStartDate.getDate() + 1);
+
+    // Format dates for query (add one day to end date for inclusive range)
+    const startDateStr = yearStartDate.toISOString().split('T')[0];
+    const endDatePlusOne = new Date(yearEndDate);
+    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -526,7 +559,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDate)
+      .gte('transaction_date', startDateStr)
       .lt('transaction_date', endDateInclusive);
 
     const formattedTransactions = transactions?.map(t => ({

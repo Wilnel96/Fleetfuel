@@ -451,7 +451,7 @@ export default function InvoiceManagement() {
                   <img
                     src="/MyFuelApp_logo.png"
                     alt="MyFuelApp Logo"
-                    className="h-20 w-auto"
+                    className="h-28 w-auto"
                   />
                 </div>
               </div>

@@ -29,12 +29,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
   const reportTypes: ReportType[] = [
     { id: 'overview', name: 'Overview Summary', description: 'General fuel purchase statistics', icon: BarChart3 },
-    { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
-    { id: 'vehicle', name: 'Vehicle Reports', description: 'Efficiency and usage by vehicle', icon: TrendingUp },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
+    { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
     { id: 'exceptions', name: 'Driver Exceptions Report', description: 'Location mismatches and policy violations', icon: MapPin },
-    { id: 'service-due', name: 'Next Service Due Date', description: 'Estimated service due dates for vehicles', icon: Wrench },
+    { id: 'vehicle', name: 'Vehicle Reports', description: 'Efficiency and usage by vehicle', icon: TrendingUp },
     { id: 'vehicles-to-service', name: 'Vehicles to be Serviced', description: 'Vehicles within 1000 km of service', icon: Wrench },
+    { id: 'service-due', name: 'Next Service Due Date', description: 'Estimated service due dates for vehicles', icon: Wrench },
     { id: 'vehicles-overdue-service', name: 'Vehicles Overdue for Service', description: 'Vehicles that exceeded service interval', icon: AlertCircle },
     { id: 'monthly', name: 'Monthly Summary', description: 'Month-end consolidated reports', icon: Calendar },
     { id: 'annual', name: 'Annual Summary', description: 'Year-end consolidated reports', icon: Calendar },

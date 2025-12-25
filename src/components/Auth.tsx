@@ -18,7 +18,7 @@ export default function Auth({ onBack }: AuthProps = {}) {
     setLoading(true);
 
     try {
-      console.log('Attempting login...');
+      console.log('Attempting login with email:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -30,6 +30,8 @@ export default function Auth({ onBack }: AuthProps = {}) {
       }
 
       console.log('Login successful:', data.user?.email);
+      console.log('Session:', data.session ? 'Created' : 'No session');
+      console.log('User ID:', data.user?.id);
     } catch (err: any) {
       console.error('Auth error:', err);
       setError(err.message || 'Authentication failed');

@@ -214,13 +214,65 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    return new Response(
-      JSON.stringify({ success: true, transaction }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    try {
+      const invoiceApiUrl = `${supabaseUrl}/functions/v1/generate-fuel-transaction-invoice`;
+      const invoiceResponse = await fetch(invoiceApiUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fuelTransactionId: transaction.id,
+        }),
+      });
+
+      const invoiceResult = await invoiceResponse.json();
+
+      if (invoiceResult.success) {
+        console.log("Invoice generated successfully:", invoiceResult.invoice.invoice_number);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction,
+            invoice: invoiceResult.invoice,
+            message: "Fuel transaction recorded and invoice generated"
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      } else {
+        console.error("Failed to generate invoice:", invoiceResult.error);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            transaction,
+            warning: "Transaction recorded but invoice generation failed",
+            invoiceError: invoiceResult.error
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
       }
-    );
+    } catch (invoiceError) {
+      console.error("Error generating invoice:", invoiceError);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          transaction,
+          warning: "Transaction recorded but invoice generation failed",
+          invoiceError: invoiceError.message
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
   } catch (error) {
     console.error("Error:", error);
     return new Response(

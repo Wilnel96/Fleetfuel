@@ -162,9 +162,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadOverviewData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Create start of day for startDate
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+
+    // Create end of day for endDate (23:59:59.999)
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -175,8 +179,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDate)
-      .lt('transaction_date', endDateInclusive)
+      .gte('transaction_date', startDateTime.toISOString())
+      .lte('transaction_date', endDateTime.toISOString())
       .order('transaction_date', { ascending: false });
 
     const totalTransactions = transactions?.length || 0;
@@ -208,9 +212,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadDriverData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Create start of day for startDate
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+
+    // Create end of day for endDate (23:59:59.999)
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -220,8 +228,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         vehicles (registration_number)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDate)
-      .lt('transaction_date', endDateInclusive);
+      .gte('transaction_date', startDateTime.toISOString())
+      .lte('transaction_date', endDateTime.toISOString());
 
     const driverStats: any = {};
 
@@ -256,9 +264,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadVehicleData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Create start of day for startDate
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+
+    // Create end of day for endDate (23:59:59.999)
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
 
     // Get all vehicles for the organization
     const { data: vehicles } = await supabase
@@ -276,8 +288,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDate)
-      .lt('transaction_date', endDateInclusive)
+      .gte('transaction_date', startDateTime.toISOString())
+      .lte('transaction_date', endDateTime.toISOString())
       .order('vehicle_id')
       .order('transaction_date', { ascending: false });
 
@@ -350,9 +362,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadFuelTheftData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Create start of day for startDate
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+
+    // Create end of day for endDate (23:59:59.999)
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
 
     const { data: vehicles } = await supabase
       .from('vehicles')
@@ -364,8 +380,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .from('fuel_transactions')
       .select('*')
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDate)
-      .lt('transaction_date', endDateInclusive)
+      .gte('transaction_date', startDateTime.toISOString())
+      .lte('transaction_date', endDateTime.toISOString())
       .not('odometer_reading', 'is', null)
       .not('previous_odometer_reading', 'is', null);
 
@@ -413,9 +429,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadExceptionsData = async (orgId: string) => {
-    const endDatePlusOne = new Date(endDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Create start of day for startDate
+    const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0);
+
+    // Create end of day for endDate (23:59:59.999)
+    const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999);
 
     const { data: exceptions } = await supabase
       .from('vehicle_exceptions')
@@ -426,8 +446,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         organizations (name, city)
       `)
       .eq('organization_id', orgId)
-      .gte('created_at', startDate)
-      .lt('created_at', endDateInclusive)
+      .gte('created_at', startDateTime.toISOString())
+      .lte('created_at', endDateTime.toISOString())
       .order('created_at', { ascending: false });
 
     const formattedExceptions = exceptions?.map(e => ({
@@ -494,12 +514,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     const monthStartDate = new Date(monthEndDate);
     monthStartDate.setMonth(monthStartDate.getMonth() - 1);
     monthStartDate.setDate(monthStartDate.getDate() + 1);
+    monthStartDate.setHours(0, 0, 0, 0);
 
-    // Format dates for query (add one day to end date for inclusive range)
-    const startDateStr = monthStartDate.toISOString().split('T')[0];
-    const endDatePlusOne = new Date(monthEndDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Set end date to end of day
+    monthEndDate.setHours(23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -510,8 +528,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDateStr)
-      .lt('transaction_date', endDateInclusive);
+      .gte('transaction_date', monthStartDate.toISOString())
+      .lte('transaction_date', monthEndDate.toISOString());
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
@@ -543,12 +561,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     const yearStartDate = new Date(yearEndDate);
     yearStartDate.setFullYear(yearStartDate.getFullYear() - 1);
     yearStartDate.setDate(yearStartDate.getDate() + 1);
+    yearStartDate.setHours(0, 0, 0, 0);
 
-    // Format dates for query (add one day to end date for inclusive range)
-    const startDateStr = yearStartDate.toISOString().split('T')[0];
-    const endDatePlusOne = new Date(yearEndDate);
-    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
-    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+    // Set end date to end of day
+    yearEndDate.setHours(23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -559,8 +575,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', startDateStr)
-      .lt('transaction_date', endDateInclusive);
+      .gte('transaction_date', yearStartDate.toISOString())
+      .lte('transaction_date', yearEndDate.toISOString());
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,

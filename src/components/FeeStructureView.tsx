@@ -126,25 +126,25 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
           <h3 className="text-base font-bold text-white">Payment Terms</h3>
         </div>
         <div className="p-4 space-y-3">
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Method</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Method</label>
             <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_method || 'Not set'}</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Terms</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Terms</label>
             <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_terms || 'Not set'}</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Date</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Date</label>
             <p className="text-base font-semibold text-gray-900">
               {feeStructure?.payment_date ? `Day ${feeStructure.payment_date} of each month` : 'Not set'}
             </p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Late Payment Interest Rate</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Late Payment Interest Rate</label>
             <p className="text-base font-semibold text-gray-900">
               {feeStructure?.late_payment_interest_rate !== null && feeStructure?.late_payment_interest_rate !== undefined
                 ? `${feeStructure.late_payment_interest_rate}%`
@@ -163,22 +163,10 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
               <li>The monthly fee per vehicle is charged for each active vehicle in your fleet</li>
               <li>Daily spending limits apply to all fuel purchases made by your organization in a single day</li>
               <li>Monthly spending limits apply to total fuel purchases across the entire month</li>
-              <li>These values can only be modified by your management organization</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-blue-800">
-            <p className="font-semibold mb-1">Payment Information</p>
-            <ul className="space-y-0.5 list-disc list-inside">
               <li>Payment terms define when invoices are due after issuance</li>
               <li>Payment date indicates the day of the month when payment is expected</li>
               <li>Late payment interest applies to overdue invoices</li>
-              <li>These terms are set by your management organization</li>
+              <li>These values and terms can only be modified by your management organization</li>
             </ul>
           </div>
         </div>

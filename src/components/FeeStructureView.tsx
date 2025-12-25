@@ -122,8 +122,8 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
-        <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 py-3">
-          <h3 className="text-base font-bold text-white">Payment Terms</h3>
+        <div className="px-4 py-3">
+          <h3 className="text-base font-bold text-gray-900">Payment Terms</h3>
         </div>
         <div className="p-4 space-y-3">
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">

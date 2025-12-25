@@ -449,7 +449,7 @@ export default function InvoiceManagement() {
                 </div>
                 <div className="flex flex-col items-center">
                   <img
-                    src="/MyFuelApp_logo_primary.png"
+                    src="/MyFuelApp_logo.png"
                     alt="MyFuelApp Logo"
                     className="h-20 w-auto"
                   />

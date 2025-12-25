@@ -105,17 +105,17 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 space-y-3">
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Monthly Fee Per Vehicle</label>
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Monthly Fee Per Vehicle</label>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_fee_per_vehicle)}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Daily Fuel Spent Limit</label>
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Daily Fuel Spent Limit</label>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.daily_spending_limit)}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Monthly Fuel Spent Limit</label>
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Monthly Fuel Spent Limit</label>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_spending_limit)}</p>
           </div>
         </div>
@@ -127,25 +127,25 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
         </div>
         <div className="p-4 space-y-3">
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Method</label>
-            <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_method || 'Not set'}</p>
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Payment Method</label>
+            <p className="text-xl font-bold text-gray-900">{feeStructure?.payment_method || 'Not set'}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Terms</label>
-            <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_terms || 'Not set'}</p>
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Payment Terms</label>
+            <p className="text-xl font-bold text-gray-900">{feeStructure?.payment_terms || 'Not set'}</p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Payment Date</label>
-            <p className="text-base font-semibold text-gray-900">
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Payment Date</label>
+            <p className="text-xl font-bold text-gray-900">
               {feeStructure?.payment_date ? `Day ${feeStructure.payment_date} of each month` : 'Not set'}
             </p>
           </div>
 
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
-            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Late Payment Interest Rate</label>
-            <p className="text-base font-semibold text-gray-900">
+            <label className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Late Payment Interest Rate</label>
+            <p className="text-xl font-bold text-gray-900">
               {feeStructure?.late_payment_interest_rate !== null && feeStructure?.late_payment_interest_rate !== undefined
                 ? `${feeStructure.late_payment_interest_rate}%`
                 : 'Not set'}

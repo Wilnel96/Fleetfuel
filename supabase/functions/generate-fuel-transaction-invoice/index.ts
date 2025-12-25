@@ -159,10 +159,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const vatRate = 0.15;
-    const subtotal = Number(transaction.total_amount) / (1 + vatRate);
-    const vatAmount = Number(transaction.total_amount) - subtotal;
-
     const garageAddress = [
       garage.address_line1,
       garage.address_line2,
@@ -181,9 +177,9 @@ Deno.serve(async (req: Request) => {
         fuel_type: transaction.fuel_type,
         liters: transaction.liters,
         price_per_liter: transaction.price_per_liter,
-        subtotal: subtotal,
-        vat_rate: vatRate,
-        vat_amount: vatAmount,
+        subtotal: null,
+        vat_rate: null,
+        vat_amount: null,
         total_amount: transaction.total_amount,
         vehicle_registration: vehicle.registration_number,
         driver_name: `${driver.name} ${driver.surname}`,
@@ -237,8 +233,6 @@ Fuel Type: ${invoice.fuel_type}
 Liters: ${Number(invoice.liters).toFixed(2)}L
 Price per Liter: R ${Number(invoice.price_per_liter).toFixed(2)}
 
-Subtotal: R ${Number(invoice.subtotal).toFixed(2)}
-VAT (15%): R ${Number(invoice.vat_amount).toFixed(2)}
 Total Amount: R ${Number(invoice.total_amount).toFixed(2)}
 
 This invoice is for accounting and tax compliance purposes.

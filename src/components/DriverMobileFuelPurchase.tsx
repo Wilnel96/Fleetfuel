@@ -66,11 +66,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
   const [currentStep, setCurrentStep] = useState<'garage_selection' | 'location_confirmation' | 'license_scan' | 'spending_check' | 'authorized' | 'fuel_details'>('garage_selection');
   const [selectedGarageId, setSelectedGarageId] = useState('');
-  const [spendingLimitError, setSpendingLimitError] = useState<{
-    type: 'daily' | 'monthly';
+  const [spendingLimitInfo, setSpendingLimitInfo] = useState<{
+    hasLimit: boolean;
+    type: 'daily' | 'monthly' | null;
     limit: number;
     currentSpending: number;
-    estimatedCost: number;
+    availableAmount: number;
+    maxLiters: number;
+    pricePerLiter: number;
+    isBlocked: boolean;
   } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -249,18 +253,22 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         return;
       }
 
-      // Calculate estimated fuel cost (tank capacity * price per liter)
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;
       const tankCapacity = parseFloat(drawnVehicle.tank_capacity?.toString() || '0');
-      const estimatedCost = tankCapacity * fuelPrice;
 
       console.log('Spending check:', {
         tankCapacity,
         fuelPrice,
-        estimatedCost,
         dailyLimit: organization.daily_spending_limit,
         monthlyLimit: organization.monthly_spending_limit
       });
+
+      let mostRestrictiveLimit: {
+        type: 'daily' | 'monthly';
+        limit: number;
+        currentSpending: number;
+        availableAmount: number;
+      } | null = null;
 
       // Check daily limit if set
       if (organization.daily_spending_limit) {
@@ -277,16 +285,14 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           console.error('Error fetching daily transactions:', dailyError);
         } else {
           const dailySpending = dailyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableDaily = organization.daily_spending_limit - dailySpending;
 
-          if (dailySpending + estimatedCost > organization.daily_spending_limit) {
-            setSpendingLimitError({
-              type: 'daily',
-              limit: organization.daily_spending_limit,
-              currentSpending: dailySpending,
-              estimatedCost
-            });
-            return;
-          }
+          mostRestrictiveLimit = {
+            type: 'daily',
+            limit: organization.daily_spending_limit,
+            currentSpending: dailySpending,
+            availableAmount: availableDaily
+          };
         }
       }
 
@@ -306,21 +312,47 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           console.error('Error fetching monthly transactions:', monthlyError);
         } else {
           const monthlySpending = monthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableMonthly = organization.monthly_spending_limit - monthlySpending;
 
-          if (monthlySpending + estimatedCost > organization.monthly_spending_limit) {
-            setSpendingLimitError({
+          // Use the most restrictive limit
+          if (!mostRestrictiveLimit || availableMonthly < mostRestrictiveLimit.availableAmount) {
+            mostRestrictiveLimit = {
               type: 'monthly',
               limit: organization.monthly_spending_limit,
               currentSpending: monthlySpending,
-              estimatedCost
-            });
-            return;
+              availableAmount: availableMonthly
+            };
           }
         }
       }
 
-      // All checks passed
-      setSpendingLimitError(null);
+      // Set spending limit info
+      if (mostRestrictiveLimit) {
+        const availableAmount = Math.max(0, mostRestrictiveLimit.availableAmount);
+        const maxLiters = fuelPrice > 0 ? availableAmount / fuelPrice : 0;
+        const isBlocked = availableAmount <= 0;
+
+        setSpendingLimitInfo({
+          hasLimit: true,
+          type: mostRestrictiveLimit.type,
+          limit: mostRestrictiveLimit.limit,
+          currentSpending: mostRestrictiveLimit.currentSpending,
+          availableAmount,
+          maxLiters,
+          pricePerLiter: fuelPrice,
+          isBlocked
+        });
+
+        if (isBlocked) {
+          // Completely blocked - no money available
+          return;
+        }
+      } else {
+        // No limits set
+        setSpendingLimitInfo(null);
+      }
+
+      // Proceed to authorized
       setCurrentStep('authorized');
     } catch (err) {
       console.error('Error checking spending limits:', err);
@@ -762,16 +794,16 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   }
 
   if (currentStep === 'spending_check') {
-    if (spendingLimitError) {
+    if (spendingLimitInfo?.isBlocked) {
       return (
         <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
             <AlertCircle className="w-16 h-16 text-red-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Spending Limit Exceeded</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Spending Limit Reached</h2>
 
             <div className="bg-red-50 rounded-lg p-4 mb-6">
               <p className="text-sm font-medium text-red-900 mb-3 text-center">
-                {spendingLimitError.type === 'daily'
+                {spendingLimitInfo.type === 'daily'
                   ? 'Daily spending limit has been reached'
                   : 'Monthly spending limit has been reached'}
               </p>
@@ -779,36 +811,30 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-red-700">Current spending:</span>
-                  <span className="font-bold text-red-900">R {spendingLimitError.currentSpending.toFixed(2)}</span>
+                  <span className="font-bold text-red-900">R {spendingLimitInfo.currentSpending.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-red-700">Estimated fuel cost:</span>
-                  <span className="font-bold text-red-900">R {spendingLimitError.estimatedCost.toFixed(2)}</span>
+                  <span className="text-red-700">{spendingLimitInfo.type === 'daily' ? 'Daily' : 'Monthly'} limit:</span>
+                  <span className="font-bold text-red-900">R {spendingLimitInfo.limit.toFixed(2)}</span>
                 </div>
                 <div className="border-t border-red-200 my-2"></div>
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-red-700">Total would be:</span>
-                  <span className="font-bold text-red-900">
-                    R {(spendingLimitError.currentSpending + spendingLimitError.estimatedCost).toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-red-700">{spendingLimitError.type === 'daily' ? 'Daily' : 'Monthly'} limit:</span>
-                  <span className="font-bold text-red-900">R {spendingLimitError.limit.toFixed(2)}</span>
+                  <span className="text-red-700">Available:</span>
+                  <span className="font-bold text-red-900">R 0.00</span>
                 </div>
               </div>
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
               <p className="text-xs text-amber-800">
-                This transaction would exceed your organization's {spendingLimitError.type} spending limit.
+                Your organization's {spendingLimitInfo.type} spending limit has been fully used.
                 Please contact your fleet manager to request a limit increase or wait until the limit resets.
               </p>
             </div>
 
             <button
               onClick={() => {
-                setSpendingLimitError(null);
+                setSpendingLimitInfo(null);
                 setCurrentStep('garage_selection');
                 setShowBarcodeScanner(false);
                 setLicenseDiskScan(null);
@@ -851,6 +877,35 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             </p>
           </div>
 
+          {spendingLimitInfo && !spendingLimitInfo.isBlocked && (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-2 mb-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-amber-900 mb-1">Spending Limit Notice</p>
+                  <p className="text-xs text-amber-800 mb-2">
+                    Your organization has a {spendingLimitInfo.type} spending limit. You can refuel up to:
+                  </p>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-amber-800">Available amount:</span>
+                  <span className="text-base font-bold text-amber-900">R {spendingLimitInfo.availableAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-amber-800">Maximum liters:</span>
+                  <span className="text-base font-bold text-amber-900">{spendingLimitInfo.maxLiters.toFixed(1)} L</span>
+                </div>
+                <div className="border-t border-amber-200 pt-2">
+                  <p className="text-xs text-amber-700 text-center">
+                    Price: R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {selectedGarage && (
             <div className="bg-blue-50 rounded-lg p-4 mb-6">
               <p className="text-sm font-medium text-blue-900 mb-2">Garage:</p>
@@ -867,10 +922,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             </div>
           )}
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-            <p className="text-sm font-medium text-amber-900 mb-2">Next Steps:</p>
-            <ol className="text-sm text-amber-800 space-y-1 list-decimal list-inside">
-              <li>Proceed to refuel your vehicle</li>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+            <p className="text-sm font-medium text-gray-900 mb-2">Next Steps:</p>
+            <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+              <li>Proceed to refuel your vehicle{spendingLimitInfo && !spendingLimitInfo.isBlocked ? ' (up to limit shown above)' : ''}</li>
               <li>Note the fuel amount and odometer reading</li>
               <li>Return here to enter the details</li>
             </ol>
@@ -1052,18 +1107,51 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
             {currentStep === 'fuel_details' && (
               <>
+                {spendingLimitInfo && !spendingLimitInfo.isBlocked && (
+                  <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 mb-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs font-bold text-amber-900 mb-1">Spending Limit Active</p>
+                        <p className="text-xs text-amber-800">
+                          Maximum: <strong>{spendingLimitInfo.maxLiters.toFixed(1)} L</strong> (R {spendingLimitInfo.availableAmount.toFixed(2)} available)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Liters</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Liters
+                      {spendingLimitInfo && !spendingLimitInfo.isBlocked && (
+                        <span className="text-amber-600 ml-2 text-xs">(Max: {spendingLimitInfo.maxLiters.toFixed(1)} L)</span>
+                      )}
+                    </label>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.liters}
-                      onChange={(e) => setFormData({ ...formData, liters: e.target.value })}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const numValue = parseFloat(value);
+
+                        if (spendingLimitInfo && !spendingLimitInfo.isBlocked && numValue > spendingLimitInfo.maxLiters) {
+                          setFormData({ ...formData, liters: spendingLimitInfo.maxLiters.toFixed(2) });
+                        } else {
+                          setFormData({ ...formData, liters: value });
+                        }
+                      }}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3"
                       placeholder="50.00"
                       required
                     />
+                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.liters) > spendingLimitInfo.maxLiters && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Amount capped at maximum available: {spendingLimitInfo.maxLiters.toFixed(1)} L
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1092,6 +1180,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       readOnly
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
                     />
+                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount) > spendingLimitInfo.availableAmount && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Amount exceeds available limit
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -1116,7 +1209,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
                 <button
                   onClick={handleFuelDetailsSubmit}
-                  disabled={loading || !formData.liters || !formData.pricePerLiter || !formData.odometerReading}
+                  disabled={loading || !formData.liters || !formData.pricePerLiter || !formData.odometerReading || (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount) > spendingLimitInfo.availableAmount)}
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {loading ? (

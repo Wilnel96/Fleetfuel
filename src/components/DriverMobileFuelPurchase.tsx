@@ -42,6 +42,14 @@ interface DriverMobileFuelPurchaseProps {
 }
 
 export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMobileFuelPurchaseProps) {
+  // ==========================================
+  // TESTING MODE CONFIGURATION
+  // ==========================================
+  // Set to true to bypass license disk scanning for testing purposes
+  // Set to false to require license disk scanning (production mode)
+  const SKIP_LICENSE_SCAN_FOR_TESTING = true;
+  // ==========================================
+
   const [drawnVehicle, setDrawnVehicle] = useState<Vehicle | null>(null);
   const [licenseDiskScan, setLicenseDiskScan] = useState<ScanData | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -448,6 +456,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMob
     setShowBarcodeScanner(true);
   };
 
+  const skipLicenseScanForTesting = async () => {
+    console.log('⚠️ BYPASSING LICENSE SCAN FOR TESTING');
+    setLicenseDiskScan({ image: '', extractedText: 'TESTING_MODE_BYPASS' });
+    setCurrentStep('spending_check');
+    await checkSpendingLimits();
+  };
+
   const handleFuelDetailsSubmit = () => {
     if (!formData.liters || !formData.pricePerLiter || !formData.odometerReading) {
       setError('Please fill in all fuel details.');
@@ -692,12 +707,29 @@ export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMob
           )}
 
           <div className="space-y-3">
-            <button
-              onClick={proceedToScan}
-              className={`w-full ${locationMismatch ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white py-3 rounded-lg font-semibold transition-colors`}
-            >
-              Continue to Refuel
-            </button>
+            {SKIP_LICENSE_SCAN_FOR_TESTING ? (
+              <>
+                <button
+                  onClick={skipLicenseScanForTesting}
+                  className="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-semibold transition-colors"
+                >
+                  Continue (Testing Mode - No License Scan)
+                </button>
+                <button
+                  onClick={proceedToScan}
+                  className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 rounded-lg font-semibold transition-colors text-sm"
+                >
+                  Scan License Disk (Optional)
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={proceedToScan}
+                className={`w-full ${locationMismatch ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white py-3 rounded-lg font-semibold transition-colors`}
+              >
+                Continue to Refuel
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -912,6 +944,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMob
           </button>
         </div>
       </div>
+
+      {SKIP_LICENSE_SCAN_FOR_TESTING && (
+        <div className="bg-amber-500 text-white px-4 py-2 text-center text-sm font-semibold">
+          ⚠️ TESTING MODE: License disk scanning is disabled
+        </div>
+      )}
 
       <div className="p-4 max-w-2xl mx-auto">
         {loadingVehicle ? (

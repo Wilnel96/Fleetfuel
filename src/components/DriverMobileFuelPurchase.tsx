@@ -966,13 +966,19 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           </div>
         ) : !drawnVehicle ? (
           <div className="bg-white rounded-lg shadow p-6">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3 mb-4">
               <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-amber-900 font-medium mb-1">No Vehicle Drawn</p>
                 <p className="text-amber-800 text-sm">{error || 'You must draw a vehicle before you can refuel. Please contact your administrator.'}</p>
               </div>
             </div>
+            <button
+              onClick={onComplete}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Back to Driver's Main Menu
+            </button>
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow p-6">

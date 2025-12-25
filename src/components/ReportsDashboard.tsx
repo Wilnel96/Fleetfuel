@@ -464,7 +464,17 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .eq('id', exceptionId);
 
     if (!error) {
-      await loadReportData();
+      setReportData((prev: any) => {
+        if (!prev?.exceptions) return prev;
+        return {
+          ...prev,
+          exceptions: prev.exceptions.map((ex: any) =>
+            ex.id === exceptionId
+              ? { ...ex, resolved: true, resolved_at: new Date().toISOString(), resolution_notes: notes }
+              : ex
+          )
+        };
+      });
     }
   };
 

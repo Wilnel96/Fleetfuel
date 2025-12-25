@@ -6,6 +6,10 @@ interface FeeStructure {
   monthly_fee_per_vehicle: number | null;
   daily_spending_limit: number | null;
   monthly_spending_limit: number | null;
+  payment_method: string | null;
+  payment_date: number | null;
+  payment_terms: string | null;
+  late_payment_interest_rate: number | null;
 }
 
 interface FeeStructureViewProps {
@@ -37,7 +41,7 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
 
       const { data: org, error: orgError } = await supabase
         .from('organizations')
-        .select('monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit')
+        .select('monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, payment_method, payment_date, payment_terms, late_payment_interest_rate')
         .eq('id', profile.organization_id)
         .single();
 
@@ -82,8 +86,8 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
           <div className="flex items-center gap-3">
             <DollarSign className="w-6 h-6 text-orange-600" />
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Fee Structure and Spending Limits (View only)</h2>
-              <p className="text-gray-600 text-sm">View your organization's fee structure and spending limits</p>
+              <h2 className="text-lg font-bold text-gray-900">Fee Structure, Spending Limits and Payment Terms (View only)</h2>
+              <p className="text-gray-600 text-sm">View your organization's fee structure, spending limits and payment terms</p>
             </div>
           </div>
           {onNavigate && (
@@ -145,6 +149,56 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
                   <li>Daily spending limits apply to all fuel purchases made by your organization in a single day</li>
                   <li>Monthly spending limits apply to total fuel purchases across the entire month</li>
                   <li>These values can only be modified by your management organization</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mt-6">
+        <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 py-3">
+          <h3 className="text-base font-bold text-white">Payment Terms</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Method</label>
+              <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_method || 'Not set'}</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Terms</label>
+              <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_terms || 'Not set'}</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Date</label>
+              <p className="text-base font-semibold text-gray-900">
+                {feeStructure?.payment_date ? `Day ${feeStructure.payment_date} of each month` : 'Not set'}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Late Payment Interest Rate</label>
+              <p className="text-base font-semibold text-gray-900">
+                {feeStructure?.late_payment_interest_rate !== null && feeStructure?.late_payment_interest_rate !== undefined
+                  ? `${feeStructure.late_payment_interest_rate}%`
+                  : 'Not set'}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-blue-800">
+                <p className="font-semibold mb-1">Payment Information</p>
+                <ul className="space-y-0.5 list-disc list-inside">
+                  <li>Payment terms define when invoices are due after issuance</li>
+                  <li>Payment date indicates the day of the month when payment is expected</li>
+                  <li>Late payment interest applies to overdue invoices</li>
+                  <li>These terms are set by your management organization</li>
                 </ul>
               </div>
             </div>

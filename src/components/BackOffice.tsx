@@ -44,8 +44,8 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       },
       ...(userRole !== 'super_admin' ? [{
         id: 'fee-structure',
-        title: 'Fee Structure and Spending Limits (View only)',
-        description: 'View monthly fees and spending limits',
+        title: 'Fee Structure, Spending Limits and Payment Terms (View only)',
+        description: 'View monthly fees, spending limits and payment terms',
         icon: TrendingUp,
         color: 'orange',
       }] : []),

@@ -103,55 +103,23 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
       </div>
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 space-y-4">
-          <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="bg-blue-500 text-white p-2 rounded-lg">
-                  <DollarSign className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Monthly Fee</h4>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_fee_per_vehicle)}</p>
-              <p className="text-xs text-gray-600 mt-1">per vehicle</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="bg-green-500 text-white p-2 rounded-lg">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Daily Limit</h4>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(feeStructure?.daily_spending_limit)}</p>
-              <p className="text-xs text-gray-600 mt-1">per day</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="bg-orange-500 text-white p-2 rounded-lg">
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Monthly Limit</h4>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_spending_limit)}</p>
-              <p className="text-xs text-gray-600 mt-1">per month</p>
-            </div>
+        <div className="p-4 space-y-3">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Monthly Fee</label>
+            <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_fee_per_vehicle)}</p>
+            <p className="text-xs text-gray-600 mt-1">per vehicle</p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-blue-800">
-                <p className="font-semibold mb-1">Information</p>
-                <ul className="space-y-0.5 list-disc list-inside">
-                  <li>The monthly fee per vehicle is charged for each active vehicle in your fleet</li>
-                  <li>Daily spending limits apply to all fuel purchases made by your organization in a single day</li>
-                  <li>Monthly spending limits apply to total fuel purchases across the entire month</li>
-                  <li>These values can only be modified by your management organization</li>
-                </ul>
-              </div>
-            </div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Daily Fuel Spent Limit</label>
+            <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.daily_spending_limit)}</p>
+            <p className="text-xs text-gray-600 mt-1">per day</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Monthly Fuel Spent Limit</label>
+            <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_spending_limit)}</p>
+            <p className="text-xs text-gray-600 mt-1">per month</p>
           </div>
         </div>
       </div>
@@ -160,48 +128,61 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
         <div className="bg-gradient-to-r from-slate-700 to-slate-900 px-4 py-3">
           <h3 className="text-base font-bold text-white">Payment Terms</h3>
         </div>
-        <div className="p-4 space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Method</label>
-              <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_method || 'Not set'}</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Terms</label>
-              <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_terms || 'Not set'}</p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Date</label>
-              <p className="text-base font-semibold text-gray-900">
-                {feeStructure?.payment_date ? `Day ${feeStructure.payment_date} of each month` : 'Not set'}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Late Payment Interest Rate</label>
-              <p className="text-base font-semibold text-gray-900">
-                {feeStructure?.late_payment_interest_rate !== null && feeStructure?.late_payment_interest_rate !== undefined
-                  ? `${feeStructure.late_payment_interest_rate}%`
-                  : 'Not set'}
-              </p>
-            </div>
+        <div className="p-4 space-y-3">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Method</label>
+            <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_method || 'Not set'}</p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-blue-800">
-                <p className="font-semibold mb-1">Payment Information</p>
-                <ul className="space-y-0.5 list-disc list-inside">
-                  <li>Payment terms define when invoices are due after issuance</li>
-                  <li>Payment date indicates the day of the month when payment is expected</li>
-                  <li>Late payment interest applies to overdue invoices</li>
-                  <li>These terms are set by your management organization</li>
-                </ul>
-              </div>
-            </div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Terms</label>
+            <p className="text-base font-semibold text-gray-900">{feeStructure?.payment_terms || 'Not set'}</p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Payment Date</label>
+            <p className="text-base font-semibold text-gray-900">
+              {feeStructure?.payment_date ? `Day ${feeStructure.payment_date} of each month` : 'Not set'}
+            </p>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Late Payment Interest Rate</label>
+            <p className="text-base font-semibold text-gray-900">
+              {feeStructure?.late_payment_interest_rate !== null && feeStructure?.late_payment_interest_rate !== undefined
+                ? `${feeStructure.late_payment_interest_rate}%`
+                : 'Not set'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-6">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-blue-800">
+            <p className="font-semibold mb-1">Information</p>
+            <ul className="space-y-0.5 list-disc list-inside">
+              <li>The monthly fee per vehicle is charged for each active vehicle in your fleet</li>
+              <li>Daily spending limits apply to all fuel purchases made by your organization in a single day</li>
+              <li>Monthly spending limits apply to total fuel purchases across the entire month</li>
+              <li>These values can only be modified by your management organization</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-xs text-blue-800">
+            <p className="font-semibold mb-1">Payment Information</p>
+            <ul className="space-y-0.5 list-disc list-inside">
+              <li>Payment terms define when invoices are due after issuance</li>
+              <li>Payment date indicates the day of the month when payment is expected</li>
+              <li>Late payment interest applies to overdue invoices</li>
+              <li>These terms are set by your management organization</li>
+            </ul>
           </div>
         </div>
       </div>

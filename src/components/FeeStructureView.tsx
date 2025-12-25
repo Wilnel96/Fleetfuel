@@ -104,22 +104,19 @@ export default function FeeStructureView({ onNavigate }: FeeStructureViewProps =
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 space-y-3">
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Monthly Fee</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Monthly Fee Per Vehicle</label>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_fee_per_vehicle)}</p>
-            <p className="text-xs text-gray-600 mt-1">per vehicle</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Daily Fuel Spent Limit</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Daily Fuel Spent Limit</label>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.daily_spending_limit)}</p>
-            <p className="text-xs text-gray-600 mt-1">per day</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Monthly Fuel Spent Limit</label>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-between items-center">
+            <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Monthly Fuel Spent Limit</label>
             <p className="text-xl font-bold text-gray-900">{formatCurrency(feeStructure?.monthly_spending_limit)}</p>
-            <p className="text-xs text-gray-600 mt-1">per month</p>
           </div>
         </div>
       </div>

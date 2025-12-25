@@ -177,6 +177,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Get organization city for location validation
+    const { data: organization } = await supabase
+      .from("organizations")
+      .select("city")
+      .eq("id", driver.organization_id)
+      .maybeSingle();
+
+    // Get garage city
+    const { data: garage } = await supabase
+      .from("garages")
+      .select("city")
+      .eq("id", transactionData.garageId)
+      .maybeSingle();
+
     // Create fuel transaction
     const { data: transaction, error: insertError } = await supabase
       .from("fuel_transactions")
@@ -212,6 +226,23 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Check for location mismatch and create exception if needed
+    if (organization?.city && garage?.city && organization.city !== garage.city) {
+      await supabase
+        .from("vehicle_exceptions")
+        .insert({
+          organization_id: driver.organization_id,
+          vehicle_id: transactionData.vehicleId,
+          driver_id: driver.id,
+          transaction_id: transaction.id,
+          exception_type: "Location Mismatch",
+          description: `Driver refueled at a garage in ${garage.city}, but organization is based in ${organization.city}`,
+          expected_value: organization.city,
+          actual_value: garage.city,
+          resolved: false,
+        });
     }
 
     try {

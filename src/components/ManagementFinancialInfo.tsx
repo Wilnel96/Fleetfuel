@@ -16,11 +16,15 @@ interface Organization {
   bank_account_number_2: string;
   bank_branch_code_2: string;
   bank_account_type_2: string;
-  billing_contact_name: string;
-  billing_contact_surname: string;
-  billing_contact_email: string;
-  billing_contact_phone_office: string;
-  billing_contact_phone_mobile: string;
+}
+
+interface BillingUser {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  phone_office: string | null;
+  phone_mobile: string | null;
 }
 
 interface ManagementFinancialInfoProps {
@@ -30,6 +34,7 @@ interface ManagementFinancialInfoProps {
 export default function ManagementFinancialInfo({ onNavigate }: ManagementFinancialInfoProps = {}) {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [originalOrganization, setOriginalOrganization] = useState<Organization | null>(null);
+  const [billingUser, setBillingUser] = useState<BillingUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -39,6 +44,7 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
 
   useEffect(() => {
     loadOrganization();
+    loadBillingUser();
   }, []);
 
   const loadOrganization = async () => {
@@ -57,7 +63,7 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
 
       const { data, error: fetchError } = await supabase
         .from('organizations')
-        .select('id, name, month_end_day, year_end_month, year_end_day, bank_name, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, billing_contact_name, billing_contact_surname, billing_contact_email, billing_contact_phone_office, billing_contact_phone_mobile')
+        .select('id, name, month_end_day, year_end_month, year_end_day, bank_name, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2')
         .eq('id', profile.organization_id)
         .maybeSingle();
 
@@ -71,6 +77,40 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadBillingUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profile?.organization_id) return;
+
+      const { data, error: fetchError } = await supabase
+        .from('organization_users')
+        .select('id, name, surname, email, phone_office, phone_mobile')
+        .eq('organization_id', profile.organization_id)
+        .eq('title', 'Billing User')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error loading billing user:', fetchError);
+        return;
+      }
+
+      if (data) {
+        setBillingUser(data);
+      }
+    } catch (err: any) {
+      console.error('Error loading billing user:', err);
     }
   };
 
@@ -118,93 +158,10 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
           bank_account_number_2: organization.bank_account_number_2,
           bank_branch_code_2: organization.bank_branch_code_2,
           bank_account_type_2: organization.bank_account_type_2,
-          billing_contact_name: organization.billing_contact_name,
-          billing_contact_surname: organization.billing_contact_surname,
-          billing_contact_email: organization.billing_contact_email,
-          billing_contact_phone_office: organization.billing_contact_phone_office,
-          billing_contact_phone_mobile: organization.billing_contact_phone_mobile,
         })
         .eq('id', organization.id);
 
       if (updateError) throw updateError;
-
-      if (organization.billing_contact_email) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error('Not authenticated');
-
-        const { data: orgUser } = await supabase
-          .from('organization_users')
-          .select('user_id')
-          .eq('organization_id', organization.id)
-          .eq('email', organization.billing_contact_email)
-          .maybeSingle();
-
-        if (orgUser?.user_id) {
-          if (billingPassword) {
-            const response = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user-password`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                },
-                body: JSON.stringify({
-                  user_id: orgUser.user_id,
-                  new_password: billingPassword,
-                }),
-              }
-            );
-
-            if (!response.ok) {
-              const errorData = await response.json();
-              throw new Error(errorData.error || 'Failed to update billing user password');
-            }
-            setBillingPassword('');
-          }
-        } else if (organization.billing_contact_name || organization.billing_contact_surname || billingPassword) {
-          // User is trying to create a billing user, validate all required fields
-          if (!billingPassword) {
-            throw new Error('Password is required to create a new billing user');
-          }
-          if (!organization.billing_contact_name || !organization.billing_contact_surname) {
-            throw new Error('First name and surname are required to create a new billing user');
-          }
-
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) throw new Error('No session found');
-
-          const response = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization-users`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                organization_id: organization.id,
-                users: [{
-                  email: organization.billing_contact_email,
-                  password: billingPassword,
-                  name: organization.billing_contact_name,
-                  surname: organization.billing_contact_surname,
-                  phone_office: organization.billing_contact_phone_office || '',
-                  phone_mobile: organization.billing_contact_phone_mobile || '',
-                  is_main_user: false,
-                  role: 'billing'
-                }]
-              }),
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to create billing user');
-          }
-          setBillingPassword('');
-        }
-      }
 
       setOriginalOrganization(organization);
       setSuccess('Financial information updated successfully');
@@ -384,98 +341,50 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <User className="w-5 h-5" />
-            Billing Contact Information
+            Billing User Information
           </h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={organization.billing_contact_name || ''}
-                  onChange={(e) => setOrganization({ ...organization, billing_contact_name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {organization.billing_contact_name || 'Not set'}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Surname</label>
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={organization.billing_contact_surname || ''}
-                  onChange={(e) => setOrganization({ ...organization, billing_contact_surname: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {organization.billing_contact_surname || 'Not set'}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              {isEditing ? (
-                <input
-                  type="email"
-                  value={organization.billing_contact_email || ''}
-                  onChange={(e) => setOrganization({ ...organization, billing_contact_email: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {organization.billing_contact_email || 'Not set'}
-                </div>
-              )}
-            </div>
-            {isEditing && (
+          {billingUser ? (
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  type="password"
-                  value={billingPassword}
-                  onChange={(e) => setBillingPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Required for new billing users. Leave blank to keep existing password.</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
+                  {billingUser.name}
+                </div>
               </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={organization.billing_contact_phone_office || ''}
-                  onChange={(e) => setOrganization({ ...organization, billing_contact_phone_office: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Surname</label>
                 <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {organization.billing_contact_phone_office || 'Not set'}
+                  {billingUser.surname}
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-              {isEditing ? (
-                <input
-                  type="tel"
-                  value={organization.billing_contact_phone_mobile || ''}
-                  onChange={(e) => setOrganization({ ...organization, billing_contact_phone_mobile: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              ) : (
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {organization.billing_contact_phone_mobile || 'Not set'}
+                  {billingUser.email}
                 </div>
-              )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
+                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
+                  {billingUser.phone_office || 'Not set'}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
+                  {billingUser.phone_mobile || 'Not set'}
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-amber-800 text-sm font-medium">No billing user assigned</p>
+                <p className="text-amber-700 text-sm mt-1">Create a user with the "Billing User" title in User Management to assign a billing user to this organization.</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div>

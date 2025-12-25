@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 
 interface Invoice {
   id: string;
+  organization_id: string;
   invoice_number: string;
   invoice_date: string;
   billing_period_start: string;
@@ -16,6 +17,17 @@ interface Invoice {
   payment_terms: string;
   payment_due_date: string;
   status: string;
+  organization?: {
+    name: string;
+    vat_number?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    province?: string;
+    postal_code?: string;
+    country?: string;
+    company_registration_number?: string;
+  };
 }
 
 interface InvoiceLineItem {
@@ -70,7 +82,20 @@ export default function ClientInvoices() {
 
       const { data, error: invoicesError } = await supabase
         .from('invoices')
-        .select('*')
+        .select(`
+          *,
+          organization:organizations(
+            name,
+            vat_number,
+            address_line1,
+            address_line2,
+            city,
+            province,
+            postal_code,
+            country,
+            company_registration_number
+          )
+        `)
         .eq('organization_id', profile.organization_id)
         .order('invoice_date', { ascending: false });
 
@@ -236,8 +261,8 @@ export default function ClientInvoices() {
               display: none !important;
             }
             body {
-              margin: 0;
-              padding: 20px;
+              margin: 0 !important;
+              padding: 0 !important;
             }
             html, body {
               height: auto !important;
@@ -246,13 +271,30 @@ export default function ClientInvoices() {
             #invoice-detail {
               box-shadow: none !important;
               page-break-after: avoid !important;
+              margin: 0 !important;
+              border-radius: 0 !important;
+            }
+            #invoice-detail > div {
+              padding: 1rem !important;
             }
             .space-y-4 {
               height: auto !important;
             }
+            .mb-8 {
+              margin-bottom: 1rem !important;
+            }
+            .p-8 {
+              padding: 1rem !important;
+            }
+            .pt-6 {
+              padding-top: 0.75rem !important;
+            }
             @page {
-              margin: 1cm;
+              margin: 0.5cm;
               size: A4;
+            }
+            table {
+              font-size: 0.875rem !important;
             }
           }
         `}</style>
@@ -287,17 +329,26 @@ export default function ClientInvoices() {
         <div className="bg-white rounded-lg shadow-md overflow-hidden" id="invoice-detail">
           {managementOrg && (
             <div className="p-8 border-b border-gray-300">
-              <div className="max-w-4xl">
-                <h1 className="text-3xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
-                <div className="text-sm text-gray-600 space-y-0.5">
-                  <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
-                  <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
-                  {managementOrg.country && <p>{managementOrg.country}</p>}
-                  {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
-                  <div className="flex gap-4 mt-2 font-medium">
-                    {managementOrg.vat_number && <p>VAT No: {managementOrg.vat_number}</p>}
-                    {managementOrg.company_registration_number && <p>Reg No: {managementOrg.company_registration_number}</p>}
+              <div className="flex justify-between items-start">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
+                  <div className="text-sm text-gray-600 space-y-0.5">
+                    <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
+                    <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
+                    {managementOrg.country && <p>{managementOrg.country}</p>}
+                    {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
+                    <div className="flex gap-4 mt-2 font-medium">
+                      {managementOrg.vat_number && <p>VAT No: {managementOrg.vat_number}</p>}
+                      {managementOrg.company_registration_number && <p>Reg No: {managementOrg.company_registration_number}</p>}
+                    </div>
                   </div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <img
+                    src="/MyFuelApp_logo.png"
+                    alt="MyFuelApp Logo"
+                    className="h-28 w-auto"
+                  />
                 </div>
               </div>
             </div>
@@ -319,6 +370,24 @@ export default function ClientInvoices() {
                   <p className="font-semibold text-gray-900">Payment Terms:</p>
                   <p className="text-gray-600">{selectedInvoice.payment_terms}</p>
                   <p className="text-red-600 font-bold mt-2">Payment Due: {formatDate(selectedInvoice.payment_due_date)}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-2">Bill To:</h3>
+              <div className="text-sm text-gray-700 space-y-0.5">
+                <p className="font-medium text-gray-900">{selectedInvoice.organization?.name}</p>
+                {selectedInvoice.organization?.address_line1 && (
+                  <p>{selectedInvoice.organization.address_line1}{selectedInvoice.organization.address_line2 && `, ${selectedInvoice.organization.address_line2}`}</p>
+                )}
+                {selectedInvoice.organization?.city && (
+                  <p>{selectedInvoice.organization.city}, {selectedInvoice.organization.province} {selectedInvoice.organization.postal_code}</p>
+                )}
+                {selectedInvoice.organization?.country && <p>{selectedInvoice.organization.country}</p>}
+                <div className="flex gap-4 mt-2 font-medium">
+                  {selectedInvoice.organization?.vat_number && <p>VAT No: {selectedInvoice.organization.vat_number}</p>}
+                  {selectedInvoice.organization?.company_registration_number && <p>Reg No: {selectedInvoice.organization.company_registration_number}</p>}
                 </div>
               </div>
             </div>

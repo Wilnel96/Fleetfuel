@@ -39,9 +39,10 @@ interface ScanData {
 interface DriverMobileFuelPurchaseProps {
   driver: DriverData;
   onLogout: () => void | Promise<void>;
+  onComplete?: () => void;
 }
 
-export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMobileFuelPurchaseProps) {
+export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete }: DriverMobileFuelPurchaseProps) {
   // ==========================================
   // TESTING MODE CONFIGURATION
   // ==========================================
@@ -914,7 +915,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMob
           )}
 
           <button
-            onClick={resetForm}
+            onClick={() => {
+              if (onComplete) {
+                onComplete();
+              } else {
+                resetForm();
+              }
+            }}
             className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
           >
             OK

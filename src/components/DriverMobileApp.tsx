@@ -61,7 +61,11 @@ export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppPro
           </div>
         </div>
         <div className="pt-16">
-          <DriverMobileFuelPurchase driver={driver} onLogout={onLogout} />
+          <DriverMobileFuelPurchase
+            driver={driver}
+            onLogout={onLogout}
+            onComplete={() => setCurrentView('menu')}
+          />
         </div>
       </div>
     );

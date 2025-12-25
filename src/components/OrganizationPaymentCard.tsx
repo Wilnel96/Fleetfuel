@@ -254,6 +254,15 @@ export function OrganizationPaymentCard() {
     return (
       <div className="space-y-6">
         <h2 className="text-2xl font-bold">Payment Card</h2>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start space-x-3">
+          <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium mb-1">Secure Storage</p>
+            <p>Your card details are encrypted and stored securely. Card data is only decrypted during active payments with valid driver PIN verification and the card data is transferred via NFC.</p>
+          </div>
+        </div>
+
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="flex items-start space-x-3">
             <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
@@ -315,7 +324,7 @@ export function OrganizationPaymentCard() {
           <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800">
             <p className="font-medium mb-1">Secure Storage</p>
-            <p>Your card details are encrypted and stored securely. Card data is only decrypted during active payments with valid driver PIN verification.</p>
+            <p>Your card details are encrypted and stored securely. Card data is only decrypted during active payments with valid driver PIN verification and the card data is transferred via NFC.</p>
           </div>
         </div>
       </div>

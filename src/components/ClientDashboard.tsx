@@ -18,6 +18,11 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
     }
   }, [resetSubmenu]);
 
+  // Update showReportsMenu when initialView changes
+  useEffect(() => {
+    setShowReportsMenu(initialView === 'reports');
+  }, [initialView]);
+
   if (showReportsMenu) {
     const reportsMenuItems = [
       {

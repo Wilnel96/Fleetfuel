@@ -471,7 +471,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
   const resolveException = async (exceptionId: string, notes: string) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      alert('Not authenticated');
+      return;
+    }
 
     const { error } = await supabase
       .from('vehicle_exceptions')
@@ -483,19 +486,25 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       })
       .eq('id', exceptionId);
 
-    if (!error) {
-      setReportData((prev: any) => {
-        if (!prev?.exceptions) return prev;
-        return {
-          ...prev,
-          exceptions: prev.exceptions.map((ex: any) =>
-            ex.id === exceptionId
-              ? { ...ex, resolved: true, resolved_at: new Date().toISOString(), resolution_notes: notes }
-              : ex
-          )
-        };
-      });
+    if (error) {
+      console.error('Error resolving exception:', error);
+      alert(`Failed to resolve exception: ${error.message}`);
+      return;
     }
+
+    setReportData((prev: any) => {
+      if (!prev?.exceptions) return prev;
+      return {
+        ...prev,
+        exceptions: prev.exceptions.map((ex: any) =>
+          ex.id === exceptionId
+            ? { ...ex, resolved: true, resolved_at: new Date().toISOString(), resolution_notes: notes }
+            : ex
+        )
+      };
+    });
+
+    alert('Exception marked as resolved successfully');
   };
 
   const loadMonthlyData = async (orgId: string) => {

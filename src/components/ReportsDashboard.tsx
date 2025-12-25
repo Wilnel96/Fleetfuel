@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName } from '../lib/fuelTypes';
-import { BarChart3, Download, Calendar, TrendingUp, AlertTriangle, FileText, ArrowLeft, Wrench, AlertCircle } from 'lucide-react';
+import { BarChart3, Download, Calendar, TrendingUp, AlertTriangle, FileText, ArrowLeft, Wrench, AlertCircle, MapPin, CheckCircle } from 'lucide-react';
 
 interface ReportType {
   id: string;
@@ -32,6 +32,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
     { id: 'vehicle', name: 'Vehicle Reports', description: 'Efficiency and usage by vehicle', icon: TrendingUp },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
+    { id: 'exceptions', name: 'Driver Exceptions Report', description: 'Location mismatches and policy violations', icon: MapPin },
     { id: 'service-due', name: 'Next Service Due Date', description: 'Estimated service due dates for vehicles', icon: Wrench },
     { id: 'vehicles-to-service', name: 'Vehicles to be Serviced', description: 'Vehicles within 1000 km of service', icon: Wrench },
     { id: 'vehicles-overdue-service', name: 'Vehicles Overdue for Service', description: 'Vehicles that exceeded service interval', icon: AlertCircle },
@@ -132,6 +133,9 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
           break;
         case 'fuel-theft':
           await loadFuelTheftData(profile.organization_id);
+          break;
+        case 'exceptions':
+          await loadExceptionsData(profile.organization_id);
           break;
         case 'service-due':
           await loadServiceDueData(profile.organization_id);
@@ -406,6 +410,62 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .filter((alert: any) => Math.abs(alert.variance) > 30);
 
     setReportData({ alerts });
+  };
+
+  const loadExceptionsData = async (orgId: string) => {
+    const endDatePlusOne = new Date(endDate);
+    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+    const endDateInclusive = endDatePlusOne.toISOString().split('T')[0];
+
+    const { data: exceptions } = await supabase
+      .from('vehicle_exceptions')
+      .select(`
+        *,
+        vehicles (registration_number, make, model),
+        drivers (first_name, last_name),
+        organizations (name, city)
+      `)
+      .eq('organization_id', orgId)
+      .gte('created_at', startDate)
+      .lt('created_at', endDateInclusive)
+      .order('created_at', { ascending: false });
+
+    const formattedExceptions = exceptions?.map(e => ({
+      id: e.id,
+      date: e.created_at,
+      vehicle: e.vehicles ? `${e.vehicles.registration_number} (${e.vehicles.make} ${e.vehicles.model})` : 'Unknown',
+      driver: e.drivers ? `${e.drivers.first_name} ${e.drivers.last_name}` : 'Unknown',
+      exception_type: e.exception_type,
+      description: e.description,
+      expected_value: e.expected_value,
+      actual_value: e.actual_value,
+      resolved: e.resolved,
+      resolved_at: e.resolved_at,
+      resolution_notes: e.resolution_notes,
+      organization_name: e.organizations?.name || '',
+      organization_city: e.organizations?.city || '',
+    }));
+
+    setReportData({ exceptions: formattedExceptions || [] });
+  };
+
+  const resolveException = async (exceptionId: string, notes: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('vehicle_exceptions')
+      .update({
+        resolved: true,
+        resolved_at: new Date().toISOString(),
+        resolved_by: user.id,
+        resolution_notes: notes,
+      })
+      .eq('id', exceptionId);
+
+    if (!error) {
+      await loadReportData();
+    }
   };
 
   const loadMonthlyData = async (orgId: string) => {
@@ -753,6 +813,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         });
         break;
 
+      case 'exceptions':
+        csv = 'Date,Vehicle,Driver,Exception Type,Description,Expected Value,Actual Value,Status,Resolved At,Resolution Notes\n';
+        reportData.exceptions?.forEach((e: any) => {
+          csv += `"${new Date(e.date).toLocaleDateString()}","${e.vehicle}","${e.driver}","${e.exception_type}","${e.description}","${e.expected_value || ''}","${e.actual_value || ''}","${e.resolved ? 'Resolved' : 'Pending'}","${e.resolved_at ? new Date(e.resolved_at).toLocaleDateString() : ''}","${e.resolution_notes || ''}"\n`;
+        });
+        break;
+
       case 'service-due':
         csv = 'Vehicle,Last Service Date,Last Service Odometer,Current Odometer,Service Interval (km),Target Odometer,Remaining (km),Avg km/day,Days Until Service,Estimated Due Date,Status\n';
         reportData.serviceDue?.forEach((s: any) => {
@@ -1091,6 +1158,103 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${alert.severity === 'High' ? 'bg-red-600 text-white' : 'bg-yellow-600 text-white'}`}>
                             {alert.severity}
                           </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedReport === 'exceptions' && reportData.exceptions && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-orange-900">Driver Exception Report</h3>
+                {reportData.exceptions.length === 0 ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                    <p className="text-green-800 font-medium">No exceptions found!</p>
+                    <p className="text-sm text-green-700 mt-2">All fuel purchases were made at expected locations.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reportData.exceptions.map((exception: any) => (
+                      <div key={exception.id} className={`border rounded-lg overflow-hidden ${exception.resolved ? 'bg-gray-50 border-gray-200' : 'bg-orange-50 border-orange-200'}`}>
+                        <div className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <MapPin className={`w-5 h-5 ${exception.resolved ? 'text-gray-600' : 'text-orange-600'}`} />
+                                <div>
+                                  <h4 className="font-semibold text-gray-900">{exception.vehicle}</h4>
+                                  <p className="text-sm text-gray-600">Driver: {exception.driver}</p>
+                                </div>
+                              </div>
+
+                              <div className="ml-8 space-y-2">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">Exception Type:</p>
+                                  <p className="text-sm text-gray-900">{exception.exception_type}</p>
+                                </div>
+
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">Description:</p>
+                                  <p className="text-sm text-gray-900">{exception.description}</p>
+                                </div>
+
+                                {exception.expected_value && (
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-700">Expected Location:</p>
+                                      <p className="text-sm text-gray-900">{exception.expected_value}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-700">Actual Location:</p>
+                                      <p className="text-sm text-orange-600 font-medium">{exception.actual_value}</p>
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <span>Date: {new Date(exception.date).toLocaleString()}</span>
+                                </div>
+
+                                {exception.resolved && exception.resolution_notes && (
+                                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded">
+                                    <p className="text-sm font-medium text-green-900 flex items-center gap-2">
+                                      <CheckCircle className="w-4 h-4" />
+                                      Resolved on {new Date(exception.resolved_at).toLocaleDateString()}
+                                    </p>
+                                    <p className="text-sm text-green-800 mt-1">{exception.resolution_notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-2">
+                              {exception.resolved ? (
+                                <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-600 text-white flex items-center gap-1">
+                                  <CheckCircle className="w-4 h-4" />
+                                  Resolved
+                                </span>
+                              ) : (
+                                <>
+                                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-orange-600 text-white">
+                                    Pending
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      const notes = prompt('Enter resolution notes:');
+                                      if (notes) {
+                                        resolveException(exception.id, notes);
+                                      }
+                                    }}
+                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                  >
+                                    Mark Resolved
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))}

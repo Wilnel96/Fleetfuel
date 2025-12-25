@@ -12,7 +12,7 @@ interface Vehicle {
   license_disk_expiry: string;
   vin_number?: string;
   fuel_type?: string;
-  tank_capacity_liters?: number;
+  tank_capacity?: number;
   organization_id: string;
 }
 
@@ -250,7 +250,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout }: DriverMob
 
       // Calculate estimated fuel cost (tank capacity * price per liter)
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;
-      const tankCapacity = drawnVehicle.tank_capacity_liters || 0;
+      const tankCapacity = parseFloat(drawnVehicle.tank_capacity?.toString() || '0');
       const estimatedCost = tankCapacity * fuelPrice;
 
       console.log('Spending check:', {

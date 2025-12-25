@@ -448,10 +448,11 @@ export default function InvoiceManagement() {
                   </div>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center">
-                    <Fuel className="w-12 h-12 text-white" strokeWidth={2} />
-                  </div>
-                  <p className="mt-2 text-lg font-bold text-gray-900">FleetFuel</p>
+                  <img
+                    src="/MyFuelApp_logo_primary.png"
+                    alt="MyFuelApp Logo"
+                    className="h-20 w-auto"
+                  />
                 </div>
               </div>
             </div>

@@ -812,10 +812,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                 setCurrentStep('garage_selection');
                 setShowBarcodeScanner(false);
                 setLicenseDiskScan(null);
+                if (onComplete) onComplete();
               }}
-              className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
             >
-              Back to Garage Selection
+              Back to Driver's Main Menu
             </button>
           </div>
         </div>

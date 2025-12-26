@@ -27,13 +27,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   const [orgSettings, setOrgSettings] = useState<any>(null);
   const [error, setError] = useState<string>('');
 
-  // Helper to create ISO timestamp from date string in local timezone
+  // Helper to create ISO timestamp from date string without timezone conversion
   const createLocalDateString = (dateStr: string, endOfDay = false) => {
-    const [year, month, day] = dateStr.split('-').map(Number);
-    const date = endOfDay
-      ? new Date(year, month - 1, day, 23, 59, 59, 999)
-      : new Date(year, month - 1, day, 0, 0, 0, 0);
-    return date.toISOString();
+    // Use date string directly with time component to avoid timezone conversion
+    return endOfDay
+      ? `${dateStr}T23:59:59.999Z`
+      : `${dateStr}T00:00:00.000Z`;
   };
 
   const reportTypes: ReportType[] = [

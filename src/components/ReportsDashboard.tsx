@@ -27,13 +27,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   const [orgSettings, setOrgSettings] = useState<any>(null);
   const [error, setError] = useState<string>('');
 
-  // Helper to format date without timezone conversion
-  const formatDateForQuery = (dateStr: string, endOfDay = false) => {
-    const [year, month, day] = dateStr.split('-');
-    if (endOfDay) {
-      return `${year}-${month}-${day} 23:59:59.999`;
-    }
-    return `${year}-${month}-${day} 00:00:00.000`;
+  // Helper to create ISO timestamp from date string in local timezone
+  const createLocalDateString = (dateStr: string, endOfDay = false) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = endOfDay
+      ? new Date(year, month - 1, day, 23, 59, 59, 999)
+      : new Date(year, month - 1, day, 0, 0, 0, 0);
+    return date.toISOString();
   };
 
   const reportTypes: ReportType[] = [
@@ -180,8 +180,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', formatDateForQuery(startDate))
-      .lte('transaction_date', formatDateForQuery(endDate, true))
+      .gte('transaction_date', createLocalDateString(startDate))
+      .lte('transaction_date', createLocalDateString(endDate, true))
       .order('transaction_date', { ascending: false });
 
     const totalTransactions = transactions?.length || 0;
@@ -221,8 +221,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         vehicles (registration_number)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', formatDateForQuery(startDate))
-      .lte('transaction_date', formatDateForQuery(endDate, true));
+      .gte('transaction_date', createLocalDateString(startDate))
+      .lte('transaction_date', createLocalDateString(endDate, true));
 
     const driverStats: any = {};
 
@@ -273,8 +273,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', formatDateForQuery(startDate))
-      .lte('transaction_date', formatDateForQuery(endDate, true))
+      .gte('transaction_date', createLocalDateString(startDate))
+      .lte('transaction_date', createLocalDateString(endDate, true))
       .order('vehicle_id')
       .order('transaction_date', { ascending: false });
 
@@ -357,8 +357,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .from('fuel_transactions')
       .select('*')
       .eq('organization_id', orgId)
-      .gte('transaction_date', formatDateForQuery(startDate))
-      .lte('transaction_date', formatDateForQuery(endDate, true))
+      .gte('transaction_date', createLocalDateString(startDate))
+      .lte('transaction_date', createLocalDateString(endDate, true))
       .not('odometer_reading', 'is', null)
       .not('previous_odometer_reading', 'is', null);
 
@@ -415,8 +415,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         organizations (name, city)
       `)
       .eq('organization_id', orgId)
-      .gte('created_at', formatDateForQuery(startDate))
-      .lte('created_at', formatDateForQuery(endDate, true))
+      .gte('created_at', createLocalDateString(startDate))
+      .lte('created_at', createLocalDateString(endDate, true))
       .order('created_at', { ascending: false });
 
     const formattedExceptions = exceptions?.map(e => ({
@@ -488,8 +488,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', formatDateForQuery(startDate))
-      .lte('transaction_date', formatDateForQuery(endDate, true));
+      .gte('transaction_date', createLocalDateString(startDate))
+      .lte('transaction_date', createLocalDateString(endDate, true));
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
@@ -517,8 +517,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', formatDateForQuery(startDate))
-      .lte('transaction_date', formatDateForQuery(endDate, true));
+      .gte('transaction_date', createLocalDateString(startDate))
+      .lte('transaction_date', createLocalDateString(endDate, true));
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,

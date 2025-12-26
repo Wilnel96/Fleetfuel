@@ -105,6 +105,11 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadReportData = async () => {
+    console.log('=== LOAD REPORT DATA TRIGGERED ===');
+    console.log('Selected Report:', selectedReport);
+    console.log('Start Date:', startDate);
+    console.log('End Date:', endDate);
+
     setLoading(true);
     setError('');
     try {
@@ -227,6 +232,15 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadDriverData = async (orgId: string, start: string, end: string) => {
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
+
+    console.log('=== DRIVER REPORT DATE FILTER ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
     const { data: transactions } = await supabase
       .from('fuel_transactions')
       .select(`
@@ -235,8 +249,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         vehicles (registration_number)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(start))
-      .lte('transaction_date', createLocalDateString(end, true));
+      .gte('transaction_date', startDateTime)
+      .lte('transaction_date', endDateTime);
+
+    console.log('Driver Transactions Found:', transactions?.length);
 
     const driverStats: any = {};
 
@@ -271,6 +287,15 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadVehicleData = async (orgId: string, start: string, end: string) => {
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
+
+    console.log('=== VEHICLE REPORT DATE FILTER ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
     // Get all vehicles for the organization
     const { data: vehicles } = await supabase
       .from('vehicles')
@@ -287,10 +312,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(start))
-      .lte('transaction_date', createLocalDateString(end, true))
+      .gte('transaction_date', startDateTime)
+      .lte('transaction_date', endDateTime)
       .order('vehicle_id')
       .order('transaction_date', { ascending: false });
+
+    console.log('Vehicle Transactions Found:', transactions?.length);
 
     // Group transactions by vehicle
     const vehicleData: any = {};

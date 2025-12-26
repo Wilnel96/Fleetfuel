@@ -548,7 +548,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         },
         body: JSON.stringify({
           vehicleId: drawnVehicle.id,
-          garageId: formData.garageId,
+          garageId: selectedGarageId,
           liters: parseFloat(formData.liters),
           pricePerLiter: parseFloat(formData.pricePerLiter),
           totalAmount,

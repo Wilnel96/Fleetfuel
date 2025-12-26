@@ -162,13 +162,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadOverviewData = async (orgId: string) => {
-    // Create start of day for startDate
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    // Create end of day for endDate (23:59:59.999)
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -212,13 +211,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadDriverData = async (orgId: string) => {
-    // Create start of day for startDate
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    // Create end of day for endDate (23:59:59.999)
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -264,13 +262,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadVehicleData = async (orgId: string) => {
-    // Create start of day for startDate
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    // Create end of day for endDate (23:59:59.999)
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     // Get all vehicles for the organization
     const { data: vehicles } = await supabase
@@ -362,13 +359,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadFuelTheftData = async (orgId: string) => {
-    // Create start of day for startDate
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    // Create end of day for endDate (23:59:59.999)
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     const { data: vehicles } = await supabase
       .from('vehicles')
@@ -429,13 +425,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadExceptionsData = async (orgId: string) => {
-    // Create start of day for startDate
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    // Create end of day for endDate (23:59:59.999)
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     const { data: exceptions } = await supabase
       .from('vehicle_exceptions')
@@ -510,12 +505,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   const loadMonthlyData = async (orgId: string) => {
     const monthEnd = orgSettings?.month_end_day || 31;
 
-    // Use the user-selected date range
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')
@@ -546,12 +541,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     const yearEndMonth = orgSettings?.year_end_month || 12;
     const yearEndDay = orgSettings?.year_end_day || 31;
 
-    // Use the user-selected date range
-    const startDateTime = new Date(startDate);
-    startDateTime.setHours(0, 0, 0, 0);
+    // Parse dates correctly in local timezone
+    const [startYear, startMonth, startDay] = startDate.split('-').map(Number);
+    const startDateTime = new Date(startYear, startMonth - 1, startDay, 0, 0, 0, 0);
 
-    const endDateTime = new Date(endDate);
-    endDateTime.setHours(23, 59, 59, 999);
+    const [endYear, endMonth, endDay] = endDate.split('-').map(Number);
+    const endDateTime = new Date(endYear, endMonth - 1, endDay, 23, 59, 59, 999);
 
     const { data: transactions } = await supabase
       .from('fuel_transactions')

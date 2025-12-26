@@ -253,6 +253,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .lte('transaction_date', endDateTime);
 
     console.log('Driver Transactions Found:', transactions?.length);
+    if (transactions && transactions.length > 0) {
+      console.log('Transaction Dates:', transactions.map(t => ({
+        date: t.transaction_date,
+        driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown'
+      })));
+    }
 
     const driverStats: any = {};
 

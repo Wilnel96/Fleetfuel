@@ -388,20 +388,32 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadFuelTheftData = async (orgId: string, start: string, end: string) => {
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
+
+    console.log('=== FUEL THEFT REPORT DATE FILTER ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
     const { data: vehicles } = await supabase
       .from('vehicles')
       .select('*')
       .eq('organization_id', orgId)
       .is('deleted_at', null);
 
-    const { data: transactions } = await supabase
+    const { data: transactions, error } = await supabase
       .from('fuel_transactions')
       .select('*')
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(start))
-      .lte('transaction_date', createLocalDateString(end, true))
+      .gte('transaction_date', startDateTime)
+      .lte('transaction_date', endDateTime)
       .not('odometer_reading', 'is', null)
       .not('previous_odometer_reading', 'is', null);
+
+    console.log('Fuel Theft Query Error:', error);
+    console.log('Fuel Theft Transactions Found:', transactions?.length);
 
     const vehicleStats: any = {};
 
@@ -447,7 +459,16 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const loadExceptionsData = async (orgId: string, start: string, end: string) => {
-    const { data: exceptions } = await supabase
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
+
+    console.log('=== EXCEPTIONS REPORT DATE FILTER ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
+    const { data: exceptions, error } = await supabase
       .from('vehicle_exceptions')
       .select(`
         *,
@@ -456,9 +477,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         organizations (name, city)
       `)
       .eq('organization_id', orgId)
-      .gte('created_at', createLocalDateString(start))
-      .lte('created_at', createLocalDateString(end, true))
+      .gte('created_at', startDateTime)
+      .lte('created_at', endDateTime)
       .order('created_at', { ascending: false });
+
+    console.log('Exceptions Query Error:', error);
+    console.log('Exceptions Found:', exceptions?.length);
 
     const formattedExceptions = exceptions?.map(e => ({
       id: e.id,
@@ -519,8 +543,16 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
   const loadMonthlyData = async (orgId: string, start: string, end: string) => {
     const monthEnd = orgSettings?.month_end_day || 31;
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
 
-    const { data: transactions } = await supabase
+    console.log('=== MONTHLY REPORT DATE FILTER ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
+    const { data: transactions, error } = await supabase
       .from('fuel_transactions')
       .select(`
         *,
@@ -529,8 +561,15 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(start))
-      .lte('transaction_date', createLocalDateString(end, true));
+      .gte('transaction_date', startDateTime)
+      .lte('transaction_date', endDateTime);
+
+    console.log('Monthly Query Error:', error);
+    console.log('Monthly Transactions Found:', transactions?.length);
+    if (transactions && transactions.length > 0) {
+      console.log('First Transaction Date:', transactions[0].transaction_date);
+      console.log('Last Transaction Date:', transactions[transactions.length - 1].transaction_date);
+    }
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
@@ -548,8 +587,16 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   const loadAnnualData = async (orgId: string, start: string, end: string) => {
     const yearEndMonth = orgSettings?.year_end_month || 12;
     const yearEndDay = orgSettings?.year_end_day || 31;
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
 
-    const { data: transactions } = await supabase
+    console.log('=== ANNUAL REPORT DATE FILTER ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
+    const { data: transactions, error } = await supabase
       .from('fuel_transactions')
       .select(`
         *,
@@ -558,8 +605,11 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(start))
-      .lte('transaction_date', createLocalDateString(end, true));
+      .gte('transaction_date', startDateTime)
+      .lte('transaction_date', endDateTime);
+
+    console.log('Annual Query Error:', error);
+    console.log('Annual Transactions Found:', transactions?.length);
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,

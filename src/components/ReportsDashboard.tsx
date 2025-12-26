@@ -132,19 +132,19 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
       switch (selectedReport) {
         case 'overview':
-          await loadOverviewData(profile.organization_id);
+          await loadOverviewData(profile.organization_id, startDate, endDate);
           break;
         case 'driver':
-          await loadDriverData(profile.organization_id);
+          await loadDriverData(profile.organization_id, startDate, endDate);
           break;
         case 'vehicle':
-          await loadVehicleData(profile.organization_id);
+          await loadVehicleData(profile.organization_id, startDate, endDate);
           break;
         case 'fuel-theft':
-          await loadFuelTheftData(profile.organization_id);
+          await loadFuelTheftData(profile.organization_id, startDate, endDate);
           break;
         case 'exceptions':
-          await loadExceptionsData(profile.organization_id);
+          await loadExceptionsData(profile.organization_id, startDate, endDate);
           break;
         case 'service-due':
           await loadServiceDueData(profile.organization_id);
@@ -156,10 +156,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
           await loadVehiclesOverdueServiceData(profile.organization_id);
           break;
         case 'monthly':
-          await loadMonthlyData(profile.organization_id);
+          await loadMonthlyData(profile.organization_id, startDate, endDate);
           break;
         case 'annual':
-          await loadAnnualData(profile.organization_id);
+          await loadAnnualData(profile.organization_id, startDate, endDate);
           break;
       }
     } catch (err: any) {
@@ -170,8 +170,17 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     }
   };
 
-  const loadOverviewData = async (orgId: string) => {
-    const { data: transactions } = await supabase
+  const loadOverviewData = async (orgId: string, start: string, end: string) => {
+    const startDateTime = createLocalDateString(start);
+    const endDateTime = createLocalDateString(end, true);
+
+    console.log('=== DATE FILTER DEBUG ===');
+    console.log('Start Date Input:', start);
+    console.log('End Date Input:', end);
+    console.log('Start DateTime Query:', startDateTime);
+    console.log('End DateTime Query:', endDateTime);
+
+    const { data: transactions, error } = await supabase
       .from('fuel_transactions')
       .select(`
         *,
@@ -180,9 +189,14 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(startDate))
-      .lte('transaction_date', createLocalDateString(endDate, true))
+      .gte('transaction_date', startDateTime)
+      .lte('transaction_date', endDateTime)
       .order('transaction_date', { ascending: false });
+
+    console.log('Query Error:', error);
+    console.log('Transactions Count:', transactions?.length);
+    console.log('First Transaction Date:', transactions?.[0]?.transaction_date);
+    console.log('Last Transaction Date:', transactions?.[transactions?.length - 1]?.transaction_date);
 
     const totalTransactions = transactions?.length || 0;
     const totalLiters = transactions?.reduce((sum, t) => sum + parseFloat(t.liters || 0), 0) || 0;
@@ -212,7 +226,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     });
   };
 
-  const loadDriverData = async (orgId: string) => {
+  const loadDriverData = async (orgId: string, start: string, end: string) => {
     const { data: transactions } = await supabase
       .from('fuel_transactions')
       .select(`
@@ -221,8 +235,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         vehicles (registration_number)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(startDate))
-      .lte('transaction_date', createLocalDateString(endDate, true));
+      .gte('transaction_date', createLocalDateString(start))
+      .lte('transaction_date', createLocalDateString(end, true));
 
     const driverStats: any = {};
 
@@ -256,7 +270,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     setReportData({ drivers });
   };
 
-  const loadVehicleData = async (orgId: string) => {
+  const loadVehicleData = async (orgId: string, start: string, end: string) => {
     // Get all vehicles for the organization
     const { data: vehicles } = await supabase
       .from('vehicles')
@@ -273,8 +287,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(startDate))
-      .lte('transaction_date', createLocalDateString(endDate, true))
+      .gte('transaction_date', createLocalDateString(start))
+      .lte('transaction_date', createLocalDateString(end, true))
       .order('vehicle_id')
       .order('transaction_date', { ascending: false });
 
@@ -346,7 +360,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     setReportData({ vehicleData: Object.values(vehicleData) });
   };
 
-  const loadFuelTheftData = async (orgId: string) => {
+  const loadFuelTheftData = async (orgId: string, start: string, end: string) => {
     const { data: vehicles } = await supabase
       .from('vehicles')
       .select('*')
@@ -357,8 +371,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .from('fuel_transactions')
       .select('*')
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(startDate))
-      .lte('transaction_date', createLocalDateString(endDate, true))
+      .gte('transaction_date', createLocalDateString(start))
+      .lte('transaction_date', createLocalDateString(end, true))
       .not('odometer_reading', 'is', null)
       .not('previous_odometer_reading', 'is', null);
 
@@ -405,7 +419,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     setReportData({ alerts });
   };
 
-  const loadExceptionsData = async (orgId: string) => {
+  const loadExceptionsData = async (orgId: string, start: string, end: string) => {
     const { data: exceptions } = await supabase
       .from('vehicle_exceptions')
       .select(`
@@ -415,8 +429,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         organizations (name, city)
       `)
       .eq('organization_id', orgId)
-      .gte('created_at', createLocalDateString(startDate))
-      .lte('created_at', createLocalDateString(endDate, true))
+      .gte('created_at', createLocalDateString(start))
+      .lte('created_at', createLocalDateString(end, true))
       .order('created_at', { ascending: false });
 
     const formattedExceptions = exceptions?.map(e => ({
@@ -476,7 +490,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     alert('Exception marked as resolved successfully');
   };
 
-  const loadMonthlyData = async (orgId: string) => {
+  const loadMonthlyData = async (orgId: string, start: string, end: string) => {
     const monthEnd = orgSettings?.month_end_day || 31;
 
     const { data: transactions } = await supabase
@@ -488,8 +502,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(startDate))
-      .lte('transaction_date', createLocalDateString(endDate, true));
+      .gte('transaction_date', createLocalDateString(start))
+      .lte('transaction_date', createLocalDateString(end, true));
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
@@ -504,7 +518,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     setReportData({ transactions: formattedTransactions, monthEnd });
   };
 
-  const loadAnnualData = async (orgId: string) => {
+  const loadAnnualData = async (orgId: string, start: string, end: string) => {
     const yearEndMonth = orgSettings?.year_end_month || 12;
     const yearEndDay = orgSettings?.year_end_day || 31;
 
@@ -517,8 +531,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         garages (name)
       `)
       .eq('organization_id', orgId)
-      .gte('transaction_date', createLocalDateString(startDate))
-      .lte('transaction_date', createLocalDateString(endDate, true));
+      .gte('transaction_date', createLocalDateString(start))
+      .lte('transaction_date', createLocalDateString(end, true));
 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,

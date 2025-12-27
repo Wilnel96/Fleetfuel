@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Eye, Download, Calendar, DollarSign, AlertCircle, CheckCircle, XCircle, FileSpreadsheet, Printer } from 'lucide-react';
+import { FileText, Eye, Download, Calendar, DollarSign, AlertCircle, CheckCircle, XCircle, FileSpreadsheet, Printer, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {
@@ -52,7 +52,11 @@ interface ManagementOrganization {
   company_registration_number: string;
 }
 
-export default function ClientInvoices() {
+interface ClientInvoicesProps {
+  onNavigate?: (view: string) => void;
+}
+
+export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {}) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
@@ -459,20 +463,31 @@ export default function ClientInvoices() {
         <div className="flex items-center gap-3">
           <FileText className="w-6 h-6 text-blue-600" />
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Invoices</h2>
+            <h2 className="text-lg font-bold text-gray-900">Fee Invoices</h2>
             <p className="text-sm text-gray-600">View your monthly invoices and payment history</p>
           </div>
         </div>
 
-        {invoices.length > 0 && (
-          <button
-            onClick={exportAllInvoicesToCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-          >
-            <FileSpreadsheet className="w-4 h-4" />
-            Export All to CSV
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {invoices.length > 0 && (
+            <button
+              onClick={exportAllInvoicesToCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export All to CSV
+            </button>
+          )}
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('invoices-menu')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to Invoices Menu
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (

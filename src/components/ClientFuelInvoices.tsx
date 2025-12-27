@@ -89,11 +89,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     }
 
     if (startDate) {
-      filtered = filtered.filter((inv) => new Date(inv.invoice_date) >= new Date(startDate));
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((inv) => new Date(inv.invoice_date) >= start);
     }
 
     if (endDate) {
-      filtered = filtered.filter((inv) => new Date(inv.invoice_date) <= new Date(endDate));
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((inv) => new Date(inv.invoice_date) <= end);
     }
 
     setFilteredInvoices(filtered);

@@ -438,6 +438,302 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     printInvoice(invoice);
   };
 
+  const generateInvoiceHTML = (invoice: FuelInvoice) => {
+    return `
+      <div class="invoice-page">
+        <div class="header">
+          <h1>FUEL TRANSACTION INVOICE</h1>
+          <p>Fuel Empowerment Systems (Pty) Ltd</p>
+        </div>
+
+        <div class="grid-container">
+          <div class="column">
+            <div class="card">
+              <h3>Invoice Details</h3>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="info-label">Invoice Number:</span>
+                  <span class="info-value">${invoice.invoice_number}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Invoice Date:</span>
+                  <span class="info-value">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Transaction Date:</span>
+                  <span class="info-value">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Vehicle & Driver</h3>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="info-label">Vehicle:</span>
+                  <span class="info-value">${invoice.vehicle_registration}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Driver:</span>
+                  <span class="info-value">${invoice.driver_name}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Odometer:</span>
+                  <span class="info-value">${invoice.odometer_reading.toLocaleString()} km</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="column">
+            <div class="card">
+              <h3>Fuel Station</h3>
+              <div class="card-content">
+                <div class="station-info">
+                  <span class="info-label">Station:</span>
+                  <span class="info-value">${invoice.garage_name}</span>
+                </div>
+                <div class="station-info">
+                  <span class="info-label">Address:</span>
+                  <span class="info-value">${invoice.garage_address}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Fuel Details</h3>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="info-label">Fuel Type:</span>
+                  <span class="info-value">${invoice.fuel_type}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Liters:</span>
+                  <span class="info-value">${parseFloat(invoice.liters.toString()).toFixed(2)} L</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Price per Liter:</span>
+                  <span class="info-value">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="total-section">
+          <div class="total-box">
+            <div class="total-content">
+              <span class="total-label">TOTAL AMOUNT:</span>
+              <span class="total-amount">R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>This invoice is for accounting and tax compliance purposes.</p>
+          <p>Thank you for your business.</p>
+        </div>
+      </div>
+    `;
+  };
+
+  const exportAllInvoicesToPDF = () => {
+    if (filteredInvoices.length === 0) {
+      alert('No invoices to export');
+      return;
+    }
+
+    const invoicesHTML = filteredInvoices.map(invoice => generateInvoiceHTML(invoice)).join('');
+
+    const dateRange = startDate && endDate
+      ? `${new Date(startDate).toLocaleDateString('en-ZA')} to ${new Date(endDate).toLocaleDateString('en-ZA')}`
+      : 'All Dates';
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Fuel Invoices - ${dateRange}</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+              font-family: Arial, sans-serif;
+              color: #374151;
+            }
+            .invoice-page {
+              padding: 40px;
+              page-break-after: always;
+            }
+            .invoice-page:last-child {
+              page-break-after: auto;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #111827;
+              padding-bottom: 24px;
+            }
+            .header h1 {
+              margin: 0 0 8px 0;
+              color: #111827;
+              font-size: 30px;
+              font-weight: bold;
+            }
+            .header p {
+              color: #4b5563;
+              margin-top: 8px;
+              font-size: 14px;
+            }
+            .grid-container {
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 24px;
+              margin-bottom: 24px;
+            }
+            .column {
+              display: flex;
+              flex-direction: column;
+              gap: 16px;
+            }
+            .card {
+              margin-bottom: 16px;
+            }
+            .card h3 {
+              font-size: 12px;
+              font-weight: 500;
+              color: #6b7280;
+              margin-bottom: 8px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .card-content {
+              background-color: #f9fafb;
+              border-radius: 8px;
+              padding: 16px;
+            }
+            .info-row {
+              display: flex;
+              justify-content: space-between;
+              margin: 8px 0;
+            }
+            .info-row:first-child {
+              margin-top: 0;
+            }
+            .info-row:last-child {
+              margin-bottom: 0;
+            }
+            .info-label {
+              color: #4b5563;
+            }
+            .info-value {
+              font-weight: 600;
+              color: #111827;
+            }
+            .station-info {
+              margin: 8px 0;
+            }
+            .station-info:first-child {
+              margin-top: 0;
+            }
+            .station-info .info-label {
+              display: block;
+              color: #4b5563;
+              margin-bottom: 4px;
+            }
+            .station-info .info-value {
+              display: block;
+              font-weight: 600;
+              color: #111827;
+            }
+            .total-section {
+              border-top: 2px solid #e5e7eb;
+              padding-top: 24px;
+              margin-top: 24px;
+            }
+            .total-box {
+              background-color: #eff6ff;
+              border-radius: 8px;
+              padding: 24px;
+            }
+            .total-content {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .total-label {
+              font-size: 20px;
+              font-weight: 600;
+              color: #111827;
+            }
+            .total-amount {
+              font-size: 30px;
+              font-weight: bold;
+              color: #2563eb;
+            }
+            .footer {
+              margin-top: 24px;
+              text-align: center;
+              font-size: 14px;
+              color: #4b5563;
+            }
+            .footer p {
+              margin: 8px 0;
+            }
+            @media print {
+              .invoice-page {
+                padding: 20px;
+              }
+              @page {
+                margin: 1.5cm;
+                size: A4;
+              }
+              .card-content {
+                background-color: #f9fafb !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .total-box {
+                background-color: #eff6ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${invoicesHTML}
+        </body>
+      </html>
+    `;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -670,10 +966,19 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
           <button
             onClick={exportToCSV}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <Download className="w-4 h-4" />
             Export CSV
+          </button>
+
+          <button
+            onClick={exportAllInvoicesToPDF}
+            disabled={filteredInvoices.length === 0}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Printer className="w-4 h-4" />
+            Export All to PDF
           </button>
         </div>
 

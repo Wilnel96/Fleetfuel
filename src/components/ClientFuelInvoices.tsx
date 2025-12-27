@@ -216,14 +216,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
     printWindow.document.close();
 
-    // Wait for content to load before printing
-    printWindow.onload = () => {
+    // Wait for content to render before printing
+    setTimeout(() => {
       printWindow.focus();
       printWindow.print();
-      printWindow.onafterprint = () => {
+      // Close window after printing (or if user cancels)
+      setTimeout(() => {
         printWindow.close();
-      };
-    };
+      }, 100);
+    }, 250);
   };
 
   const exportToCSV = () => {

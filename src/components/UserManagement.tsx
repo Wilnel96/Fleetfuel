@@ -1050,7 +1050,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                  Name <span className="text-red-500">*</span>
+                  First Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1426,7 +1426,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
             <div className="grid md:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
                 <input
                   type="text"
                   value={editingUser.name || ''}
@@ -1896,7 +1896,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                       <input
                         type="text"
                         value={user.first_name}

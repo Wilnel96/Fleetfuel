@@ -28,6 +28,7 @@ import CustomReportBuilder from './components/CustomReportBuilder';
 import BackupManagement from './components/BackupManagement';
 import ClientInvoices from './components/ClientInvoices';
 import InvoiceManagement from './components/InvoiceManagement';
+import ClientFuelInvoices from './components/ClientFuelInvoices';
 import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
 import { DriverData } from './components/DriverAuth';
 
@@ -523,6 +524,12 @@ function App() {
           <DriverManagement key="drivers" onNavigate={setCurrentView} />
         ) : currentView === 'invoices' ? (
           userRole === 'super_admin' ? <InvoiceManagement key="invoices" /> : <ClientInvoices key="invoices" />
+        ) : currentView === 'invoices-menu' ? (
+          <ClientDashboard key="invoices-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" />
+        ) : currentView === 'fee-invoices' ? (
+          <ClientInvoices key="fee-invoices" onNavigate={setCurrentView} />
+        ) : currentView === 'fuel-invoices' ? (
+          <ClientFuelInvoices key="fuel-invoices" onNavigate={setCurrentView} />
         ) : currentView === 'reports-menu' ? (
           <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" />
         ) : currentView === 'reports' ? (

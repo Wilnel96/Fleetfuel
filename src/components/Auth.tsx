@@ -18,24 +18,28 @@ export default function Auth({ onBack }: AuthProps = {}) {
     setLoading(true);
 
     try {
-      console.log('Attempting login with email:', email);
+      console.log('[Auth] Attempting login with email:', email);
+      console.log('[Auth] Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('Login error:', error);
+        console.error('[Auth] Login error:', error);
         throw error;
       }
 
-      console.log('Login successful:', data.user?.email);
-      console.log('Session:', data.session ? 'Created' : 'No session');
-      console.log('User ID:', data.user?.id);
+      console.log('[Auth] Login successful:', data.user?.email);
+      console.log('[Auth] Session:', data.session ? 'Created' : 'No session');
+      console.log('[Auth] User ID:', data.user?.id);
+      console.log('[Auth] Access token:', data.session?.access_token ? 'Present' : 'Missing');
+
+      console.log('[Auth] Waiting for auth state change to trigger...');
     } catch (err: any) {
-      console.error('Auth error:', err);
+      console.error('[Auth] Auth error:', err);
       setError(err.message || 'Authentication failed');
-    } finally {
       setLoading(false);
     }
   };

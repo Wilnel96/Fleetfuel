@@ -112,24 +112,25 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
   };
 
   const printInvoice = (invoice: FuelInvoice) => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    if (!printWindow) return;
-
-    printWindow.document.write(`
+    const htmlContent = `
+      <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="UTF-8">
           <title>Invoice ${invoice.invoice_number}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 40px; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
             .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-            .header h1 { margin: 0; color: #2563eb; }
+            .header h1 { margin: 0 0 10px 0; color: #2563eb; font-size: 24px; }
             .section { margin: 20px 0; }
-            .section h3 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+            .section h3 { color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; }
             .info-row { display: flex; justify-content: space-between; margin: 8px 0; }
             .info-label { font-weight: bold; }
             .total { font-size: 1.2em; font-weight: bold; color: #2563eb; margin-top: 20px; }
             @media print {
               body { padding: 20px; }
+              @page { margin: 2cm; }
             }
           </style>
         </head>
@@ -212,19 +213,33 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           </div>
         </body>
       </html>
-    `);
+    `;
 
-    printWindow.document.close();
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
 
-    // Wait for content to render before printing
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      // Close window after printing (or if user cancels)
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+
       setTimeout(() => {
-        printWindow.close();
-      }, 100);
-    }, 250);
+        document.body.removeChild(iframe);
+      }, 1000);
+    }, 500);
   };
 
   const exportToCSV = () => {

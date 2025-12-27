@@ -215,7 +215,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     `);
 
     printWindow.document.close();
-    printWindow.print();
+
+    // Wait for content to load before printing
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+    };
   };
 
   const exportToCSV = () => {

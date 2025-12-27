@@ -137,7 +137,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         <body>
           <div class="header">
             <h1>FUEL TRANSACTION INVOICE</h1>
-            <p>MyFuelApp Management System</p>
+            <p>Fuel Empowerment Systems (Pty) Ltd</p>
           </div>
 
           <div class="section">
@@ -352,7 +352,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
           <div className="border-b-2 border-gray-900 pb-6 mb-6">
             <h1 className="text-3xl font-bold text-gray-900 text-center">FUEL TRANSACTION INVOICE</h1>
-            <p className="text-center text-gray-600 mt-2">MyFuelApp Management System</p>
+            <p className="text-center text-gray-600 mt-2">Fuel Empowerment Systems (Pty) Ltd</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 mb-6">

@@ -91,14 +91,14 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
       supabase
         .from("drivers")
-        .select("name, surname")
+        .select("first_name, last_name")
         .eq("id", transaction.driver_id)
         .maybeSingle(),
-      supabase
+      transaction.garage_id ? supabase
         .from("garages")
-        .select("name, address_line1, address_line2, city, province, postal_code")
+        .select("name, address_line_1, address_line_2, city, province, postal_code")
         .eq("id", transaction.garage_id)
-        .maybeSingle(),
+        .maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
 
     if (orgResult.error || !orgResult.data) {
@@ -131,11 +131,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (garageResult.error || !garageResult.data) {
+    if (garageResult.error) {
       return new Response(
-        JSON.stringify({ error: "Garage not found" }),
+        JSON.stringify({ error: "Error fetching garage information" }),
         {
-          status: 404,
+          status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -159,13 +159,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const garageAddress = [
-      garage.address_line1,
-      garage.address_line2,
+    const garageAddress = garage ? [
+      garage.address_line_1,
+      garage.address_line_2,
       `${garage.city}, ${garage.province} ${garage.postal_code}`,
     ]
       .filter(Boolean)
-      .join(", ");
+      .join(", ") : "Not recorded";
 
     const { data: invoice, error: invoiceError } = await supabase
       .from("fuel_transaction_invoices")
@@ -182,8 +182,8 @@ Deno.serve(async (req: Request) => {
         vat_amount: null,
         total_amount: transaction.total_amount,
         vehicle_registration: vehicle.registration_number,
-        driver_name: `${driver.name} ${driver.surname}`,
-        garage_name: garage.name,
+        driver_name: `${driver.first_name} ${driver.last_name}`,
+        garage_name: garage ? garage.name : "Not recorded",
         garage_address: garageAddress,
         odometer_reading: transaction.odometer_reading,
         transaction_date: transaction.transaction_date,

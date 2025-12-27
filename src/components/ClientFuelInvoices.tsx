@@ -239,6 +239,41 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     URL.revokeObjectURL(url);
   };
 
+  const exportSingleInvoiceToCSV = (invoice: FuelInvoice) => {
+    const csvData = [
+      ['Field', 'Value'],
+      ['Invoice Number', invoice.invoice_number],
+      ['Invoice Date', new Date(invoice.invoice_date).toLocaleDateString('en-ZA')],
+      ['Transaction Date', new Date(invoice.transaction_date).toLocaleDateString('en-ZA')],
+      [''],
+      ['Vehicle Registration', invoice.vehicle_registration],
+      ['Driver', invoice.driver_name],
+      ['Odometer Reading', `${invoice.odometer_reading.toLocaleString()} km`],
+      [''],
+      ['Fuel Station', invoice.garage_name],
+      ['Station Address', invoice.garage_address],
+      [''],
+      ['Fuel Type', invoice.fuel_type],
+      ['Liters', parseFloat(invoice.liters.toString()).toFixed(2)],
+      ['Price per Liter', `R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`],
+      [''],
+      ['TOTAL AMOUNT', `R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`]
+    ];
+
+    const csv = csvData.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `fuel-invoice-${invoice.invoice_number}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportInvoiceToPDF = (invoice: FuelInvoice) => {
+    printInvoice(invoice);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -262,13 +297,29 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
               <ArrowLeft className="w-5 h-5" />
               Back to List
             </button>
-            <button
-              onClick={() => printInvoice(selectedInvoice)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Printer className="w-4 h-4" />
-              Print
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => exportSingleInvoiceToCSV(selectedInvoice)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+              <button
+                onClick={() => exportInvoiceToPDF(selectedInvoice)}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                <FileText className="w-4 h-4" />
+                Export PDF
+              </button>
+              <button
+                onClick={() => printInvoice(selectedInvoice)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Print
+              </button>
+            </div>
           </div>
 
           <div className="border-b-2 border-gray-900 pb-6 mb-6">

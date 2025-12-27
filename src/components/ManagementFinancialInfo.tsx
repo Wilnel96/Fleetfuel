@@ -20,7 +20,7 @@ interface Organization {
 
 interface BillingUser {
   id: string;
-  name: string;
+  first_name: string;
   surname: string;
   email: string;
   phone_office: string | null;
@@ -95,7 +95,7 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
 
       const { data, error: fetchError } = await supabase
         .from('organization_users')
-        .select('id, name, surname, email, phone_office, phone_mobile')
+        .select('id, first_name, surname, email, phone_office, phone_mobile')
         .eq('organization_id', profile.organization_id)
         .eq('title', 'Billing User')
         .eq('is_active', true)
@@ -348,7 +348,7 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
                 <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {billingUser.name}
+                  {billingUser.first_name}
                 </div>
               </div>
               <div>

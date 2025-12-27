@@ -50,7 +50,11 @@ Deno.serve(async (req: Request) => {
         total_amount,
         odometer_reading,
         transaction_date,
-        invoice_id
+        invoice_id,
+        has_additional_items,
+        items_subtotal_excl_vat,
+        items_vat_amount,
+        items_total_incl_vat
       `)
       .eq("id", fuelTransactionId)
       .maybeSingle();
@@ -146,6 +150,25 @@ Deno.serve(async (req: Request) => {
     const driver = driverResult.data;
     const garage = garageResult.data;
 
+    // Fetch additional items if transaction has them
+    let additionalItems: any[] = [];
+    if (transaction.has_additional_items) {
+      const { data: items, error: itemsError } = await supabase
+        .from("fuel_transaction_items")
+        .select("*")
+        .eq("fuel_transaction_id", transaction.id);
+
+      if (!itemsError && items) {
+        additionalItems = items;
+      }
+    }
+
+    // Calculate fuel amount (fuel is VAT zero-rated)
+    const fuelAmount = Number(transaction.liters) * Number(transaction.price_per_liter);
+    const itemsSubtotalExclVat = Number(transaction.items_subtotal_excl_vat || 0);
+    const itemsVatAmount = Number(transaction.items_vat_amount || 0);
+    const itemsTotalInclVat = Number(transaction.items_total_incl_vat || 0);
+
     const { data: invoiceNumber, error: invoiceNumberError } = await supabase
       .rpc("generate_fuel_invoice_number");
 
@@ -177,9 +200,13 @@ Deno.serve(async (req: Request) => {
         fuel_type: transaction.fuel_type,
         liters: transaction.liters,
         price_per_liter: transaction.price_per_liter,
-        subtotal: null,
-        vat_rate: null,
-        vat_amount: null,
+        fuel_amount: fuelAmount,
+        subtotal: fuelAmount,
+        vat_rate: 0,
+        vat_amount: itemsVatAmount,
+        items_subtotal_excl_vat: itemsSubtotalExclVat,
+        items_vat_amount: itemsVatAmount,
+        items_total_incl_vat: itemsTotalInclVat,
         total_amount: transaction.total_amount,
         vehicle_registration: vehicle.registration_number,
         driver_name: `${driver.first_name} ${driver.surname}`,
@@ -213,6 +240,26 @@ Deno.serve(async (req: Request) => {
       console.error("Transaction update error:", updateError);
     }
 
+    // Build additional items section for email
+    let additionalItemsSection = "";
+    if (additionalItems.length > 0) {
+      additionalItemsSection = "\n\nAdditional Items:\n";
+      for (const item of additionalItems) {
+        additionalItemsSection += `- ${item.item_type}: ${Number(item.quantity_liters).toFixed(2)}L @ R ${Number(item.total_price_incl_vat).toFixed(2)}\n`;
+      }
+    }
+
+    // Build breakdown section
+    let breakdownSection = "\n";
+    if (additionalItems.length > 0) {
+      breakdownSection += `Fuel Amount (VAT Zero-Rated): R ${fuelAmount.toFixed(2)}\n`;
+      breakdownSection += `Additional Items Subtotal: R ${itemsSubtotalExclVat.toFixed(2)}\n`;
+      breakdownSection += `VAT (15%): R ${itemsVatAmount.toFixed(2)}\n`;
+      breakdownSection += `\nTotal Amount: R ${Number(invoice.total_amount).toFixed(2)}`;
+    } else {
+      breakdownSection += `Total Amount (VAT Zero-Rated): R ${Number(invoice.total_amount).toFixed(2)}`;
+    }
+
     const emailSubject = `Fuel Transaction Invoice - ${invoiceNumber}`;
     const emailBody = `
 Dear ${organization.billing_contact_name || organization.name},
@@ -233,8 +280,8 @@ Address: ${invoice.garage_address}
 Fuel Type: ${invoice.fuel_type}
 Liters: ${Number(invoice.liters).toFixed(2)}L
 Price per Liter: R ${Number(invoice.price_per_liter).toFixed(2)}
-
-Total Amount: R ${Number(invoice.total_amount).toFixed(2)}
+Fuel Amount: R ${fuelAmount.toFixed(2)}
+${additionalItemsSection}${breakdownSection}
 
 This invoice is for accounting and tax compliance purposes.
 
@@ -252,7 +299,10 @@ MyFuelApp Management
     return new Response(
       JSON.stringify({
         success: true,
-        invoice,
+        invoice: {
+          ...invoice,
+          additional_items: additionalItems,
+        },
         message: "Invoice generated successfully",
       }),
       {

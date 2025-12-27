@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Search, Calendar, DollarSign, Fuel, Download, Eye, AlertCircle, Printer, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import jsPDF from 'jspdf';
 
 interface FuelInvoice {
   id: string;
@@ -435,7 +436,202 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
   };
 
   const exportInvoiceToPDF = (invoice: FuelInvoice) => {
-    printInvoice(invoice);
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+    let yPosition = margin;
+
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('FUEL TRANSACTION INVOICE', pageWidth / 2, yPosition, { align: 'center' });
+
+    yPosition += 7;
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Fuel Empowerment Systems (Pty) Ltd', pageWidth / 2, yPosition, { align: 'center' });
+
+    yPosition += 10;
+    pdf.setDrawColor(17, 24, 39);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+
+    yPosition += 10;
+
+    const columnWidth = (contentWidth - 10) / 2;
+    const leftColumnX = margin;
+    const rightColumnX = margin + columnWidth + 10;
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('INVOICE DETAILS', leftColumnX, yPosition);
+
+    yPosition += 5;
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(leftColumnX, yPosition, columnWidth, 25, 'F');
+
+    yPosition += 6;
+    pdf.setFontSize(9);
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Invoice Number:', leftColumnX + 3, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(invoice.invoice_number, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+    yPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Invoice Date:', leftColumnX + 3, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+    yPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Transaction Date:', leftColumnX + 3, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+    let rightYPosition = yPosition - 17;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('FUEL STATION', rightColumnX, rightYPosition);
+
+    rightYPosition += 5;
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(rightColumnX, rightYPosition, columnWidth, 25, 'F');
+
+    rightYPosition += 6;
+    pdf.setFontSize(9);
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Station:', rightColumnX + 3, rightYPosition);
+    rightYPosition += 4;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    const stationLines = pdf.splitTextToSize(invoice.garage_name, columnWidth - 6);
+    pdf.text(stationLines, rightColumnX + 3, rightYPosition);
+    rightYPosition += (stationLines.length * 4);
+
+    rightYPosition += 2;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Address:', rightColumnX + 3, rightYPosition);
+    rightYPosition += 4;
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    const addressLines = pdf.splitTextToSize(invoice.garage_address, columnWidth - 6);
+    pdf.text(addressLines, rightColumnX + 3, rightYPosition);
+
+    yPosition += 15;
+
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('VEHICLE & DRIVER', leftColumnX, yPosition);
+
+    yPosition += 5;
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(leftColumnX, yPosition, columnWidth, 22, 'F');
+
+    yPosition += 6;
+    pdf.setFontSize(9);
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Vehicle:', leftColumnX + 3, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(invoice.vehicle_registration, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+    yPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Driver:', leftColumnX + 3, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(invoice.driver_name, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+    yPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Odometer:', leftColumnX + 3, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+    let fuelYPosition = yPosition - 17;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('FUEL DETAILS', rightColumnX, fuelYPosition);
+
+    fuelYPosition += 5;
+    pdf.setFillColor(249, 250, 251);
+    pdf.rect(rightColumnX, fuelYPosition, columnWidth, 22, 'F');
+
+    fuelYPosition += 6;
+    pdf.setFontSize(9);
+    pdf.setTextColor(75, 85, 99);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Fuel Type:', rightColumnX + 3, fuelYPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(invoice.fuel_type, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
+    fuelYPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Liters:', rightColumnX + 3, fuelYPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`${parseFloat(invoice.liters.toString()).toFixed(2)} L`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
+    fuelYPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Price per Liter:', rightColumnX + 3, fuelYPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
+    yPosition += 15;
+    pdf.setDrawColor(229, 231, 235);
+    pdf.setLineWidth(0.5);
+    pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+
+    yPosition += 10;
+    pdf.setFillColor(239, 246, 255);
+    pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+
+    yPosition += 12;
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('TOTAL AMOUNT:', margin + 5, yPosition);
+
+    pdf.setFontSize(16);
+    pdf.setTextColor(37, 99, 235);
+    pdf.text(`R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
+
+    yPosition += 15;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('This invoice is for accounting and tax compliance purposes.', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 5;
+    pdf.text('Thank you for your business.', pageWidth / 2, yPosition, { align: 'center' });
+
+    pdf.save(`fuel-invoice-${invoice.invoice_number}.pdf`);
   };
 
   const generateInvoiceHTML = (invoice: FuelInvoice) => {
@@ -543,195 +739,214 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       return;
     }
 
-    const invoicesHTML = filteredInvoices.map(invoice => generateInvoiceHTML(invoice)).join('');
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    filteredInvoices.forEach((invoice, index) => {
+      if (index > 0) {
+        pdf.addPage();
+      }
+
+      let yPosition = margin;
+
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('FUEL TRANSACTION INVOICE', pageWidth / 2, yPosition, { align: 'center' });
+
+      yPosition += 7;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Fuel Empowerment Systems (Pty) Ltd', pageWidth / 2, yPosition, { align: 'center' });
+
+      yPosition += 10;
+      pdf.setDrawColor(17, 24, 39);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+
+      yPosition += 10;
+
+      const columnWidth = (contentWidth - 10) / 2;
+      const leftColumnX = margin;
+      const rightColumnX = margin + columnWidth + 10;
+
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('INVOICE DETAILS', leftColumnX, yPosition);
+
+      yPosition += 5;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(leftColumnX, yPosition, columnWidth, 25, 'F');
+
+      yPosition += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Invoice Number:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.invoice_number, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Invoice Date:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Transaction Date:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      let rightYPosition = yPosition - 17;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('FUEL STATION', rightColumnX, rightYPosition);
+
+      rightYPosition += 5;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(rightColumnX, rightYPosition, columnWidth, 25, 'F');
+
+      rightYPosition += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Station:', rightColumnX + 3, rightYPosition);
+      rightYPosition += 4;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const stationLines = pdf.splitTextToSize(invoice.garage_name, columnWidth - 6);
+      pdf.text(stationLines, rightColumnX + 3, rightYPosition);
+      rightYPosition += (stationLines.length * 4);
+
+      rightYPosition += 2;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Address:', rightColumnX + 3, rightYPosition);
+      rightYPosition += 4;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const addressLines = pdf.splitTextToSize(invoice.garage_address, columnWidth - 6);
+      pdf.text(addressLines, rightColumnX + 3, rightYPosition);
+
+      yPosition += 15;
+
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('VEHICLE & DRIVER', leftColumnX, yPosition);
+
+      yPosition += 5;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(leftColumnX, yPosition, columnWidth, 22, 'F');
+
+      yPosition += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Vehicle:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.vehicle_registration, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Driver:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.driver_name, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Odometer:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      let fuelYPosition = yPosition - 17;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('FUEL DETAILS', rightColumnX, fuelYPosition);
+
+      fuelYPosition += 5;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(rightColumnX, fuelYPosition, columnWidth, 22, 'F');
+
+      fuelYPosition += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Fuel Type:', rightColumnX + 3, fuelYPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.fuel_type, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
+      fuelYPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Liters:', rightColumnX + 3, fuelYPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`${parseFloat(invoice.liters.toString()).toFixed(2)} L`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
+      fuelYPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Price per Liter:', rightColumnX + 3, fuelYPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
+      yPosition += 15;
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+
+      yPosition += 10;
+      pdf.setFillColor(239, 246, 255);
+      pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+
+      yPosition += 12;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text('TOTAL AMOUNT:', margin + 5, yPosition);
+
+      pdf.setFontSize(16);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text(`R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
+
+      yPosition += 15;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('This invoice is for accounting and tax compliance purposes.', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 5;
+      pdf.text('Thank you for your business.', pageWidth / 2, yPosition, { align: 'center' });
+    });
 
     const dateRange = startDate && endDate
-      ? `${new Date(startDate).toLocaleDateString('en-ZA')} to ${new Date(endDate).toLocaleDateString('en-ZA')}`
-      : 'All Dates';
+      ? `${new Date(startDate).toISOString().split('T')[0]}_to_${new Date(endDate).toISOString().split('T')[0]}`
+      : new Date().toISOString().split('T')[0];
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Fuel Invoices - ${dateRange}</title>
-          <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body {
-              font-family: Arial, sans-serif;
-              color: #374151;
-            }
-            .invoice-page {
-              padding: 40px;
-              page-break-after: always;
-            }
-            .invoice-page:last-child {
-              page-break-after: auto;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #111827;
-              padding-bottom: 24px;
-            }
-            .header h1 {
-              margin: 0 0 8px 0;
-              color: #111827;
-              font-size: 30px;
-              font-weight: bold;
-            }
-            .header p {
-              color: #4b5563;
-              margin-top: 8px;
-              font-size: 14px;
-            }
-            .grid-container {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 24px;
-              margin-bottom: 24px;
-            }
-            .column {
-              display: flex;
-              flex-direction: column;
-              gap: 16px;
-            }
-            .card {
-              margin-bottom: 16px;
-            }
-            .card h3 {
-              font-size: 12px;
-              font-weight: 500;
-              color: #6b7280;
-              margin-bottom: 8px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-            .card-content {
-              background-color: #f9fafb;
-              border-radius: 8px;
-              padding: 16px;
-            }
-            .info-row {
-              display: flex;
-              justify-content: space-between;
-              margin: 8px 0;
-            }
-            .info-row:first-child {
-              margin-top: 0;
-            }
-            .info-row:last-child {
-              margin-bottom: 0;
-            }
-            .info-label {
-              color: #4b5563;
-            }
-            .info-value {
-              font-weight: 600;
-              color: #111827;
-            }
-            .station-info {
-              margin: 8px 0;
-            }
-            .station-info:first-child {
-              margin-top: 0;
-            }
-            .station-info .info-label {
-              display: block;
-              color: #4b5563;
-              margin-bottom: 4px;
-            }
-            .station-info .info-value {
-              display: block;
-              font-weight: 600;
-              color: #111827;
-            }
-            .total-section {
-              border-top: 2px solid #e5e7eb;
-              padding-top: 24px;
-              margin-top: 24px;
-            }
-            .total-box {
-              background-color: #eff6ff;
-              border-radius: 8px;
-              padding: 24px;
-            }
-            .total-content {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
-            .total-label {
-              font-size: 20px;
-              font-weight: 600;
-              color: #111827;
-            }
-            .total-amount {
-              font-size: 30px;
-              font-weight: bold;
-              color: #2563eb;
-            }
-            .footer {
-              margin-top: 24px;
-              text-align: center;
-              font-size: 14px;
-              color: #4b5563;
-            }
-            .footer p {
-              margin: 8px 0;
-            }
-            @media print {
-              .invoice-page {
-                padding: 20px;
-              }
-              @page {
-                margin: 1.5cm;
-                size: A4;
-              }
-              .card-content {
-                background-color: #f9fafb !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-              .total-box {
-                background-color: #eff6ff !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-              }
-            }
-          </style>
-        </head>
-        <body>
-          ${invoicesHTML}
-        </body>
-      </html>
-    `;
-
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      document.body.removeChild(iframe);
-      return;
-    }
-
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
-
-    setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-    }, 500);
+    pdf.save(`fuel-invoices-${dateRange}.pdf`);
   };
 
   if (loading) {

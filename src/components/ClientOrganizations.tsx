@@ -997,7 +997,7 @@ export default function ClientOrganizations() {
                         >
                           <div className="flex items-center gap-3">
                             <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300 rounded">{user.title}</span>
-                            <span className="text-sm font-medium text-gray-900">{user.name} {user.surname}</span>
+                            <span className="text-sm font-medium text-gray-900">{user.first_name} {user.surname}</span>
                             {user.is_active ? (
                               <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Active</span>
                             ) : (
@@ -1037,7 +1037,7 @@ export default function ClientOrganizations() {
                                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                                   <input
                                     type="text"
-                                    value={user.name}
+                                    value={user.first_name}
                                     disabled
                                     className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-500 cursor-not-allowed"
                                   />

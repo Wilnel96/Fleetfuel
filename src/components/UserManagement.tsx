@@ -353,7 +353,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
         .from('organization_users')
         .select('*')
         .eq('organization_id', organizationId)
-        .order('name');
+        .order('first_name');
 
       if (fetchError) throw fetchError;
 
@@ -383,7 +383,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
         if (orderA !== orderB) return orderA - orderB;
 
         // Finally by name
-        return a.name.localeCompare(b.name);
+        return a.first_name.localeCompare(b.first_name);
       });
 
       setUsers(sortedData);
@@ -1745,7 +1745,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                         .filter(u => u.id !== editingUser.id && u.is_active)
                         .map(u => (
                           <option key={u.id} value={u.id}>
-                            {u.name} {u.surname} ({u.email}) {u.is_secondary_main_user ? '- Secondary Main User' : ''}
+                            {u.first_name} {u.surname} ({u.email}) {u.is_secondary_main_user ? '- Secondary Main User' : ''}
                           </option>
                         ))}
                     </select>
@@ -1762,7 +1762,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                           .filter(u => u.is_secondary_main_user && u.is_active)
                           .map(u => (
                             <div key={u.id} className="flex items-center justify-between bg-white p-1.5 rounded border border-purple-200">
-                              <span className="text-xs text-gray-700">{u.name} {u.surname}</span>
+                              <span className="text-xs text-gray-700">{u.first_name} {u.surname}</span>
                               <button
                                 onClick={() => handleToggleSecondaryMainUser(u.id, true)}
                                 className="px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -1787,7 +1787,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                           .filter(u => u.id !== editingUser.id && u.is_active && !u.is_main_user && !u.is_secondary_main_user)
                           .map(u => (
                             <option key={u.id} value={u.id}>
-                              {u.name} {u.surname} ({u.email})
+                              {u.first_name} {u.surname} ({u.email})
                             </option>
                           ))}
                       </select>
@@ -1834,7 +1834,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                     className="flex items-center gap-3 flex-1 hover:bg-gray-50 transition-colors -mx-4 -my-3 px-4 py-3"
                   >
                     <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300 rounded">{user.title}</span>
-                    <span className="text-sm font-medium text-gray-900">{user.name} {user.surname}</span>
+                    <span className="text-sm font-medium text-gray-900">{user.first_name} {user.surname}</span>
                     {user.is_active ? (
                       <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Active</span>
                     ) : (
@@ -1899,7 +1899,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                       <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input
                         type="text"
-                        value={user.name}
+                        value={user.first_name}
                         disabled
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-500 cursor-not-allowed"
                       />

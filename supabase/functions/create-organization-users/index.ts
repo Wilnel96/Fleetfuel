@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
           .insert({
             user_id: authData.user.id,
             email: userData.email,
-            name: userData.name,
+            first_name: userData.name,
             surname: userData.surname,
             title: title,
             password: userData.password,

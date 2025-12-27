@@ -145,7 +145,7 @@ Deno.serve(async (req: Request) => {
         .from('organization_users')
         .update({
           user_id: authUserId,
-          name: userData.name,
+          first_name: userData.name,
           surname: userData.surname,
           title: userData.title,
           password: userData.password,
@@ -181,7 +181,7 @@ Deno.serve(async (req: Request) => {
         .insert({
           user_id: authUserId,
           email: userData.email,
-          name: userData.name,
+          first_name: userData.name,
           surname: userData.surname,
           title: userData.title,
           password: userData.password,

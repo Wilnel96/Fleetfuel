@@ -121,7 +121,7 @@ BEGIN
     'admin'
   );
   
-  INSERT INTO organization_users (user_id, organization_id, is_main_user, is_active, title, name, surname, email)
+  INSERT INTO organization_users (user_id, organization_id, is_main_user, is_active, title, first_name, surname, email)
   VALUES (NEW.id, org_id, true, true, 'Main User', user_name, user_surname, NEW.email);
   
   RETURN NEW;

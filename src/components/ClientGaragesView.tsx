@@ -35,7 +35,7 @@ interface Garage {
   contact_person: string;
   contact_phone: string;
   contact_email: string;
-  contacts?: ContactPerson[];
+  contact_persons?: ContactPerson[];
   bank_name: string;
   account_number: string;
   account_holder?: string;
@@ -112,15 +112,25 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
 
   useEffect(() => {
     if (searchTerm) {
-      const filtered = garages.filter(
-        (garage) =>
-          garage.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          garage.address_line_1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (garage.address_line_2 && garage.address_line_2.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (garage.city && garage.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          (garage.province && garage.province.toLowerCase().includes(searchTerm.toLowerCase())) ||
-          garage.contact_person.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const filtered = garages.filter((garage) => {
+        const term = searchTerm.toLowerCase();
+        const contactMatch = garage.contact_person?.toLowerCase().includes(term) ||
+          garage.contact_persons?.some(contact =>
+            contact.name.toLowerCase().includes(term) ||
+            contact.surname.toLowerCase().includes(term) ||
+            contact.email.toLowerCase().includes(term) ||
+            contact.mobile_phone.includes(term)
+          );
+
+        return (
+          garage.name.toLowerCase().includes(term) ||
+          garage.address_line_1.toLowerCase().includes(term) ||
+          (garage.address_line_2 && garage.address_line_2.toLowerCase().includes(term)) ||
+          (garage.city && garage.city.toLowerCase().includes(term)) ||
+          (garage.province && garage.province.toLowerCase().includes(term)) ||
+          contactMatch
+        );
+      });
       setFilteredGarages(filtered);
     } else {
       setFilteredGarages(garages);
@@ -253,9 +263,9 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Contact Information</h3>
-              {selectedGarage.contacts && selectedGarage.contacts.length > 0 ? (
+              {selectedGarage.contact_persons && selectedGarage.contact_persons.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {selectedGarage.contacts.slice(0, 2).map((contact, idx) => (
+                  {selectedGarage.contact_persons.slice(0, 2).map((contact, idx) => (
                     <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                       <div className="font-medium text-gray-900 mb-3">{contact.name} {contact.surname}</div>
                       <div className="space-y-2">
@@ -427,9 +437,9 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
                   <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
                     <div className="flex items-center gap-1">
                       <Phone className="w-4 h-4" />
-                      <span>{garage.contact_phone || 'N/A'}</span>
+                      <span>{garage.contact_persons?.[0]?.mobile_phone || garage.contact_phone || 'N/A'}</span>
                     </div>
-                    <div>Contact: {garage.contact_person}</div>
+                    <div>Contact: {garage.contact_persons?.[0] ? `${garage.contact_persons[0].name} ${garage.contact_persons[0].surname}` : garage.contact_person}</div>
                   </div>
                 </div>
                 {garage.fuel_types && garage.fuel_types.length > 0 && (

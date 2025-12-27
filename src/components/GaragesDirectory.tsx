@@ -35,7 +35,7 @@ interface Garage {
   contact_person: string;
   contact_phone: string;
   contact_email: string;
-  contacts?: ContactPerson[];
+  contact_persons?: ContactPerson[];
   bank_name: string;
   account_number: string;
   account_holder?: string;
@@ -71,7 +71,15 @@ export default function GaragesDirectory() {
         const address2Match = garage.address_line_2 && garage.address_line_2.toLowerCase().includes(term);
         const cityMatch = garage.city && garage.city.toLowerCase().includes(term);
         const provinceMatch = garage.province && garage.province.toLowerCase().includes(term);
-        const contactMatch = garage.contact_person.toLowerCase().includes(term);
+
+        const contactMatch = garage.contact_person?.toLowerCase().includes(term) ||
+          garage.contact_persons?.some(contact =>
+            contact.name.toLowerCase().includes(term) ||
+            contact.surname.toLowerCase().includes(term) ||
+            contact.email.toLowerCase().includes(term) ||
+            contact.mobile_phone.includes(term)
+          );
+
         const brandMatch = (garage.fuel_brand || '').toLowerCase().includes(term);
 
         let offeringsMatch = false;
@@ -205,11 +213,11 @@ export default function GaragesDirectory() {
                 </button>
 
                 <div className="space-y-3 text-sm mt-3">
-                  {garage.contacts && garage.contacts.length > 0 ? (
+                  {garage.contact_persons && garage.contact_persons.length > 0 ? (
                     <div>
                       <div className="font-medium text-gray-900 mb-2">Contact Persons</div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {garage.contacts.slice(0, 2).map((contact, idx) => (
+                        {garage.contact_persons.slice(0, 2).map((contact, idx) => (
                           <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                             <div className="font-medium text-gray-900">{contact.name} {contact.surname}</div>
                             {contact.mobile_phone && (

@@ -12,6 +12,7 @@ interface FuelInvoice {
   driver_name: string;
   garage_name: string;
   garage_address: string;
+  garage_vat_number?: string;
   fuel_type: string;
   liters: number;
   price_per_liter: number;
@@ -417,6 +418,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       [''],
       ['Fuel Station', invoice.garage_name],
       ['Station Address', invoice.garage_address],
+      ...(invoice.garage_vat_number ? [['Station VAT Number', invoice.garage_vat_number]] : []),
       [''],
       ['Fuel Type', invoice.fuel_type],
       ['Liters', parseFloat(invoice.liters.toString()).toFixed(2)],
@@ -532,6 +534,18 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setTextColor(17, 24, 39);
     const addressLines = pdf.splitTextToSize(invoice.garage_address, columnWidth - 6);
     pdf.text(addressLines, rightColumnX + 3, rightYPosition);
+    rightYPosition += (addressLines.length * 4);
+
+    if (invoice.garage_vat_number) {
+      rightYPosition += 2;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('VAT Number:', rightColumnX + 3, rightYPosition);
+      rightYPosition += 4;
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.garage_vat_number, rightColumnX + 3, rightYPosition);
+    }
 
     yPosition += 15;
 
@@ -693,6 +707,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                   <span class="info-label">Address:</span>
                   <span class="info-value">${invoice.garage_address}</span>
                 </div>
+                ${invoice.garage_vat_number ? `
+                <div class="station-info">
+                  <span class="info-label">VAT Number:</span>
+                  <span class="info-value">${invoice.garage_vat_number}</span>
+                </div>
+                ` : ''}
               </div>
             </div>
 
@@ -842,6 +862,18 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.setTextColor(17, 24, 39);
       const addressLines = pdf.splitTextToSize(invoice.garage_address, columnWidth - 6);
       pdf.text(addressLines, rightColumnX + 3, rightYPosition);
+      rightYPosition += (addressLines.length * 4);
+
+      if (invoice.garage_vat_number) {
+        rightYPosition += 2;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('VAT Number:', rightColumnX + 3, rightYPosition);
+        rightYPosition += 4;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(invoice.garage_vat_number, rightColumnX + 3, rightYPosition);
+      }
 
       yPosition += 15;
 
@@ -1053,6 +1085,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                     <span className="text-gray-600">Address:</span>
                     <p className="font-semibold">{selectedInvoice.garage_address}</p>
                   </div>
+                  {selectedInvoice.garage_vat_number && (
+                    <div>
+                      <span className="text-gray-600">VAT Number:</span>
+                      <p className="font-semibold">{selectedInvoice.garage_vat_number}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 

@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
       transaction.garage_id ? supabase
         .from("garages")
-        .select("name, address_line_1, address_line_2, city, province, postal_code")
+        .select("name, address_line_1, address_line_2, city, province, postal_code, vat_number")
         .eq("id", transaction.garage_id)
         .maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
@@ -185,6 +185,7 @@ Deno.serve(async (req: Request) => {
         driver_name: `${driver.first_name} ${driver.surname}`,
         garage_name: garage ? garage.name : "Not recorded",
         garage_address: garageAddress,
+        garage_vat_number: garage?.vat_number || "",
         odometer_reading: transaction.odometer_reading,
         transaction_date: transaction.transaction_date,
         email_recipient: organization.billing_contact_email || null,

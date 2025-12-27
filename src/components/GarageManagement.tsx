@@ -35,6 +35,7 @@ interface Garage {
   province?: string;
   postal_code?: string;
   contact_persons: ContactPerson[];
+  vat_number?: string;
   bank_name: string;
   account_holder: string;
   account_number: string;
@@ -72,6 +73,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
     province: '',
     postal_code: '',
     contact_persons: [] as ContactPerson[],
+    vat_number: '',
     bank_name: '',
     account_holder: '',
     account_number: '',
@@ -203,6 +205,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
       province: garage.province || '',
       postal_code: garage.postal_code || '',
       contact_persons: garage.contact_persons || [],
+      vat_number: garage.vat_number || '',
       bank_name: garage.bank_name,
       account_holder: garage.account_holder,
       account_number: garage.account_number,
@@ -245,6 +248,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
       province: '',
       postal_code: '',
       contact_persons: [],
+      vat_number: '',
       bank_name: '',
       account_holder: '',
       account_number: '',
@@ -862,6 +866,22 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
               </div>
 
               <div className="border-t pt-4">
+                <h3 className="font-semibold text-gray-900 mb-3">VAT Information</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">VAT Number</label>
+                    <input
+                      type="text"
+                      value={formData.vat_number}
+                      onChange={(e) => setFormData({ ...formData, vat_number: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                      placeholder="e.g., 4123456789"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
                 <h3 className="font-semibold text-gray-900 mb-3">Banking Details</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1267,6 +1287,15 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-2">Price Zone</h3>
                       <div className="text-sm text-gray-700">{selectedGarage.price_zone}</div>
+                    </div>
+                  )}
+
+                  {selectedGarage.vat_number && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 mb-2">VAT Information</h3>
+                      <div className="text-sm text-gray-700">
+                        <span className="font-medium">VAT Number:</span> {selectedGarage.vat_number}
+                      </div>
                     </div>
                   )}
 

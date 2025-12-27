@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle(),
       supabase
         .from("drivers")
-        .select("first_name, last_name")
+        .select("first_name, surname")
         .eq("id", transaction.driver_id)
         .maybeSingle(),
       transaction.garage_id ? supabase
@@ -182,7 +182,7 @@ Deno.serve(async (req: Request) => {
         vat_amount: null,
         total_amount: transaction.total_amount,
         vehicle_registration: vehicle.registration_number,
-        driver_name: `${driver.first_name} ${driver.last_name}`,
+        driver_name: `${driver.first_name} ${driver.surname}`,
         garage_name: garage ? garage.name : "Not recorded",
         garage_address: garageAddress,
         odometer_reading: transaction.odometer_reading,

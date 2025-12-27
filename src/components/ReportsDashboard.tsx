@@ -189,7 +189,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .select(`
         *,
         vehicles (registration_number, make, model),
-        drivers (first_name, last_name),
+        drivers (first_name, surname),
         garages (name)
       `)
       .eq('organization_id', orgId)
@@ -210,7 +210,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
       vehicle: t.vehicles ? `${t.vehicles.registration_number} (${t.vehicles.make} ${t.vehicles.model})` : 'Unknown',
-      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.surname}` : 'Unknown',
       garage: t.garages?.name || 'Unknown',
       fuel_type: getFuelTypeDisplayName(t.fuel_type),
       liters: parseFloat(t.liters || 0),
@@ -244,7 +244,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .from('fuel_transactions')
       .select(`
         *,
-        drivers (first_name, last_name),
+        drivers (first_name, surname),
         vehicles (registration_number)
       `)
       .eq('organization_id', orgId)
@@ -255,7 +255,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     if (transactions && transactions.length > 0) {
       console.log('Transaction Dates:', transactions.map(t => ({
         date: t.transaction_date,
-        driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown'
+        driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.surname}` : 'Unknown'
       })));
     }
 
@@ -268,7 +268,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       if (!driverStats[driverId]) {
         driverStats[driverId] = {
           first_name: t.drivers.first_name,
-          last_name: t.drivers.last_name,
+          surname: t.drivers.surname,
           total_transactions: 0,
           vehicles_driven: new Set(),
           total_liters: 0,
@@ -313,7 +313,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .select(`
         *,
         vehicles (registration_number, make, model),
-        drivers (first_name, last_name),
+        drivers (first_name, surname),
         garages (name)
       `)
       .eq('organization_id', orgId)
@@ -350,7 +350,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
       vehicleData[vehicleId].transactions.push({
         date: t.transaction_date,
-        driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+        driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.surname}` : 'Unknown',
         garage: t.garages?.name || 'Unknown',
         fuel_type: getFuelTypeDisplayName(t.fuel_type),
         liters: liters,
@@ -478,7 +478,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .select(`
         *,
         vehicles (registration_number, make, model),
-        drivers (first_name, last_name),
+        drivers (first_name, surname),
         organizations (name, city)
       `)
       .eq('organization_id', orgId)
@@ -493,7 +493,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       id: e.id,
       date: e.created_at,
       vehicle: e.vehicles ? `${e.vehicles.registration_number} (${e.vehicles.make} ${e.vehicles.model})` : 'Unknown',
-      driver: e.drivers ? `${e.drivers.first_name} ${e.drivers.last_name}` : 'Unknown',
+      driver: e.drivers ? `${e.drivers.first_name} ${e.drivers.surname}` : 'Unknown',
       exception_type: e.exception_type,
       description: e.description,
       expected_value: e.expected_value,
@@ -562,7 +562,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .select(`
         *,
         vehicles (registration_number, make, model),
-        drivers (first_name, last_name),
+        drivers (first_name, surname),
         garages (name)
       `)
       .eq('organization_id', orgId)
@@ -579,7 +579,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
       vehicle: t.vehicles ? `${t.vehicles.registration_number}` : 'Unknown',
-      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.surname}` : 'Unknown',
       location: t.garages?.name || t.location || '-',
       fuel_type: getFuelTypeDisplayName(t.fuel_type),
       liters: t.liters,
@@ -606,7 +606,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       .select(`
         *,
         vehicles (registration_number, make, model),
-        drivers (first_name, last_name),
+        drivers (first_name, surname),
         garages (name)
       `)
       .eq('organization_id', orgId)
@@ -619,7 +619,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     const formattedTransactions = transactions?.map(t => ({
       date: t.transaction_date,
       vehicle: t.vehicles ? `${t.vehicles.registration_number}` : 'Unknown',
-      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.last_name}` : 'Unknown',
+      driver: t.drivers ? `${t.drivers.first_name} ${t.drivers.surname}` : 'Unknown',
       location: t.garages?.name || t.location || '-',
       fuel_type: getFuelTypeDisplayName(t.fuel_type),
       liters: t.liters,
@@ -875,7 +875,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       case 'driver':
         csv = 'Driver,Transactions,Vehicles Driven,Total Liters,Total Spent,Avg Transaction\n';
         reportData.drivers?.forEach((d: any) => {
-          csv += `${d.first_name} ${d.last_name},${d.total_transactions},${d.vehicles_driven},${d.total_liters},${d.total_spent},${d.average_transaction_amount}\n`;
+          csv += `${d.first_name} ${d.surname},${d.total_transactions},${d.vehicles_driven},${d.total_liters},${d.total_spent},${d.average_transaction_amount}\n`;
         });
         break;
 
@@ -1152,7 +1152,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                       {reportData.drivers.map((driver: any, idx: number) => (
                         <tr key={idx} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                            {driver.first_name} {driver.last_name}
+                            {driver.first_name} {driver.surname}
                           </td>
                           <td className="px-4 py-3 text-sm text-right text-gray-900">{driver.total_transactions}</td>
                           <td className="px-4 py-3 text-sm text-right text-gray-900">{driver.vehicles_driven}</td>

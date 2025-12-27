@@ -8,7 +8,7 @@ interface Driver {
   organization_id: string;
   user_id: string | null;
   first_name: string;
-  last_name: string;
+  surname: string;
   id_number: string;
   date_of_birth: string;
   phone_number: string;
@@ -38,7 +38,7 @@ interface Driver {
 
 interface DriverFormData {
   first_name: string;
-  last_name: string;
+  surname: string;
   id_number: string;
   date_of_birth: string;
   phone_number: string;
@@ -91,7 +91,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
 
   const [formData, setFormData] = useState<DriverFormData>({
     first_name: '',
-    last_name: '',
+    surname: '',
     id_number: '',
     date_of_birth: '',
     phone_number: '',
@@ -135,7 +135,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       filtered = filtered.filter(
         (d) =>
           (d.first_name || '').toLowerCase().includes(term) ||
-          (d.last_name || '').toLowerCase().includes(term) ||
+          (d.surname || '').toLowerCase().includes(term) ||
           (d.id_number || '').toLowerCase().includes(term) ||
           (d.license_number || '').toLowerCase().includes(term) ||
           (d.phone_number || '').toLowerCase().includes(term) ||
@@ -221,7 +221,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
           const { data, error } = await supabase
             .from('drivers')
             .select('*, organizations(name)')
-            .order('last_name');
+            .order('surname');
 
           if (error) throw error;
           setDrivers(data || []);
@@ -236,11 +236,11 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             orgIds.push(...childOrgs.map(org => org.id));
           }
 
-          const { data, error } = await supabase
+          const { data, error} = await supabase
             .from('drivers')
             .select('*, organizations(name)')
             .in('organization_id', orgIds)
-            .order('last_name');
+            .order('surname');
 
           if (error) throw error;
           setDrivers(data || []);
@@ -259,7 +259,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       const restrictions = parseRestrictions(driver.license_restrictions);
       setFormData({
         first_name: driver.first_name,
-        last_name: driver.last_name,
+        surname: driver.surname,
         id_number: driver.id_number,
         date_of_birth: driver.date_of_birth,
         phone_number: driver.phone_number,
@@ -287,7 +287,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       setEditingDriver(null);
       setFormData({
         first_name: '',
-        last_name: '',
+        surname: '',
         id_number: '',
         date_of_birth: '',
         phone_number: '',
@@ -328,7 +328,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const handleLicenseScan = (data: ParsedLicenseData) => {
     setFormData({
       first_name: data.firstName || formData.first_name,
-      last_name: data.lastName || formData.last_name,
+      surname: data.lastName || formData.surname,
       id_number: data.idNumber || formData.id_number,
       date_of_birth: data.dateOfBirth || formData.date_of_birth,
       phone_number: formData.phone_number,
@@ -379,7 +379,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
           .from('drivers')
           .update({
             first_name: formData.first_name,
-            last_name: formData.last_name,
+            surname: formData.surname,
             id_number: formData.id_number,
             date_of_birth: formData.date_of_birth,
             phone_number: formData.phone_number,
@@ -419,7 +419,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
           .from('drivers')
           .insert({
             first_name: formData.first_name,
-            last_name: formData.last_name,
+            surname: formData.surname,
             id_number: formData.id_number,
             date_of_birth: formData.date_of_birth,
             phone_number: formData.phone_number,
@@ -626,7 +626,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                     <td className="px-4 py-3">
                       <div>
                         <p className={`font-medium ${driver.deleted_at ? 'text-gray-500' : 'text-gray-900'}`}>
-                          {driver.first_name} {driver.last_name}
+                          {driver.first_name} {driver.surname}
                           {driver.deleted_at && <span className="ml-2 text-xs text-red-600">(Deleted)</span>}
                         </p>
                         {driver.email && <p className="text-xs text-gray-500">{driver.email}</p>}
@@ -780,8 +780,8 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                     <input
                       type="text"
                       required
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      value={formData.surname}
+                      onChange={(e) => setFormData({ ...formData, surname: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>

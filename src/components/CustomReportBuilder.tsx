@@ -221,7 +221,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         { name: 'organization_id', type: 'string' },
         { name: 'user_id', type: 'string' },
         { name: 'first_name', type: 'string' },
-        { name: 'last_name', type: 'string' },
+        { name: 'surname', type: 'string' },
         { name: 'id_number', type: 'string' },
         { name: 'date_of_birth', type: 'string' },
         { name: 'phone_number', type: 'string' },
@@ -627,7 +627,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       if (col === 'vehicle_id') {
         columnsWithJoins.push('vehicle_id,vehicles!vehicle_id(registration_number,make,model)');
       } else if (col === 'driver_id') {
-        columnsWithJoins.push('driver_id,drivers!driver_id(first_name,last_name)');
+        columnsWithJoins.push('driver_id,drivers!driver_id(first_name,surname)');
       } else if (col === 'garage_id') {
         columnsWithJoins.push('garage_id,garages!garage_id(name)');
       } else if (col === 'organization_id') {
@@ -680,7 +680,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
             processedRow['_vehicle_model'] = row.vehicles.model || 'N/A';
           }
         } else if (key === 'drivers' && row.drivers) {
-          processedRow['driver_id'] = `${row.drivers.first_name} ${row.drivers.last_name}`.trim() || 'N/A';
+          processedRow['driver_id'] = `${row.drivers.first_name} ${row.drivers.surname}`.trim() || 'N/A';
         } else if (key === 'garages' && row.garages) {
           processedRow['garage_id'] = row.garages.name || 'N/A';
         } else if (key === 'organizations' && row.organizations) {
@@ -751,7 +751,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       'model': 'Model',
       'year': 'Year',
       'first_name': 'First Name',
-      'last_name': 'Surname',
+      'surname': 'Surname',
       'id_number': 'ID Number',
       'date_of_birth': 'Date of Birth',
       'fuel_type': 'Fuel Type',
@@ -852,7 +852,6 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       'role': 'Role',
       'title': 'Title',
       'name': 'Name',
-      'surname': 'Surname',
       'can_add_vehicles': 'Can Add Vehicles',
       'can_edit_vehicles': 'Can Edit Vehicles',
       'can_delete_vehicles': 'Can Delete Vehicles',

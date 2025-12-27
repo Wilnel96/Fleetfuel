@@ -82,7 +82,7 @@ Deno.serve(async (req: Request) => {
         driver: {
           id: driver.id,
           firstName: driver.first_name,
-          lastName: driver.last_name,
+          lastName: driver.surname,
           organizationId: driver.organization_id,
         },
       }),

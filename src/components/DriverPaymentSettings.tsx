@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 interface Driver {
   id: string;
   first_name: string;
-  last_name: string;
+  surname: string;
 }
 
 interface PaymentSettings {
@@ -58,7 +58,7 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
       const [driverResult, settingsResult, spendingResult] = await Promise.all([
         supabase
           .from('drivers')
-          .select('id, first_name, last_name')
+          .select('id, first_name, surname')
           .eq('id', driverId)
           .single(),
         supabase
@@ -199,7 +199,7 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
       <div className="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">
-            Payment Settings: {driver.first_name} {driver.last_name}
+            Payment Settings: {driver.first_name} {driver.surname}
           </h2>
           <button
             onClick={onClose}

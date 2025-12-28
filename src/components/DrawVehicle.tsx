@@ -21,7 +21,7 @@ interface DrawVehicleProps {
 }
 
 export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVehicleProps) {
-  const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch'>('scan');
+  const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch' | 'confirm-license-warning'>('scan');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -33,11 +33,26 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const [success, setSuccess] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [odometerMismatch, setOdometerMismatch] = useState(false);
+  const [licenseWarning, setLicenseWarning] = useState(false);
+  const [driverLicenseCode, setDriverLicenseCode] = useState<string>('');
 
   useEffect(() => {
     loadVehicles();
     getCurrentLocation();
+    loadDriverLicenseCode();
   }, []);
+
+  const loadDriverLicenseCode = async () => {
+    const { data: driver } = await supabase
+      .from('drivers')
+      .select('license_type')
+      .eq('id', driverId)
+      .maybeSingle();
+
+    if (driver) {
+      setDriverLicenseCode(driver.license_type || 'Code B');
+    }
+  };
 
   const getCurrentLocation = () => {
     if ('geolocation' in navigator) {
@@ -82,14 +97,6 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
     const { vehicle } = result;
 
-    // Check if driver's license qualifies for this vehicle
-    const isQualified = await checkDriverLicenseQualifies(driverId, vehicle);
-    if (!isQualified) {
-      const requiredLicense = vehicle.license_code_required || 'Code B';
-      setError(`You are not qualified to drive this vehicle. Required license: ${requiredLicense}`);
-      return;
-    }
-
     const hasActiveDrawing = await checkActiveDrawing(vehicle.id, driverId);
     if (hasActiveDrawing) {
       setError('This vehicle is already drawn by you. Please return it before drawing again.');
@@ -97,8 +104,17 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     }
 
     setSelectedVehicle(vehicle);
-    await loadExpectedOdometer(vehicle.id);
-    setStep('enter-odometer');
+
+    // Check if driver's license qualifies for this vehicle
+    const isQualified = await checkDriverLicenseQualifies(driverId, vehicle);
+    if (!isQualified) {
+      setLicenseWarning(true);
+      setStep('confirm-license-warning');
+    } else {
+      setLicenseWarning(false);
+      await loadExpectedOdometer(vehicle.id);
+      setStep('enter-odometer');
+    }
   };
 
   const loadExpectedOdometer = async (vehicleId: string) => {
@@ -221,11 +237,11 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       setOdometerMismatch(true);
       setStep('confirm-mismatch');
     } else {
-      handleSubmit(false);
+      handleSubmit(false, licenseWarning);
     }
   };
 
-  const handleSubmit = async (logException: boolean) => {
+  const handleSubmit = async (logOdometerException: boolean, logLicenseException: boolean = false) => {
     if (!odometerReading || !selectedVehicle) return;
 
     setError('');
@@ -247,7 +263,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
       if (insertError) throw insertError;
 
-      if (logException && expectedOdometer !== null) {
+      if (logOdometerException && expectedOdometer !== null) {
         const { error: exceptionError } = await supabase
           .from('vehicle_exceptions')
           .insert({
@@ -263,7 +279,28 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
           });
 
         if (exceptionError) {
-          console.error('Failed to log exception:', exceptionError);
+          console.error('Failed to log odometer exception:', exceptionError);
+        }
+      }
+
+      if (logLicenseException) {
+        const requiredLicense = selectedVehicle.license_code_required || 'Code B';
+        const { error: exceptionError } = await supabase
+          .from('vehicle_exceptions')
+          .insert({
+            vehicle_id: selectedVehicle.id,
+            driver_id: driverId,
+            organization_id: organizationId,
+            exception_type: 'unauthorized_license',
+            description: `Driver does not have the required license to drive this vehicle. Driver has ${driverLicenseCode}, but vehicle requires ${requiredLicense}.`,
+            expected_value: requiredLicense,
+            actual_value: driverLicenseCode,
+            transaction_id: transaction.id,
+            resolved: false,
+          });
+
+        if (exceptionError) {
+          console.error('Failed to log license exception:', exceptionError);
         }
       }
 
@@ -282,6 +319,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setExpectedOdometer(null);
     setIsFirstDraw(false);
     setOdometerMismatch(false);
+    setLicenseWarning(false);
     setSuccess(false);
     setError('');
     onBack();
@@ -386,7 +424,16 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
               {selectedVehicle && (
                 <button
-                  onClick={() => setStep('enter-odometer')}
+                  onClick={async () => {
+                    const isQualified = await checkDriverLicenseQualifies(driverId, selectedVehicle);
+                    if (!isQualified) {
+                      setLicenseWarning(true);
+                      setStep('confirm-license-warning');
+                    } else {
+                      setLicenseWarning(false);
+                      setStep('enter-odometer');
+                    }
+                  }}
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
                 >
                   Continue to Odometer Reading
@@ -520,7 +567,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
             <div className="space-y-3">
               <button
-                onClick={() => handleSubmit(true)}
+                onClick={() => handleSubmit(true, licenseWarning)}
                 disabled={loading}
                 className="w-full bg-red-600 text-white py-4 rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
@@ -546,6 +593,77 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                   setExpectedOdometer(null);
                   setIsFirstDraw(false);
                   setOdometerMismatch(false);
+                }}
+                className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Select Different Vehicle
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'confirm-license-warning' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-amber-900 mb-4">License Warning</h2>
+
+            <div className="bg-amber-50 rounded-lg p-4 mb-6">
+              <AlertCircle className="w-12 h-12 text-amber-600 mx-auto mb-3" />
+              <p className="text-sm font-medium text-amber-900 text-center mb-4">
+                Your license does not authorize you to drive this vehicle.
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-amber-700">Your License:</span>
+                  <span className="text-lg font-bold text-amber-900">{driverLicenseCode}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-amber-700">Required License:</span>
+                  <span className="text-lg font-bold text-amber-900">{selectedVehicle?.license_code_required || 'Code B'}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-amber-200">
+                <p className="text-sm text-amber-900 font-medium">Vehicle Details:</p>
+                <p className="text-base font-bold text-amber-900">{selectedVehicle?.registration_number}</p>
+                <p className="text-sm text-amber-700">{selectedVehicle?.make} {selectedVehicle?.model}</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium text-red-900 mb-2">Warning:</p>
+              <ul className="text-xs text-red-800 space-y-1 list-disc list-inside">
+                <li>Driving a vehicle without the proper license is illegal</li>
+                <li>You may be personally liable for any accidents or damage</li>
+                <li>Your organization's insurance may not cover incidents</li>
+                <li>This exception will be logged and reported to management</li>
+              </ul>
+            </div>
+
+            <p className="text-sm text-gray-700 mb-6">
+              If you choose to proceed, an exception report will be logged for investigation by your organization.
+              It is strongly recommended that you select a different vehicle or contact your supervisor.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  await loadExpectedOdometer(selectedVehicle!.id);
+                  setStep('enter-odometer');
+                }}
+                className="w-full bg-amber-600 text-white py-4 rounded-lg font-semibold hover:bg-amber-700 transition-colors"
+              >
+                I Understand, Continue Anyway
+              </button>
+
+              <button
+                onClick={() => {
+                  setStep('scan');
+                  setSelectedVehicle(null);
+                  setOdometerReading('');
+                  setExpectedOdometer(null);
+                  setIsFirstDraw(false);
+                  setLicenseWarning(false);
                 }}
                 className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
               >

@@ -11,6 +11,7 @@ interface Vehicle {
   license_disk_expiry: string;
   vin_number?: string;
   license_code_required?: string;
+  initial_odometer_reading?: number;
 }
 
 interface DrawVehicleProps {
@@ -26,6 +27,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [odometerReading, setOdometerReading] = useState('');
   const [expectedOdometer, setExpectedOdometer] = useState<number | null>(null);
+  const [isFirstDraw, setIsFirstDraw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -111,8 +113,22 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
     if (lastReturn?.odometer_reading) {
       setExpectedOdometer(lastReturn.odometer_reading);
+      setIsFirstDraw(false);
     } else {
-      setExpectedOdometer(null);
+      // No previous return - this is the first draw, use initial odometer reading
+      const { data: vehicle } = await supabase
+        .from('vehicles')
+        .select('initial_odometer_reading')
+        .eq('id', vehicleId)
+        .maybeSingle();
+
+      if (vehicle?.initial_odometer_reading) {
+        setExpectedOdometer(vehicle.initial_odometer_reading);
+        setIsFirstDraw(true);
+      } else {
+        setExpectedOdometer(null);
+        setIsFirstDraw(false);
+      }
     }
   };
 
@@ -264,6 +280,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setSelectedVehicle(null);
     setOdometerReading('');
     setExpectedOdometer(null);
+    setIsFirstDraw(false);
     setOdometerMismatch(false);
     setSuccess(false);
     setError('');
@@ -415,7 +432,9 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                 <div>
                   <p className="text-sm font-medium text-blue-900">Expected Odometer Reading</p>
                   <p className="text-2xl font-bold text-blue-900">{expectedOdometer.toLocaleString()} km</p>
-                  <p className="text-xs text-blue-700 mt-1">Based on last return transaction</p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    {isFirstDraw ? 'Based on initial odometer reading (first draw)' : 'Based on last return transaction'}
+                  </p>
                   <p className="text-xs text-blue-600 mt-2">Please verify the current odometer reading matches or is close to this value.</p>
                 </div>
               </div>
@@ -425,8 +444,8 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
               <div className="bg-amber-50 rounded-lg p-4 mb-4 flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-amber-900">No Previous Return Record</p>
-                  <p className="text-xs text-amber-700 mt-1">This appears to be the first time this vehicle is being drawn. Please enter the current odometer reading.</p>
+                  <p className="text-sm font-medium text-amber-900">No Odometer Reference Available</p>
+                  <p className="text-xs text-amber-700 mt-1">Please enter the current odometer reading carefully.</p>
                 </div>
               </div>
             )}
@@ -525,6 +544,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                   setSelectedVehicle(null);
                   setOdometerReading('');
                   setExpectedOdometer(null);
+                  setIsFirstDraw(false);
                   setOdometerMismatch(false);
                 }}
                 className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"

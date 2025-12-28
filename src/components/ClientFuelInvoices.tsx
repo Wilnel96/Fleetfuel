@@ -504,57 +504,88 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
     yPosition += 8;
 
+    const columnWidth = (contentWidth - 10) / 3;
+    const col1X = margin;
+    const col2X = margin + columnWidth + 5;
+    const col3X = margin + (columnWidth * 2) + 10;
+
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(107, 114, 128);
+    pdf.text('INVOICE', col1X, yPosition);
+    pdf.text('VEHICLE & DRIVER', col2X, yPosition);
+    pdf.text('FUEL STATION', col3X, yPosition);
+
+    yPosition += 3;
+
     pdf.setFillColor(249, 250, 251);
-    pdf.rect(margin, yPosition, contentWidth, 14, 'F');
+    pdf.rect(col1X, yPosition, columnWidth, 18, 'F');
+    pdf.rect(col2X, yPosition, columnWidth, 18, 'F');
+    pdf.rect(col3X, yPosition, columnWidth, 18, 'F');
 
     yPosition += 4;
     pdf.setFontSize(7);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+
+    pdf.text('Number:', col1X + 2, yPosition);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(75, 85, 99);
-
-    pdf.text('Invoice #:', margin + 2, yPosition);
     pdf.setTextColor(17, 24, 39);
-    pdf.text(invoice.invoice_number, margin + 18, yPosition);
+    pdf.text(invoice.invoice_number, col1X + columnWidth - 2, yPosition, { align: 'right' });
 
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Invoice Date:', margin + 45, yPosition);
+    pdf.text('Vehicle:', col2X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), margin + 68, yPosition);
+    pdf.text(invoice.vehicle_registration, col2X + columnWidth - 2, yPosition, { align: 'right' });
 
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Transaction Date:', margin + 90, yPosition);
+    pdf.text('Station:', col3X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), margin + 120, yPosition);
-
-    yPosition += 5;
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Vehicle:', margin + 2, yPosition);
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(invoice.vehicle_registration, margin + 18, yPosition);
-
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Driver:', margin + 45, yPosition);
-    pdf.setTextColor(17, 24, 39);
-    const driverNameText = pdf.splitTextToSize(invoice.driver_name, 40);
-    pdf.text(driverNameText[0], margin + 60, yPosition);
-
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Odometer:', margin + 110, yPosition);
-    pdf.setTextColor(17, 24, 39);
-    pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, margin + 130, yPosition);
+    const stationText = pdf.splitTextToSize(invoice.garage_name, columnWidth - 4);
+    pdf.text(stationText[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
 
     yPosition += 5;
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Station:', margin + 2, yPosition);
+    pdf.text('Date:', col1X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const stationText = pdf.splitTextToSize(invoice.garage_name, 60);
-    pdf.text(stationText[0], margin + 18, yPosition);
+    pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), col1X + columnWidth - 2, yPosition, { align: 'right' });
 
+    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Address:', margin + 90, yPosition);
+    pdf.text('Driver:', col2X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const addressText = pdf.splitTextToSize(invoice.garage_address, 70);
-    pdf.text(addressText[0], margin + 108, yPosition);
+    const driverText = pdf.splitTextToSize(invoice.driver_name, columnWidth - 4);
+    pdf.text(driverText[0], col2X + columnWidth - 2, yPosition, { align: 'right' });
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Address:', col3X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    const addressText = pdf.splitTextToSize(invoice.garage_address, columnWidth - 4);
+    pdf.text(addressText[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
+
+    yPosition += 5;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Trans. Date:', col1X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), col1X + columnWidth - 2, yPosition, { align: 'right' });
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Odometer:', col2X + 2, yPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
 
     yPosition += 8;
 
@@ -673,21 +704,59 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           <p>Fuel Empowerment Systems (Pty) Ltd</p>
         </div>
 
-        <div style="background: #f9fafb; padding: 12px; margin-bottom: 16px; border-radius: 8px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-            <div><span style="color: #6b7280; font-weight: 500;">Invoice #:</span> <span style="font-weight: 700;">${invoice.invoice_number}</span></div>
-            <div><span style="color: #6b7280; font-weight: 500;">Invoice Date:</span> <span style="font-weight: 700;">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span></div>
-            <div><span style="color: #6b7280; font-weight: 500;">Transaction Date:</span> <span style="font-weight: 700;">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span></div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
+          <div>
+            <h3 style="font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 6px;">INVOICE</h3>
+            <div style="background: #f9fafb; padding: 8px; border-radius: 6px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: #6b7280;">Number:</span>
+                <span style="font-weight: 700;">${invoice.invoice_number}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: #6b7280;">Date:</span>
+                <span style="font-weight: 700;">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #6b7280;">Trans. Date:</span>
+                <span style="font-weight: 700;">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span>
+              </div>
+            </div>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
-            <div><span style="color: #6b7280; font-weight: 500;">Vehicle:</span> <span style="font-weight: 700;">${invoice.vehicle_registration}</span></div>
-            <div><span style="color: #6b7280; font-weight: 500;">Driver:</span> <span style="font-weight: 700;">${invoice.driver_name}</span></div>
-            <div><span style="color: #6b7280; font-weight: 500;">Odometer:</span> <span style="font-weight: 700;">${invoice.odometer_reading.toLocaleString()} km</span></div>
+          <div>
+            <h3 style="font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 6px;">VEHICLE & DRIVER</h3>
+            <div style="background: #f9fafb; padding: 8px; border-radius: 6px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: #6b7280;">Vehicle:</span>
+                <span style="font-weight: 700;">${invoice.vehicle_registration}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: #6b7280;">Driver:</span>
+                <span style="font-weight: 700;">${invoice.driver_name}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #6b7280;">Odometer:</span>
+                <span style="font-weight: 700;">${invoice.odometer_reading.toLocaleString()} km</span>
+              </div>
+            </div>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 12px;">
-            <div><span style="color: #6b7280; font-weight: 500;">Station:</span> <span style="font-weight: 700;">${invoice.garage_name}</span></div>
-            <div><span style="color: #6b7280; font-weight: 500;">Address:</span> <span style="font-weight: 700;">${invoice.garage_address}</span></div>
-            ${invoice.garage_vat_number ? `<div><span style="color: #6b7280; font-weight: 500;">VAT #:</span> <span style="font-weight: 700;">${invoice.garage_vat_number}</span></div>` : '<div></div>'}
+          <div>
+            <h3 style="font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 6px;">FUEL STATION</h3>
+            <div style="background: #f9fafb; padding: 8px; border-radius: 6px; font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: #6b7280;">Station:</span>
+                <span style="font-weight: 700; text-align: right;">${invoice.garage_name}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="color: #6b7280;">Address:</span>
+                <span style="font-weight: 700; text-align: right;">${invoice.garage_address}</span>
+              </div>
+              ${invoice.garage_vat_number ? `
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #6b7280;">VAT Number:</span>
+                <span style="font-weight: 700;">${invoice.garage_vat_number}</span>
+              </div>
+              ` : ''}
+            </div>
           </div>
         </div>
 
@@ -792,57 +861,88 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
       yPosition += 8;
 
+      const columnWidth = (contentWidth - 10) / 3;
+      const col1X = margin;
+      const col2X = margin + columnWidth + 5;
+      const col3X = margin + (columnWidth * 2) + 10;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('INVOICE', col1X, yPosition);
+      pdf.text('VEHICLE & DRIVER', col2X, yPosition);
+      pdf.text('FUEL STATION', col3X, yPosition);
+
+      yPosition += 3;
+
       pdf.setFillColor(249, 250, 251);
-      pdf.rect(margin, yPosition, contentWidth, 14, 'F');
+      pdf.rect(col1X, yPosition, columnWidth, 18, 'F');
+      pdf.rect(col2X, yPosition, columnWidth, 18, 'F');
+      pdf.rect(col3X, yPosition, columnWidth, 18, 'F');
 
       yPosition += 4;
       pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+
+      pdf.text('Number:', col1X + 2, yPosition);
       pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(75, 85, 99);
-
-      pdf.text('Invoice #:', margin + 2, yPosition);
       pdf.setTextColor(17, 24, 39);
-      pdf.text(invoice.invoice_number, margin + 18, yPosition);
+      pdf.text(invoice.invoice_number, col1X + columnWidth - 2, yPosition, { align: 'right' });
 
+      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Invoice Date:', margin + 45, yPosition);
+      pdf.text('Vehicle:', col2X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), margin + 68, yPosition);
+      pdf.text(invoice.vehicle_registration, col2X + columnWidth - 2, yPosition, { align: 'right' });
 
+      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Transaction Date:', margin + 90, yPosition);
+      pdf.text('Station:', col3X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), margin + 120, yPosition);
-
-      yPosition += 5;
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Vehicle:', margin + 2, yPosition);
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(invoice.vehicle_registration, margin + 18, yPosition);
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Driver:', margin + 45, yPosition);
-      pdf.setTextColor(17, 24, 39);
-      const driverNameTextAll = pdf.splitTextToSize(invoice.driver_name, 40);
-      pdf.text(driverNameTextAll[0], margin + 60, yPosition);
-
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Odometer:', margin + 110, yPosition);
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, margin + 130, yPosition);
+      const stationTextAll = pdf.splitTextToSize(invoice.garage_name, columnWidth - 4);
+      pdf.text(stationTextAll[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
 
       yPosition += 5;
+      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Station:', margin + 2, yPosition);
+      pdf.text('Date:', col1X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      const stationTextAll = pdf.splitTextToSize(invoice.garage_name, 60);
-      pdf.text(stationTextAll[0], margin + 18, yPosition);
+      pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), col1X + columnWidth - 2, yPosition, { align: 'right' });
 
+      pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Address:', margin + 90, yPosition);
+      pdf.text('Driver:', col2X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      const addressTextAll = pdf.splitTextToSize(invoice.garage_address, 70);
-      pdf.text(addressTextAll[0], margin + 108, yPosition);
+      const driverTextAll = pdf.splitTextToSize(invoice.driver_name, columnWidth - 4);
+      pdf.text(driverTextAll[0], col2X + columnWidth - 2, yPosition, { align: 'right' });
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Address:', col3X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const addressTextAll = pdf.splitTextToSize(invoice.garage_address, columnWidth - 4);
+      pdf.text(addressTextAll[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
+
+      yPosition += 5;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Trans. Date:', col1X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), col1X + columnWidth - 2, yPosition, { align: 'right' });
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Odometer:', col2X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
 
       yPosition += 8;
 
@@ -1011,23 +1111,61 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
             <p className="text-center text-gray-600 mt-2">Fuel Empowerment Systems (Pty) Ltd</p>
           </div>
 
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2 text-sm">
-            <div className="flex justify-between">
-              <div><span className="text-gray-600 font-medium">Invoice #:</span> <span className="font-bold">{selectedInvoice.invoice_number}</span></div>
-              <div><span className="text-gray-600 font-medium">Invoice Date:</span> <span className="font-bold">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span></div>
-              <div><span className="text-gray-600 font-medium">Transaction Date:</span> <span className="font-bold">{new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')}</span></div>
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <h3 className="text-xs font-bold text-gray-500 mb-2">INVOICE</h3>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Number:</span>
+                  <span className="font-bold">{selectedInvoice.invoice_number}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Date:</span>
+                  <span className="font-bold">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Trans. Date:</span>
+                  <span className="font-bold">{new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')}</span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <div><span className="text-gray-600 font-medium">Vehicle:</span> <span className="font-bold">{selectedInvoice.vehicle_registration}</span></div>
-              <div><span className="text-gray-600 font-medium">Driver:</span> <span className="font-bold">{selectedInvoice.driver_name}</span></div>
-              <div><span className="text-gray-600 font-medium">Odometer:</span> <span className="font-bold">{selectedInvoice.odometer_reading.toLocaleString()} km</span></div>
+
+            <div>
+              <h3 className="text-xs font-bold text-gray-500 mb-2">VEHICLE & DRIVER</h3>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Vehicle:</span>
+                  <span className="font-bold">{selectedInvoice.vehicle_registration}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Driver:</span>
+                  <span className="font-bold">{selectedInvoice.driver_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Odometer:</span>
+                  <span className="font-bold">{selectedInvoice.odometer_reading.toLocaleString()} km</span>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <div><span className="text-gray-600 font-medium">Station:</span> <span className="font-bold">{selectedInvoice.garage_name}</span></div>
-              <div><span className="text-gray-600 font-medium">Address:</span> <span className="font-bold">{selectedInvoice.garage_address}</span></div>
-              {selectedInvoice.garage_vat_number && (
-                <div><span className="text-gray-600 font-medium">VAT #:</span> <span className="font-bold">{selectedInvoice.garage_vat_number}</span></div>
-              )}
+
+            <div>
+              <h3 className="text-xs font-bold text-gray-500 mb-2">FUEL STATION</h3>
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Station:</span>
+                  <span className="font-bold text-right">{selectedInvoice.garage_name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Address:</span>
+                  <span className="font-bold text-right">{selectedInvoice.garage_address}</span>
+                </div>
+                {selectedInvoice.garage_vat_number && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">VAT Number:</span>
+                    <span className="font-bold">{selectedInvoice.garage_vat_number}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft } from 'lucide-react';
+import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {
@@ -76,6 +76,49 @@ export default function InvoiceManagement() {
   const [hasSearched, setHasSearched] = useState(false);
   const [totalVehicles, setTotalVehicles] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
+
+  // Generate billing period options (next month first, then past months)
+  const generateBillingPeriods = () => {
+    const periods: Array<{ value: string; label: string; start: string; end: string }> = [];
+    const today = new Date();
+
+    // Start from next month
+    let year = today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear();
+    let month = today.getMonth() === 11 ? 0 : today.getMonth() + 1;
+
+    // Add next month (first future billing period)
+    const nextMonthStart = new Date(year, month, 1);
+    const nextMonthEnd = new Date(year, month + 1, 0);
+    periods.push({
+      value: `${year}-${String(month + 1).padStart(2, '0')}`,
+      label: `${nextMonthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+      start: nextMonthStart.toISOString().split('T')[0],
+      end: nextMonthEnd.toISOString().split('T')[0]
+    });
+
+    // Add current month and go back 24 months
+    for (let i = 0; i < 25; i++) {
+      year = today.getFullYear();
+      month = today.getMonth() - i;
+
+      while (month < 0) {
+        month += 12;
+        year -= 1;
+      }
+
+      const periodStart = new Date(year, month, 1);
+      const periodEnd = new Date(year, month + 1, 0);
+
+      periods.push({
+        value: `${year}-${String(month + 1).padStart(2, '0')}`,
+        label: `${periodStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}`,
+        start: periodStart.toISOString().split('T')[0],
+        end: periodEnd.toISOString().split('T')[0]
+      });
+    }
+
+    return periods;
+  };
 
   useEffect(() => {
     loadOrganizations();
@@ -155,14 +198,25 @@ export default function InvoiceManagement() {
 
       if (invoicesError) throw invoicesError;
 
-      // Client-side filtering for billing period search
+      // Client-side filtering for billing period
       let filteredData = data || [];
       if (billingPeriodSearch) {
-        const searchLower = billingPeriodSearch.toLowerCase();
-        filteredData = filteredData.filter(invoice =>
-          invoice.billing_period_start?.toLowerCase().includes(searchLower) ||
-          invoice.billing_period_end?.toLowerCase().includes(searchLower)
-        );
+        const periods = generateBillingPeriods();
+        const selectedPeriod = periods.find(p => p.value === billingPeriodSearch);
+
+        if (selectedPeriod) {
+          filteredData = filteredData.filter(invoice => {
+            const invoiceStart = new Date(invoice.billing_period_start);
+            const invoiceEnd = new Date(invoice.billing_period_end);
+            const periodStart = new Date(selectedPeriod.start);
+            const periodEnd = new Date(selectedPeriod.end);
+
+            // Check if invoice billing period overlaps with selected period
+            return (invoiceStart >= periodStart && invoiceStart <= periodEnd) ||
+                   (invoiceEnd >= periodStart && invoiceEnd <= periodEnd) ||
+                   (invoiceStart <= periodStart && invoiceEnd >= periodEnd);
+          });
+        }
       }
 
       setInvoices(filteredData);
@@ -760,17 +814,22 @@ export default function InvoiceManagement() {
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Or Search by Billing Period
+                Or Filter by Billing Period
               </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search by billing period (e.g., 2024-01)..."
+              <div className="flex items-center gap-2">
+                <Calendar className="text-gray-400 w-5 h-5" />
+                <select
                   value={billingPeriodSearch}
                   onChange={(e) => setBillingPeriodSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Billing Periods</option>
+                  {generateBillingPeriods().map(period => (
+                    <option key={period.value} value={period.value}>
+                      {period.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex flex-col">

@@ -37,6 +37,11 @@ export default function Auth({ onBack }: AuthProps = {}) {
       console.log('[Auth] Access token:', data.session?.access_token ? 'Present' : 'Missing');
 
       console.log('[Auth] Waiting for auth state change to trigger...');
+
+      setTimeout(() => {
+        console.log('[Auth] Timeout: Resetting loading state after 3 seconds');
+        setLoading(false);
+      }, 3000);
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);
       setError(err.message || 'Authentication failed');

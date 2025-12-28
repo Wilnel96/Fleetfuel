@@ -425,8 +425,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                     <input
                       type="text"
                       value={formData.registration_number}
-                      onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                      onChange={(e) => setFormData({ ...formData, registration_number: e.target.value.toUpperCase() })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm uppercase"
                       placeholder="ABC 123 GP"
                       required
                     />
@@ -439,7 +439,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       type="text"
                       value={formData.vin_number || ''}
                       onChange={(e) => setFormData({ ...formData, vin_number: e.target.value.toUpperCase() })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm uppercase"
                       placeholder="1HGBH41JXMN109186"
                       minLength={11}
                       maxLength={17}
@@ -458,8 +458,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                     <input
                       type="text"
                       value={formData.make}
-                      onChange={(e) => setFormData({ ...formData, make: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                      onChange={(e) => setFormData({ ...formData, make: e.target.value.toUpperCase() })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm uppercase"
                       placeholder="Toyota"
                       required
                     />
@@ -469,8 +469,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                     <input
                       type="text"
                       value={formData.model}
-                      onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                      onChange={(e) => setFormData({ ...formData, model: e.target.value.toUpperCase() })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm uppercase"
                       placeholder="Hilux"
                       required
                     />
@@ -793,13 +793,13 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
               filteredVehicles.map((vehicle) => (
               <tr key={vehicle.id} className={`hover:bg-gray-50 ${vehicle.deleted_at ? 'bg-gray-50 opacity-60' : ''}`}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className={`font-medium ${vehicle.deleted_at ? 'text-gray-500' : 'text-gray-900'}`}>
+                  <p className={`font-medium uppercase ${vehicle.deleted_at ? 'text-gray-500' : 'text-gray-900'}`}>
                     {vehicle.registration_number}
                     {vehicle.deleted_at && <span className="ml-2 text-xs text-red-600">(Deleted)</span>}
                   </p>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <p className={`text-sm ${vehicle.deleted_at ? 'text-gray-500' : 'text-gray-900'}`}>{vehicle.make} {vehicle.model}</p>
+                  <p className={`text-sm uppercase ${vehicle.deleted_at ? 'text-gray-500' : 'text-gray-900'}`}>{vehicle.make} {vehicle.model}</p>
                 </td>
                 {userRole === 'super_admin' && (
                   <td className="px-6 py-4 whitespace-nowrap">

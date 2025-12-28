@@ -515,11 +515,13 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       return;
     }
 
+    const resolvedAt = new Date().toISOString();
+
     const { error } = await supabase
       .from('vehicle_exceptions')
       .update({
         resolved: true,
-        resolved_at: new Date().toISOString(),
+        resolved_at: resolvedAt,
         resolved_by: user.id,
         resolution_notes: notes,
       })
@@ -531,17 +533,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
       return;
     }
 
-    setReportData((prev: any) => {
-      if (!prev?.exceptions) return prev;
-      return {
-        ...prev,
-        exceptions: prev.exceptions.map((ex: any) =>
-          ex.id === exceptionId
-            ? { ...ex, resolved: true, resolved_at: new Date().toISOString(), resolution_notes: notes }
-            : ex
-        )
-      };
-    });
+    // Force a fresh data load to ensure UI reflects the change
+    if (selectedOrganization && startDate && endDate) {
+      await loadExceptionsData(selectedOrganization, startDate, endDate);
+    }
 
     alert('Exception marked as resolved successfully');
   };

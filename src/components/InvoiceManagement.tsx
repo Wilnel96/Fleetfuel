@@ -59,7 +59,7 @@ export default function InvoiceManagement() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
   const [managementOrg, setManagementOrg] = useState<ManagementOrganization | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -70,20 +70,52 @@ export default function InvoiceManagement() {
   const [billingPeriodStart, setBillingPeriodStart] = useState('');
   const [billingPeriodEnd, setBillingPeriodEnd] = useState('');
 
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
+  const [invoiceNumberSearch, setInvoiceNumberSearch] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+
   useEffect(() => {
-    loadInvoices();
+    loadOrganizations();
   }, []);
 
   useEffect(() => {
+    if (selectedOrgId || invoiceNumberSearch) {
+      setHasSearched(true);
+      loadInvoices();
+    } else {
+      setHasSearched(false);
+      setInvoices([]);
+      setFilteredInvoices([]);
+    }
+  }, [selectedOrgId, invoiceNumberSearch]);
+
+  useEffect(() => {
     filterInvoices();
-  }, [invoices, searchTerm, statusFilter]);
+  }, [invoices, statusFilter]);
+
+  const loadOrganizations = async () => {
+    try {
+      const { data, error: orgsError } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .eq('is_management_org', false)
+        .order('name');
+
+      if (orgsError) throw orgsError;
+
+      setOrganizations(data || []);
+    } catch (err: any) {
+      console.error('Failed to load organizations:', err.message);
+    }
+  };
 
   const loadInvoices = async () => {
     try {
       setLoading(true);
       setError('');
 
-      const { data, error: invoicesError } = await supabase
+      let query = supabase
         .from('invoices')
         .select(`
           *,
@@ -98,8 +130,17 @@ export default function InvoiceManagement() {
             country,
             company_registration_number
           )
-        `)
-        .order('invoice_date', { ascending: false });
+        `);
+
+      if (selectedOrgId) {
+        query = query.eq('organization_id', selectedOrgId);
+      }
+
+      if (invoiceNumberSearch) {
+        query = query.ilike('invoice_number', `%${invoiceNumberSearch}%`);
+      }
+
+      const { data, error: invoicesError } = await query.order('invoice_date', { ascending: false });
 
       if (invoicesError) throw invoicesError;
 
@@ -113,14 +154,6 @@ export default function InvoiceManagement() {
 
   const filterInvoices = () => {
     let filtered = [...invoices];
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        inv =>
-          inv.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          inv.organization?.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
 
     if (statusFilter !== 'all') {
       filtered = filtered.filter(inv => inv.status === statusFilter);
@@ -650,29 +683,56 @@ export default function InvoiceManagement() {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search by invoice number or organization..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="text-gray-400 w-5 h-5" />
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select Organization
+              </label>
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="">Select an organization...</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
               </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Or Search by Invoice Number
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search by invoice number..."
+                  value={invoiceNumberSearch}
+                  onChange={(e) => setInvoiceNumberSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Status Filter
+              </label>
+              <div className="flex items-center gap-2">
+                <Filter className="text-gray-400 w-5 h-5" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="paid">Paid</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -692,7 +752,25 @@ export default function InvoiceManagement() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredInvoices.length === 0 ? (
+              {!hasSearched ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      <Building2 className="w-12 h-12 text-gray-300" />
+                      <div>
+                        <p className="text-gray-600 font-medium">Please select an organization or search by invoice number</p>
+                        <p className="text-sm text-gray-500 mt-1">Select an organization from the dropdown above or enter an invoice number to view invoices</p>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : loading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    Loading invoices...
+                  </td>
+                </tr>
+              ) : filteredInvoices.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     No invoices found

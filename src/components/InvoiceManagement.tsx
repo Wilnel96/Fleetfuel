@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel } from 'lucide-react';
+import { FileText, Plus, Search, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {
@@ -53,7 +53,7 @@ interface ManagementOrganization {
 }
 
 export default function InvoiceManagement() {
-  const [activeTab, setActiveTab] = useState<'fee' | 'fuel'>('fee');
+  const [currentView, setCurrentView] = useState<'menu' | 'fee' | 'fuel'>('menu');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -556,79 +556,96 @@ export default function InvoiceManagement() {
     );
   }
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+  if (currentView === 'menu') {
+    return (
+      <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <FileText className="w-6 h-6 text-blue-600" />
-          <div>
-            <h2 className="text-lg font-bold text-gray-900">Invoice Management</h2>
-            <p className="text-sm text-gray-600">Manage client invoices and billing</p>
-          </div>
+          <DollarSign className="w-6 h-6 text-gray-700" />
+          <h1 className="text-xl font-bold text-gray-900">Invoices</h1>
         </div>
-        <div className="flex gap-2">
-          {filteredInvoices.length > 0 && (
-            <button
-              onClick={exportAllInvoicesToCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              Export All to CSV
-            </button>
-          )}
+
+        <div className="space-y-2">
           <button
-            onClick={() => setShowGenerateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            onClick={() => setCurrentView('fee')}
+            className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
           >
-            <Plus className="w-4 h-4" />
-            Generate Monthly Invoices
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-50 rounded-lg">
+                <FileText className="w-6 h-6 text-teal-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Fee Invoices</h3>
+                <p className="text-sm text-gray-600">Monthly subscription and service fees</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setCurrentView('fuel')}
+            className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Fuel className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Fuel Invoices</h3>
+                <p className="text-sm text-gray-600">Individual fuel transaction invoices</p>
+              </div>
+            </div>
           </button>
         </div>
       </div>
+    );
+  }
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-3 text-red-800">
-            <AlertCircle className="w-5 h-5" />
-            <span>{error}</span>
+  if (currentView === 'fee') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <FileText className="w-6 h-6 text-teal-600" />
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Fee Invoices</h2>
+              <p className="text-sm text-gray-600">Monthly subscription and service fees</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentView('menu')}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2 px-3 py-1.5 text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </button>
+            {filteredInvoices.length > 0 && (
+              <button
+                onClick={exportAllInvoicesToCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Export All to CSV
+              </button>
+            )}
+            <button
+              onClick={() => setShowGenerateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4" />
+              Generate Monthly Invoices
+            </button>
           </div>
         </div>
-      )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="border-b border-gray-200">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('fee')}
-              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'fee'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" />
-                Fee Invoices
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('fuel')}
-              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
-                activeTab === 'fuel'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Fuel className="w-4 h-4" />
-                Fuel Invoices
-              </div>
-            </button>
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 text-red-800">
+              <AlertCircle className="w-5 h-5" />
+              <span>{error}</span>
+            </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {activeTab === 'fee' && (
       <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 border-b border-gray-200">
@@ -814,13 +831,36 @@ export default function InvoiceManagement() {
         </div>
       )}
       </>
-      )}
+      </div>
+    );
+  }
 
-      {activeTab === 'fuel' && (
+  if (currentView === 'fuel') {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Fuel className="w-6 h-6 text-orange-600" />
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Fuel Invoices</h2>
+              <p className="text-sm text-gray-600">Individual fuel transaction invoices</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setCurrentView('menu')}
+            className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2 px-3 py-1.5 text-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
+
         <FuelInvoicesTab />
-      )}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  return null;
 }
 
 interface FuelInvoice {

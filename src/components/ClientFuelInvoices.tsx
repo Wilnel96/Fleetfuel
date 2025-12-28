@@ -592,6 +592,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setTextColor(17, 24, 39);
     pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
 
+    if (invoice.garage_vat_number) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('VAT Number:', col3X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.garage_vat_number, col3X + columnWidth - 2, yPosition, { align: 'right' });
+    }
+
     yPosition += 8;
 
     pdf.setFontSize(8);
@@ -952,6 +961,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
       pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
+
+      if (invoice.garage_vat_number) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('VAT Number:', col3X + 2, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(invoice.garage_vat_number, col3X + columnWidth - 2, yPosition, { align: 'right' });
+      }
 
       yPosition += 8;
 

@@ -201,22 +201,20 @@ export default function InvoiceManagement() {
       // Client-side filtering for billing period
       let filteredData = data || [];
       if (billingPeriodSearch) {
-        const periods = generateBillingPeriods();
-        const selectedPeriod = periods.find(p => p.value === billingPeriodSearch);
+        // billingPeriodSearch is in format "YYYY-MM"
+        const [selectedYear, selectedMonth] = billingPeriodSearch.split('-').map(Number);
 
-        if (selectedPeriod) {
-          filteredData = filteredData.filter(invoice => {
-            const invoiceStart = new Date(invoice.billing_period_start);
-            const invoiceEnd = new Date(invoice.billing_period_end);
-            const periodStart = new Date(selectedPeriod.start);
-            const periodEnd = new Date(selectedPeriod.end);
+        filteredData = filteredData.filter(invoice => {
+          if (!invoice.billing_period_start) return false;
 
-            // Check if invoice billing period overlaps with selected period
-            return (invoiceStart >= periodStart && invoiceStart <= periodEnd) ||
-                   (invoiceEnd >= periodStart && invoiceEnd <= periodEnd) ||
-                   (invoiceStart <= periodStart && invoiceEnd >= periodEnd);
-          });
-        }
+          // Extract year and month from the invoice billing period start date
+          const invoiceDate = new Date(invoice.billing_period_start);
+          const invoiceYear = invoiceDate.getFullYear();
+          const invoiceMonth = invoiceDate.getMonth() + 1; // getMonth() returns 0-11
+
+          // Match if year and month are the same
+          return invoiceYear === selectedYear && invoiceMonth === selectedMonth;
+        });
       }
 
       setInvoices(filteredData);

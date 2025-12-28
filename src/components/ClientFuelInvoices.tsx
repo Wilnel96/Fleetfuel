@@ -309,9 +309,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           <div class="section">
             <h3>Fuel Station</h3>
             <div class="section-content">
-              <div class="info-row">
-                <span class="info-label">Station:</span>
-                <span class="info-value">${invoice.garage_name}${invoice.garage_vat_number ? ` | VAT no: ${invoice.garage_vat_number}` : ''}</span>
+              <div class="info-row-spread">
+                <div>
+                  <span class="info-label">Station:</span>
+                  <span class="info-value">${invoice.garage_name}</span>
+                </div>
+                ${invoice.garage_vat_number ? `<div>
+                  <span class="info-label">VAT no:</span>
+                  <span class="info-value">${invoice.garage_vat_number}</span>
+                </div>` : ''}
               </div>
               <div class="info-row">
                 <span class="info-label">Address:</span>
@@ -545,10 +551,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.text('Station:', col3X + 2, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const stationWithVat = invoice.garage_vat_number
-      ? `${invoice.garage_name} | VAT no: ${invoice.garage_vat_number}`
-      : invoice.garage_name;
-    const stationText = pdf.splitTextToSize(stationWithVat, columnWidth - 4);
+    const stationText = pdf.splitTextToSize(invoice.garage_name, columnWidth - 4);
     pdf.text(stationText[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
 
     yPosition += 5;
@@ -589,6 +592,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
+
+    if (invoice.garage_vat_number) {
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('VAT no:', col3X + 2, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.garage_vat_number, col3X + columnWidth - 2, yPosition, { align: 'right' });
+    }
 
     yPosition += 8;
 
@@ -909,10 +921,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.text('Station:', col3X + 2, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      const stationWithVatAll = invoice.garage_vat_number
-        ? `${invoice.garage_name} | VAT no: ${invoice.garage_vat_number}`
-        : invoice.garage_name;
-      const stationTextAll = pdf.splitTextToSize(stationWithVatAll, columnWidth - 4);
+      const stationTextAll = pdf.splitTextToSize(invoice.garage_name, columnWidth - 4);
       pdf.text(stationTextAll[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
 
       yPosition += 5;
@@ -953,6 +962,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
       pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
+
+      if (invoice.garage_vat_number) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('VAT no:', col3X + 2, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(invoice.garage_vat_number, col3X + columnWidth - 2, yPosition, { align: 'right' });
+      }
 
       yPosition += 8;
 

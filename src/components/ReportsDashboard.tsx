@@ -26,6 +26,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   const [reportData, setReportData] = useState<any>(null);
   const [orgSettings, setOrgSettings] = useState<any>(null);
   const [error, setError] = useState<string>('');
+  const [resolvingException, setResolvingException] = useState<string | null>(null);
+  const [resolutionNotes, setResolutionNotes] = useState('');
 
   // Helper to create ISO timestamp from date string without timezone conversion
   const createLocalDateString = (dateStr: string, endOfDay = false) => {
@@ -509,36 +511,57 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const resolveException = async (exceptionId: string, notes: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert('Not authenticated');
+    if (!notes || notes.trim() === '') {
+      alert('Please enter resolution notes');
       return;
     }
 
-    const resolvedAt = new Date().toISOString();
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Not authenticated');
+        return;
+      }
 
-    const { error } = await supabase
-      .from('vehicle_exceptions')
-      .update({
-        resolved: true,
-        resolved_at: resolvedAt,
-        resolved_by: user.id,
-        resolution_notes: notes,
-      })
-      .eq('id', exceptionId);
+      const resolvedAt = new Date().toISOString();
 
-    if (error) {
-      console.error('Error resolving exception:', error);
-      alert(`Failed to resolve exception: ${error.message}`);
-      return;
+      const { error } = await supabase
+        .from('vehicle_exceptions')
+        .update({
+          resolved: true,
+          resolved_at: resolvedAt,
+          resolved_by: user.id,
+          resolution_notes: notes,
+        })
+        .eq('id', exceptionId);
+
+      if (error) {
+        console.error('Error resolving exception:', error);
+        alert(`Failed to resolve exception: ${error.message}`);
+        return;
+      }
+
+      // Get the organization ID and reload the exceptions data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.organization_id) {
+        await loadExceptionsData(profile.organization_id, startDate, endDate);
+      }
+
+      // Reset the resolution modal
+      setResolvingException(null);
+      setResolutionNotes('');
+    } catch (err: any) {
+      console.error('Exception resolution error:', err);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setLoading(false);
     }
-
-    // Force a fresh data load to ensure UI reflects the change
-    if (selectedOrganization && startDate && endDate) {
-      await loadExceptionsData(selectedOrganization, startDate, endDate);
-    }
-
-    alert('Exception marked as resolved successfully');
   };
 
   const loadMonthlyData = async (orgId: string, start: string, end: string) => {
@@ -1333,11 +1356,12 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                                     Pending
                                   </span>
                                   <button
-                                    onClick={() => {
-                                      const notes = prompt('Enter resolution notes:');
-                                      if (notes) {
-                                        resolveException(exception.id, notes);
-                                      }
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setResolvingException(exception.id);
+                                      setResolutionNotes('');
                                     }}
                                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                                   >
@@ -1606,6 +1630,47 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
           <p className="text-center text-gray-600 py-12">Select a date range and report type to view data</p>
         )}
       </div>
+
+      {/* Resolution Modal */}
+      {resolvingException && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Resolve Exception</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Please provide notes explaining how this exception was resolved or investigated.
+            </p>
+            <textarea
+              value={resolutionNotes}
+              onChange={(e) => setResolutionNotes(e.target.value)}
+              placeholder="Enter resolution notes here..."
+              rows={4}
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              autoFocus
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setResolvingException(null);
+                  setResolutionNotes('');
+                }}
+                disabled={loading}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => resolveException(resolvingException, resolutionNotes)}
+                disabled={loading || !resolutionNotes.trim()}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Resolving...' : 'Mark as Resolved'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

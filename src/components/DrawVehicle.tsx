@@ -182,13 +182,15 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
     if (!driver) return false;
 
-    const driverLicenseCode = driver.license_type;
+    const licenseCode = driver.license_type || 'Code B';
+    setDriverLicenseCode(licenseCode);
+
     const vehicleLicenseRequired = vehicle.license_code_required || 'Code B';
 
     // Call the database function to check if driver qualifies
     const { data, error } = await supabase
       .rpc('check_driver_license_qualifies', {
-        p_driver_license_code: driverLicenseCode,
+        p_driver_license_code: licenseCode,
         p_vehicle_license_required: vehicleLicenseRequired
       });
 

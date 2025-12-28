@@ -267,7 +267,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           </div>
 
           <div class="section">
-            <h3>Invoice</h3>
+            <h3>Invoice Details</h3>
             <div class="section-content">
               <div class="info-row-spread">
                 <div>
@@ -275,53 +275,41 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                   <span class="info-value">${invoice.invoice_number}</span>
                 </div>
                 <div>
-                  <span class="info-label">Date:</span>
-                  <span class="info-value">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
-                </div>
-                <div>
-                  <span class="info-label">Transaction Date & Time:</span>
-                  <span class="info-value">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')} ${new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Vehicle & Driver</h3>
-            <div class="section-content">
-              <div class="info-row-spread">
-                <div>
                   <span class="info-label">Vehicle:</span>
                   <span class="info-value">${invoice.vehicle_registration}</span>
+                </div>
+                <div>
+                  <span class="info-label">Station:</span>
+                  <span class="info-value">${invoice.garage_name}</span>
+                </div>
+              </div>
+              <div class="info-row-spread" style="margin-top: 6px;">
+                <div>
+                  <span class="info-label">Date:</span>
+                  <span class="info-value">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
                 </div>
                 <div>
                   <span class="info-label">Driver:</span>
                   <span class="info-value">${invoice.driver_name}</span>
                 </div>
                 <div>
-                  <span class="info-label">Odometer:</span>
-                  <span class="info-value">${invoice.odometer_reading.toLocaleString()} km</span>
+                  <span class="info-label">Address:</span>
+                  <span class="info-value">${invoice.garage_address}</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div class="section">
-            <h3>Fuel Station</h3>
-            <div class="section-content">
-              <div class="info-row-spread">
+              <div class="info-row-spread" style="margin-top: 6px;">
                 <div>
-                  <span class="info-label">Station:</span>
-                  <span class="info-value">${invoice.garage_name}</span>
+                  <span class="info-label">Trans. Date:</span>
+                  <span class="info-value">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')} ${new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div>
+                  <span class="info-label">Odometer:</span>
+                  <span class="info-value">${invoice.odometer_reading.toLocaleString()} km</span>
                 </div>
                 ${invoice.garage_vat_number ? `<div>
                   <span class="info-label">VAT no:</span>
                   <span class="info-value">${invoice.garage_vat_number}</span>
-                </div>` : ''}
-              </div>
-              <div class="info-row">
-                <span class="info-label">Address:</span>
-                <span class="info-value">${invoice.garage_address}</span>
+                </div>` : '<div></div>'}
               </div>
             </div>
           </div>
@@ -1140,65 +1128,53 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           </div>
 
           <div className="mb-6">
-            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">INVOICE</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">INVOICE DETAILS</h3>
+            <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center text-base">
                 <div>
                   <span className="text-gray-600">Number:</span>
                   <span className="font-bold ml-1">{selectedInvoice.invoice_number}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Date:</span>
-                  <span className="font-bold ml-1">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Transaction Date & Time:</span>
-                  <span className="font-bold ml-1">
-                    {new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')} {new Date(selectedInvoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">VEHICLE & DRIVER</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex justify-between items-center text-base">
-                <div>
                   <span className="text-gray-600">Vehicle:</span>
                   <span className="font-bold ml-1">{selectedInvoice.vehicle_registration}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Station:</span>
+                  <span className="font-bold ml-1">{selectedInvoice.garage_name}</span>
+                </div>
+              </div>
+              <div className="flex justify-between items-center text-base">
+                <div>
+                  <span className="text-gray-600">Date:</span>
+                  <span className="font-bold ml-1">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span>
                 </div>
                 <div>
                   <span className="text-gray-600">Driver:</span>
                   <span className="font-bold ml-1">{selectedInvoice.driver_name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-600">Odometer:</span>
-                  <span className="font-bold ml-1">{selectedInvoice.odometer_reading.toLocaleString()} km</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">FUEL STATION</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex gap-8 text-base">
-                <div>
-                  <span className="text-gray-600">Station:</span>
-                  <span className="font-bold ml-1">{selectedInvoice.garage_name}</span>
-                </div>
-                <div>
                   <span className="text-gray-600">Address:</span>
                   <span className="font-bold ml-1">{selectedInvoice.garage_address}</span>
                 </div>
-                {selectedInvoice.garage_vat_number && (
+              </div>
+              <div className="flex justify-between items-center text-base">
+                <div>
+                  <span className="text-gray-600">Trans. Date:</span>
+                  <span className="font-bold ml-1">
+                    {new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')} {new Date(selectedInvoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Odometer:</span>
+                  <span className="font-bold ml-1">{selectedInvoice.odometer_reading.toLocaleString()} km</span>
+                </div>
+                {selectedInvoice.garage_vat_number ? (
                   <div>
-                    <span className="text-gray-600">VAT Number:</span>
+                    <span className="text-gray-600">VAT no:</span>
                     <span className="font-bold ml-1">{selectedInvoice.garage_vat_number}</span>
                   </div>
-                )}
+                ) : <div></div>}
               </div>
             </div>
           </div>

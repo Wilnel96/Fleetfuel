@@ -88,6 +88,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const [success, setSuccess] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
+  const [idDobMismatch, setIdDobMismatch] = useState<string>('');
 
   const [formData, setFormData] = useState<DriverFormData>({
     first_name: '',
@@ -323,14 +324,18 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     setEditingDriver(null);
     setError('');
     setSuccess('');
+    setIdDobMismatch('');
   };
 
   const handleLicenseScan = (data: ParsedLicenseData) => {
+    const newIdNumber = data.idNumber || formData.id_number;
+    const newDob = data.dateOfBirth || formData.date_of_birth;
+
     setFormData({
       first_name: data.firstName || formData.first_name,
       surname: data.lastName || formData.surname,
-      id_number: data.idNumber || formData.id_number,
-      date_of_birth: data.dateOfBirth || formData.date_of_birth,
+      id_number: newIdNumber,
+      date_of_birth: newDob,
       phone_number: formData.phone_number,
       email: formData.email,
       address_line_1: data.address || formData.address_line_1,
@@ -349,6 +354,8 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       status: formData.status,
       organization_id: formData.organization_id,
     });
+
+    validateIdNumberDob(newIdNumber, newDob);
     setShowScanner(false);
     setSuccess('License scanned successfully! Review and complete remaining fields.');
   };
@@ -357,6 +364,12 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    if (idDobMismatch) {
+      setError('Please correct the date of birth to match the ID number before submitting');
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -513,6 +526,38 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const buildRestrictionString = (driver: string, vehicle: string, prpd: string) => {
     const parts = [driver, vehicle, prpd].filter(p => p !== '');
     return parts.join(', ');
+  };
+
+  const validateIdNumberDob = (idNumber: string, dateOfBirth: string) => {
+    if (!idNumber || !dateOfBirth || idNumber.length < 6) {
+      setIdDobMismatch('');
+      return true;
+    }
+
+    const idYear = idNumber.substring(0, 2);
+    const idMonth = idNumber.substring(2, 4);
+    const idDay = idNumber.substring(4, 6);
+
+    const dob = new Date(dateOfBirth);
+    const birthYear = dob.getFullYear();
+    const birthMonth = dob.getMonth() + 1;
+    const birthDay = dob.getDate();
+
+    const fullYear = parseInt(idYear) <= 23 ? 2000 + parseInt(idYear) : 1900 + parseInt(idYear);
+
+    if (
+      fullYear !== birthYear ||
+      parseInt(idMonth) !== birthMonth ||
+      parseInt(idDay) !== birthDay
+    ) {
+      setIdDobMismatch(
+        `ID number indicates birth date: ${idDay}/${idMonth}/${fullYear}, but entered DOB is: ${birthDay}/${birthMonth}/${birthYear}`
+      );
+      return false;
+    }
+
+    setIdDobMismatch('');
+    return true;
   };
 
   if (showScanner) {
@@ -794,7 +839,11 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                       type="text"
                       required
                       value={formData.id_number}
-                      onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
+                      onChange={(e) => {
+                        const newIdNumber = e.target.value;
+                        setFormData({ ...formData, id_number: newIdNumber });
+                        validateIdNumberDob(newIdNumber, formData.date_of_birth);
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
@@ -805,9 +854,19 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                       type="date"
                       required
                       value={formData.date_of_birth}
-                      onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                      onChange={(e) => {
+                        const newDob = e.target.value;
+                        setFormData({ ...formData, date_of_birth: newDob });
+                        validateIdNumberDob(formData.id_number, newDob);
+                      }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
+                    {idDobMismatch && (
+                      <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" />
+                        {idDobMismatch}
+                      </p>
+                    )}
                   </div>
                 </div>
 

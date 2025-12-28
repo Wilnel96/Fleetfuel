@@ -2,6 +2,7 @@ const SUPABASE_URL = 'https://dhklqlqpowrwjplrkfzz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRoa2xxbHFwb3dyd2pwbHJrZnp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU2NTE5OTksImV4cCI6MjA4MTIyNzk5OX0.BIQWNP7CbcTVgFRBXwELg7LschBVHklyblR3cnZedUI';
 
 const transactionIds = [
+  'a936504f-d602-40a3-8a7b-c3c56e3c4928', // Dec 28 - Missing invoice
   '9082f2e4-7c37-4a2e-93b0-c8164be09f7e', // Most recent - Dec 27
   'b8158385-9593-4828-b07d-2dc85de80893', // Dec 25
   '1f102417-4c5c-4d4e-aba5-c8fd626950a3', // Dec 25

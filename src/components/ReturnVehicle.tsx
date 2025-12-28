@@ -157,10 +157,6 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
     if (!odometerReading || !selectedVehicle || !drawTransaction) return;
 
     const returnOdometer = parseInt(odometerReading);
-    if (returnOdometer < drawTransaction.odometer_reading) {
-      setError('Return odometer reading cannot be less than the draw odometer reading.');
-      return;
-    }
 
     setError('');
     setLoading(true);
@@ -192,7 +188,12 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
       let exceptionDescription = '';
       let exceptionType = '';
 
-      if (kmDrivenValue > 500 && hoursElapsed < 1) {
+      // Check for odometer going backward
+      if (returnOdometer < drawTransaction.odometer_reading) {
+        shouldLogException = true;
+        exceptionType = 'odometer_decreased';
+        exceptionDescription = `Critical: Closing odometer (${returnOdometer.toLocaleString()} km) is less than opening odometer (${drawTransaction.odometer_reading.toLocaleString()} km). Decrease of ${Math.abs(kmDrivenValue).toLocaleString()} km. This indicates either incorrect readings, odometer tampering, or odometer rollback.`;
+      } else if (kmDrivenValue > 500 && hoursElapsed < 1) {
         shouldLogException = true;
         exceptionType = 'excessive_km_short_time';
         exceptionDescription = `Suspicious: ${kmDrivenValue} km driven in ${hoursElapsed.toFixed(1)} hours (over 500 km in under 1 hour). This suggests either incorrect odometer readings or unauthorized vehicle use.`;
@@ -219,8 +220,12 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
             organization_id: organizationId,
             exception_type: exceptionType,
             description: exceptionDescription,
-            expected_value: `Normal usage: ${(hoursElapsed * 60).toFixed(0)} minutes should result in reasonable km`,
-            actual_value: `${kmDrivenValue} km in ${hoursElapsed.toFixed(1)} hours`,
+            expected_value: returnOdometer < drawTransaction.odometer_reading
+              ? `Odometer should increase or stay the same (was ${drawTransaction.odometer_reading.toLocaleString()} km)`
+              : `Normal usage: ${(hoursElapsed * 60).toFixed(0)} minutes should result in reasonable km`,
+            actual_value: returnOdometer < drawTransaction.odometer_reading
+              ? `Decreased to ${returnOdometer.toLocaleString()} km (${kmDrivenValue} km decrease)`
+              : `${kmDrivenValue} km in ${hoursElapsed.toFixed(1)} hours`,
             transaction_id: returnTx.id,
             resolved: false,
           });
@@ -423,16 +428,28 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
                 placeholder="125500"
                 required
               />
-              {odometerReading && drawTransaction && parseInt(odometerReading) >= drawTransaction.odometer_reading && (
-                <p className="text-sm text-green-600 mt-2">
-                  Distance driven: {(parseInt(odometerReading) - drawTransaction.odometer_reading).toLocaleString()} km
-                </p>
+              {odometerReading && drawTransaction && (
+                <>
+                  {parseInt(odometerReading) >= drawTransaction.odometer_reading ? (
+                    <p className="text-sm text-green-600 mt-2">
+                      Distance driven: {(parseInt(odometerReading) - drawTransaction.odometer_reading).toLocaleString()} km
+                    </p>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 mt-2">
+                      <p className="text-sm text-yellow-900 font-medium">Warning: Odometer Decreased</p>
+                      <p className="text-xs text-yellow-700 mt-1">
+                        The closing odometer ({parseInt(odometerReading).toLocaleString()} km) is less than the opening odometer ({drawTransaction.odometer_reading.toLocaleString()} km).
+                        This will be logged as an exception for review.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             <button
               onClick={handleSubmit}
-              disabled={loading || !odometerReading || (drawTransaction && parseInt(odometerReading) < drawTransaction.odometer_reading)}
+              disabled={loading || !odometerReading}
               className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? 'Processing...' : 'Confirm Return Vehicle'}

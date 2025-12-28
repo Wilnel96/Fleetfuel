@@ -246,14 +246,17 @@ Deno.serve(async (req: Request) => {
     let oilSection = "";
     const oilQuantity = Number(transaction.oil_quantity || 0);
     const oilPricePerLiter = Number(transaction.oil_price_per_liter || 0);
-    const oilTotalAmount = Number(transaction.oil_total_amount || 0);
+    const oilTotalInclVat = Number(transaction.oil_total_amount || 0);
+
+    const oilExclVat = oilTotalInclVat / 1.15;
+    const oilVatAmount = oilTotalInclVat - oilExclVat;
 
     if (oilQuantity > 0) {
       oilSection = `\n\nOil Purchase:
 Type: ${transaction.oil_type || 'N/A'}${transaction.oil_brand ? ` (${transaction.oil_brand})` : ''}
 Quantity: ${oilQuantity.toFixed(2)}L
-Price per Liter: R ${oilPricePerLiter.toFixed(2)}
-Oil Amount: R ${oilTotalAmount.toFixed(2)}`;
+Price per Liter (incl VAT): R ${oilPricePerLiter.toFixed(2)}
+Oil Amount (incl VAT): R ${oilTotalInclVat.toFixed(2)}`;
     }
 
     let additionalItemsSection = "";
@@ -264,15 +267,19 @@ Oil Amount: R ${oilTotalAmount.toFixed(2)}`;
       }
     }
 
+    const totalVat = itemsVatAmount + oilVatAmount;
+
     let breakdownSection = "\n";
     if (oilQuantity > 0 || additionalItems.length > 0) {
       breakdownSection += `Fuel Amount (VAT Zero-Rated): R ${fuelAmount.toFixed(2)}\n`;
       if (oilQuantity > 0) {
-        breakdownSection += `Oil Amount (VAT Zero-Rated): R ${oilTotalAmount.toFixed(2)}\n`;
+        breakdownSection += `Oil Subtotal (excl VAT): R ${oilExclVat.toFixed(2)}\n`;
       }
       if (additionalItems.length > 0) {
-        breakdownSection += `Additional Items Subtotal: R ${itemsSubtotalExclVat.toFixed(2)}\n`;
-        breakdownSection += `VAT (15%): R ${itemsVatAmount.toFixed(2)}\n`;
+        breakdownSection += `Additional Items Subtotal (excl VAT): R ${itemsSubtotalExclVat.toFixed(2)}\n`;
+      }
+      if (oilQuantity > 0 || additionalItems.length > 0) {
+        breakdownSection += `VAT (15%): R ${totalVat.toFixed(2)}\n`;
       }
       breakdownSection += `\nTotal Amount: R ${Number(invoice.total_amount).toFixed(2)}`;
     } else {

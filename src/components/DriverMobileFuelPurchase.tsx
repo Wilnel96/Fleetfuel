@@ -1306,7 +1306,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Price per Liter (R)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Price per Liter (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
                           <input
                             type="number"
                             step="0.01"
@@ -1332,10 +1332,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                             placeholder="150.00"
                             required={purchasingOil}
                           />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Oil is subject to 15% VAT
+                          </p>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Total Amount (R)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Total Amount (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
                           <input
                             type="number"
                             step="0.01"

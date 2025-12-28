@@ -1372,7 +1372,14 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
                 <button
                   onClick={handleFuelDetailsSubmit}
-                  disabled={loading || !formData.liters || !formData.pricePerLiter || !formData.odometerReading || (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount) > spendingLimitInfo.availableAmount)}
+                  disabled={
+                    loading ||
+                    !formData.liters ||
+                    !formData.pricePerLiter ||
+                    !formData.odometerReading ||
+                    (purchasingOil && (!formData.oilQuantity || !formData.oilUnitPrice || !formData.oilType)) ||
+                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount) > spendingLimitInfo.availableAmount)
+                  }
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >
                   {loading ? (

@@ -311,7 +311,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
             <div class="section-content">
               <div class="info-row">
                 <span class="info-label">Station:</span>
-                <span class="info-value">${invoice.garage_name}${invoice.garage_vat_number ? ` | VAT: ${invoice.garage_vat_number}` : ''}</span>
+                <span class="info-value">${invoice.garage_name}${invoice.garage_vat_number ? ` | VAT no: ${invoice.garage_vat_number}` : ''}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">Address:</span>
@@ -546,7 +546,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     const stationWithVat = invoice.garage_vat_number
-      ? `${invoice.garage_name} | VAT: ${invoice.garage_vat_number}`
+      ? `${invoice.garage_name} | VAT no: ${invoice.garage_vat_number}`
       : invoice.garage_name;
     const stationText = pdf.splitTextToSize(stationWithVat, columnWidth - 4);
     pdf.text(stationText[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
@@ -910,7 +910,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
       const stationWithVatAll = invoice.garage_vat_number
-        ? `${invoice.garage_name} | VAT: ${invoice.garage_vat_number}`
+        ? `${invoice.garage_name} | VAT no: ${invoice.garage_vat_number}`
         : invoice.garage_name;
       const stationTextAll = pdf.splitTextToSize(stationWithVatAll, columnWidth - 4);
       pdf.text(stationTextAll[0], col3X + columnWidth - 2, yPosition, { align: 'right' });

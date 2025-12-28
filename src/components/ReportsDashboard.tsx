@@ -39,7 +39,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     { id: 'overview', name: 'Overview Summary', description: 'General fuel purchase statistics', icon: BarChart3 },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
     { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
-    { id: 'exceptions', name: 'Driver Exceptions Report', description: 'Location mismatches and policy violations', icon: MapPin },
+    { id: 'exceptions', name: 'Vehicle Exception Report', description: 'Odometer mismatches, suspicious usage patterns, and violations', icon: AlertCircle },
     { id: 'vehicle', name: 'Vehicle Reports', description: 'Efficiency and usage by vehicle', icon: TrendingUp },
     { id: 'vehicles-to-service', name: 'Vehicles to be Serviced', description: 'Vehicles within 1000 km of service', icon: Wrench },
     { id: 'service-due', name: 'Next Service Due Date', description: 'Estimated service due dates for vehicles', icon: Wrench },
@@ -1265,11 +1265,11 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
             {selectedReport === 'exceptions' && reportData.exceptions && (
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-orange-900">Driver Exception Report</h3>
+                <h3 className="text-lg font-semibold mb-4 text-orange-900">Vehicle Exception Report</h3>
                 {reportData.exceptions.length === 0 ? (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
                     <p className="text-green-800 font-medium">No exceptions found!</p>
-                    <p className="text-sm text-green-700 mt-2">All fuel purchases were made at expected locations.</p>
+                    <p className="text-sm text-green-700 mt-2">All vehicle transactions were completed without any anomalies.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -1279,7 +1279,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <MapPin className={`w-5 h-5 ${exception.resolved ? 'text-gray-600' : 'text-orange-600'}`} />
+                                <AlertCircle className={`w-5 h-5 ${exception.resolved ? 'text-gray-600' : 'text-orange-600'}`} />
                                 <div>
                                   <h4 className="font-semibold text-gray-900">{exception.vehicle}</h4>
                                   <p className="text-sm text-gray-600">Driver: {exception.driver}</p>
@@ -1300,11 +1300,11 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
                                 {exception.expected_value && (
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                      <p className="text-sm font-medium text-gray-700">Expected Location:</p>
+                                      <p className="text-sm font-medium text-gray-700">Expected:</p>
                                       <p className="text-sm text-gray-900">{exception.expected_value}</p>
                                     </div>
                                     <div>
-                                      <p className="text-sm font-medium text-gray-700">Actual Location:</p>
+                                      <p className="text-sm font-medium text-gray-700">Actual:</p>
                                       <p className="text-sm text-orange-600 font-medium">{exception.actual_value}</p>
                                     </div>
                                   </div>

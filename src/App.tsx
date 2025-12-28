@@ -44,7 +44,6 @@ function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [userRole, setUserRole] = useState<string>('admin');
-  const [initialViewSet, setInitialViewSet] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -94,6 +93,7 @@ function App() {
       }
 
       if (session) {
+        console.log('Auth state - Session detected, loading profile...');
         setSession(session);
         setUserMode('admin');
         setShowModeSelection(false);
@@ -103,7 +103,7 @@ function App() {
           console.warn('Profile load timeout, using defaults');
           if (!mounted) return;
           setUserRole('admin');
-          setCurrentView('organization');
+          setCurrentView(null);
         }, 3000);
 
         supabase
@@ -119,7 +119,7 @@ function App() {
             if (profileError) {
               console.error('Auth state - Profile error:', profileError);
               setUserRole('admin');
-              setCurrentView('organization');
+              setCurrentView(null);
               return;
             }
 
@@ -128,11 +128,10 @@ function App() {
             if (profile) {
               setUserRole(profile.role);
               setCurrentView(null);
-              setInitialViewSet(true);
             } else {
               console.warn('Auth state - No profile found, using defaults');
               setUserRole('admin');
-              setCurrentView('organization');
+              setCurrentView(null);
             }
           })
           .catch((err) => {
@@ -140,7 +139,7 @@ function App() {
             console.error('Auth state - Exception loading profile:', err);
             if (!mounted) return;
             setUserRole('admin');
-            setCurrentView('organization');
+            setCurrentView(null);
           });
       } else if (_event === 'SIGNED_OUT') {
         console.log('User signed out event');
@@ -162,8 +161,14 @@ function App() {
 
     console.log('Checking session... Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
 
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
       if (!mounted) return;
+
+      if (error) {
+        console.error('Error getting session:', error);
+        setLoading(false);
+        return;
+      }
 
       if (currentSession) {
         console.log('Existing session found on mount');
@@ -171,8 +176,33 @@ function App() {
         setUserMode('admin');
         setShowModeSelection(false);
         setLoading(false);
+
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentSession.user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (!mounted) return;
+            if (profile) {
+              console.log('Profile loaded on mount:', profile);
+              setUserRole(profile.role);
+              setCurrentView(null);
+            } else {
+              console.warn('No profile on mount, using defaults');
+              setUserRole('admin');
+              setCurrentView(null);
+            }
+          })
+          .catch((err) => {
+            console.error('Error loading profile on mount:', err);
+            if (!mounted) return;
+            setUserRole('admin');
+            setCurrentView(null);
+          });
       } else {
         console.log('No existing session on mount');
+        setLoading(false);
       }
     });
 

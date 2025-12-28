@@ -841,23 +841,21 @@ export default function InvoiceManagement() {
                 ))
               )}
             </tbody>
-            {filteredInvoices.length > 0 && (
-              <tfoot className="bg-gray-100 border-t-2 border-gray-300">
-                <tr>
-                  <td colSpan={4} className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
-                    Totals:
-                  </td>
-                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
-                    {formatCurrency(totalAmount)}
-                  </td>
-                  <td colSpan={3} className="px-4 py-3 text-sm font-semibold text-gray-700">
-                    Total Vehicles: {totalVehicles}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
           </table>
         </div>
+
+        {filteredInvoices.length > 0 && (
+          <div className="flex gap-4 mt-4">
+            <div className="bg-white rounded-lg shadow-md p-4 flex-1">
+              <div className="text-sm text-gray-600 mb-1">Total Vehicles</div>
+              <div className="text-2xl font-bold text-gray-900">{totalVehicles}</div>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-4 flex-1">
+              <div className="text-sm text-gray-600 mb-1">Total Amount</div>
+              <div className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount)}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {showGenerateModal && (

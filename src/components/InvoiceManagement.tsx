@@ -1147,20 +1147,23 @@ function FuelInvoicesTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([]);
-  const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [selectedOrgId, setSelectedOrgId] = useState('all');
   const [invoiceNumberFilter, setInvoiceNumberFilter] = useState('');
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const today = new Date();
+
+  const [startDate, setStartDate] = useState(yesterday.toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(today.toISOString().split('T')[0]);
 
   useEffect(() => {
     fetchOrganizations();
   }, []);
 
   useEffect(() => {
-    if (selectedOrgId) {
-      loadInvoices();
-    } else {
-      setFuelInvoices([]);
-    }
-  }, [selectedOrgId, invoiceNumberFilter]);
+    loadInvoices();
+  }, [selectedOrgId, invoiceNumberFilter, startDate, endDate]);
 
   const fetchOrganizations = async () => {
     try {
@@ -1178,8 +1181,6 @@ function FuelInvoicesTab() {
   };
 
   const loadInvoices = async () => {
-    if (!selectedOrgId) return;
-
     try {
       setLoading(true);
       setError('');
@@ -1197,8 +1198,21 @@ function FuelInvoicesTab() {
             province,
             postal_code
           )
-        `)
-        .eq('organization_id', selectedOrgId);
+        `);
+
+      if (selectedOrgId !== 'all') {
+        query = query.eq('organization_id', selectedOrgId);
+      }
+
+      if (startDate) {
+        query = query.gte('transaction_date', startDate);
+      }
+
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        query = query.lte('transaction_date', endDateTime.toISOString());
+      }
 
       if (invoiceNumberFilter.trim()) {
         query = query.ilike('invoice_number', `%${invoiceNumberFilter}%`);
@@ -1549,8 +1563,8 @@ function FuelInvoicesTab() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Organization
               </label>
@@ -1559,7 +1573,7 @@ function FuelInvoicesTab() {
                 onChange={(e) => setSelectedOrgId(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">Select an organization...</option>
+                <option value="all">All Organizations</option>
                 {organizations.map((org) => (
                   <option key={org.id} value={org.id}>
                     {org.name}
@@ -1567,19 +1581,40 @@ function FuelInvoicesTab() {
                 ))}
               </select>
             </div>
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Filter by Invoice Number (optional)
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Invoice Number
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Enter invoice number..."
+                  placeholder="Filter..."
                   value={invoiceNumberFilter}
                   onChange={(e) => setInvoiceNumberFilter(e.target.value)}
-                  disabled={!selectedOrgId}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
@@ -1596,8 +1631,7 @@ function FuelInvoicesTab() {
         </div>
       </div>
 
-      {selectedOrgId && (
-        <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -1641,7 +1675,7 @@ function FuelInvoicesTab() {
                   {fuelInvoices.length === 0 ? (
                     <tr>
                       <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
-                        {invoiceNumberFilter ? 'No invoices found matching your filter' : 'No invoices found for this organization'}
+                        No invoices found matching your criteria
                       </td>
                     </tr>
                   ) : (
@@ -1688,7 +1722,6 @@ function FuelInvoicesTab() {
             </div>
           )}
         </div>
-      )}
 
       {selectedInvoice && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

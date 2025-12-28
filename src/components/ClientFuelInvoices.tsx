@@ -1117,61 +1117,67 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
           <div className="border-b-2 border-gray-900 pb-6 mb-6">
             <h1 className="text-3xl font-bold text-gray-900 text-center">FUEL TRANSACTION INVOICE</h1>
-            <p className="text-center text-gray-600 mt-2">Fuel Empowerment Systems (Pty) Ltd</p>
+            <p className="text-center text-gray-600 mt-2 text-base">Fuel Empowerment Systems (Pty) Ltd</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 mb-6">
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 mb-2">INVOICE</h3>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">INVOICE</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-center text-base">
+                <div>
                   <span className="text-gray-600">Number:</span>
-                  <span className="font-bold">{selectedInvoice.invoice_number}</span>
+                  <span className="font-bold ml-1">{selectedInvoice.invoice_number}</span>
                 </div>
-                <div className="flex justify-between">
+                <div>
                   <span className="text-gray-600">Date:</span>
-                  <span className="font-bold">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+                  <span className="font-bold ml-1">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Trans. Date:</span>
-                  <span className="font-bold">{new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')}</span>
+                <div>
+                  <span className="text-gray-600">Transaction Date & Time:</span>
+                  <span className="font-bold ml-1">
+                    {new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')} {new Date(selectedInvoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 mb-2">VEHICLE & DRIVER</h3>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">VEHICLE & DRIVER</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-center text-base">
+                <div>
                   <span className="text-gray-600">Vehicle:</span>
-                  <span className="font-bold">{selectedInvoice.vehicle_registration}</span>
+                  <span className="font-bold ml-1">{selectedInvoice.vehicle_registration}</span>
                 </div>
-                <div className="flex justify-between">
+                <div>
                   <span className="text-gray-600">Driver:</span>
-                  <span className="font-bold">{selectedInvoice.driver_name}</span>
+                  <span className="font-bold ml-1">{selectedInvoice.driver_name}</span>
                 </div>
-                <div className="flex justify-between">
+                <div>
                   <span className="text-gray-600">Odometer:</span>
-                  <span className="font-bold">{selectedInvoice.odometer_reading.toLocaleString()} km</span>
+                  <span className="font-bold ml-1">{selectedInvoice.odometer_reading.toLocaleString()} km</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div>
-              <h3 className="text-xs font-bold text-gray-500 mb-2">FUEL STATION</h3>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                <div className="flex justify-between">
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">FUEL STATION</h3>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex gap-8 text-base">
+                <div>
                   <span className="text-gray-600">Station:</span>
-                  <span className="font-bold text-right">{selectedInvoice.garage_name}</span>
+                  <span className="font-bold ml-1">{selectedInvoice.garage_name}</span>
                 </div>
-                <div className="flex justify-between">
+                <div>
                   <span className="text-gray-600">Address:</span>
-                  <span className="font-bold text-right">{selectedInvoice.garage_address}</span>
+                  <span className="font-bold ml-1">{selectedInvoice.garage_address}</span>
                 </div>
                 {selectedInvoice.garage_vat_number && (
-                  <div className="flex justify-between">
+                  <div>
                     <span className="text-gray-600">VAT Number:</span>
-                    <span className="font-bold">{selectedInvoice.garage_vat_number}</span>
+                    <span className="font-bold ml-1">{selectedInvoice.garage_vat_number}</span>
                   </div>
                 )}
               </div>
@@ -1179,15 +1185,15 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           </div>
 
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-2">Fuel Details</h3>
+            <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">FUEL DETAILS</h3>
             <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-4 gap-2 mb-2 text-xs font-medium text-gray-600">
+              <div className="grid grid-cols-4 gap-3 mb-2 text-sm font-medium text-gray-600">
                 <div>Fuel Type</div>
                 <div className="text-right">Liters</div>
                 <div className="text-right">Price per Liter</div>
                 <div className="text-right">Fuel Amount</div>
               </div>
-              <div className="grid grid-cols-4 gap-2 text-sm font-semibold">
+              <div className="grid grid-cols-4 gap-3 text-base font-bold">
                 <div>{selectedInvoice.fuel_type}</div>
                 <div className="text-right">{parseFloat(selectedInvoice.liters.toString()).toFixed(2)}</div>
                 <div className="text-right">R {parseFloat(selectedInvoice.price_per_liter.toString()).toFixed(2)}</div>
@@ -1198,16 +1204,16 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
           {selectedInvoice.oil_quantity && parseFloat(selectedInvoice.oil_quantity.toString()) > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Oil Purchase</h3>
+              <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">OIL PURCHASE</h3>
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
                 <div>
-                  <div className="grid grid-cols-4 gap-2 mb-2 text-xs font-medium text-gray-600">
+                  <div className="grid grid-cols-4 gap-3 mb-2 text-sm font-medium text-gray-600">
                     <div>Oil Type</div>
                     <div className="text-right">Quantity</div>
                     <div className="text-right">Unit Price (Incl VAT)</div>
                     <div className="text-right">Oil Amount (Incl VAT)</div>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-sm font-semibold">
+                  <div className="grid grid-cols-4 gap-3 text-base font-bold">
                     <div>{selectedInvoice.oil_type || 'N/A'}{selectedInvoice.oil_brand ? ` (${selectedInvoice.oil_brand})` : ''}</div>
                     <div className="text-right">{parseFloat(selectedInvoice.oil_quantity.toString()).toFixed(0)} Unit{parseFloat(selectedInvoice.oil_quantity.toString()) > 1 ? 's' : ''}</div>
                     <div className="text-right">R {parseFloat(selectedInvoice.oil_unit_price?.toString() || '0').toFixed(2)}</div>
@@ -1215,9 +1221,9 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                   </div>
                 </div>
                 <div className="pt-2 border-t border-gray-300">
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-base">
                     <span className="text-gray-600">Amount of VAT included:</span>
-                    <span className="font-semibold">R {((parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') - (parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') / 1.15))).toFixed(2)}</span>
+                    <span className="font-bold">R {((parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') - (parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') / 1.15))).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -1235,7 +1241,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
             </div>
           </div>
 
-          <div className="mt-6 text-sm text-gray-600 text-center">
+          <div className="mt-6 text-base text-gray-600 text-center">
             <p>This invoice is for accounting and tax compliance purposes.</p>
             <p className="mt-2">Thank you for your business.</p>
           </div>

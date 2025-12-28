@@ -74,6 +74,8 @@ export default function InvoiceManagement() {
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
   const [invoiceNumberSearch, setInvoiceNumberSearch] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [totalVehicles, setTotalVehicles] = useState(0);
+  const [totalAmount, setTotalAmount] = useState(0);
 
   useEffect(() => {
     loadOrganizations();
@@ -93,6 +95,10 @@ export default function InvoiceManagement() {
   useEffect(() => {
     filterInvoices();
   }, [invoices, statusFilter]);
+
+  useEffect(() => {
+    calculateTotals();
+  }, [filteredInvoices]);
 
   const loadOrganizations = async () => {
     try {
@@ -132,7 +138,7 @@ export default function InvoiceManagement() {
           )
         `);
 
-      if (selectedOrgId) {
+      if (selectedOrgId && selectedOrgId !== 'all') {
         query = query.eq('organization_id', selectedOrgId);
       }
 
@@ -160,6 +166,35 @@ export default function InvoiceManagement() {
     }
 
     setFilteredInvoices(filtered);
+  };
+
+  const calculateTotals = async () => {
+    if (filteredInvoices.length === 0) {
+      setTotalVehicles(0);
+      setTotalAmount(0);
+      return;
+    }
+
+    try {
+      // Calculate total amount
+      const sumAmount = filteredInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
+      setTotalAmount(sumAmount);
+
+      // Fetch line items for all filtered invoices to calculate total vehicles
+      const invoiceIds = filteredInvoices.map(inv => inv.id);
+      const { data: lineItemsData, error: lineItemsError } = await supabase
+        .from('invoice_line_items')
+        .select('quantity, item_type')
+        .in('invoice_id', invoiceIds)
+        .eq('item_type', 'Vehicle Fee');
+
+      if (lineItemsError) throw lineItemsError;
+
+      const sumVehicles = lineItemsData?.reduce((sum, item) => sum + parseInt(item.quantity), 0) || 0;
+      setTotalVehicles(sumVehicles);
+    } catch (err) {
+      console.error('Failed to calculate totals:', err);
+    }
   };
 
   const viewInvoiceDetails = async (invoice: Invoice) => {
@@ -693,6 +728,7 @@ export default function InvoiceManagement() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select an organization...</option>
+                <option value="all">All Organizations</option>
                 {organizations.map((org) => (
                   <option key={org.id} value={org.id}>
                     {org.name}
@@ -805,6 +841,21 @@ export default function InvoiceManagement() {
                 ))
               )}
             </tbody>
+            {filteredInvoices.length > 0 && (
+              <tfoot className="bg-gray-100 border-t-2 border-gray-300">
+                <tr>
+                  <td colSpan={4} className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                    Totals:
+                  </td>
+                  <td className="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                    {formatCurrency(totalAmount)}
+                  </td>
+                  <td colSpan={3} className="px-4 py-3 text-sm font-semibold text-gray-700">
+                    Total Vehicles: {totalVehicles}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       </div>

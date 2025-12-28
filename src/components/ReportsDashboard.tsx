@@ -41,7 +41,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
     { id: 'overview', name: 'Overview Summary', description: 'General fuel purchase statistics', icon: BarChart3 },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
     { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
-    { id: 'exceptions', name: 'Vehicle Exception Report', description: 'Odometer mismatches, suspicious usage patterns, and violations', icon: AlertCircle },
+    { id: 'exceptions', name: 'Vehicle Exception Report', description: 'Unresolved exceptions only (use Custom Report Builder for historical analysis)', icon: AlertCircle },
     { id: 'vehicle', name: 'Vehicle Reports', description: 'Efficiency and usage by vehicle', icon: TrendingUp },
     { id: 'vehicles-to-service', name: 'Vehicles to be Serviced', description: 'Vehicles within 1000 km of service', icon: Wrench },
     { id: 'service-due', name: 'Next Service Due Date', description: 'Estimated service due dates for vehicles', icon: Wrench },
@@ -484,6 +484,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         organizations (name, city)
       `)
       .eq('organization_id', orgId)
+      .eq('resolved', false)
       .gte('created_at', startDateTime)
       .lte('created_at', endDateTime)
       .order('created_at', { ascending: false });
@@ -929,9 +930,10 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
         break;
 
       case 'exceptions':
-        csv = 'Date,Vehicle,Driver,Exception Type,Description,Expected Value,Actual Value,Status,Resolved At,Resolution Notes\n';
+        csv = 'Unresolved Vehicle Exceptions Report\n\n';
+        csv += 'Date,Vehicle,Driver,Exception Type,Description,Expected Value,Actual Value,Status\n';
         reportData.exceptions?.forEach((e: any) => {
-          csv += `"${new Date(e.date).toLocaleDateString()}","${e.vehicle}","${e.driver}","${e.exception_type}","${e.description}","${e.expected_value || ''}","${e.actual_value || ''}","${e.resolved ? 'Resolved' : 'Pending'}","${e.resolved_at ? new Date(e.resolved_at).toLocaleDateString() : ''}","${e.resolution_notes || ''}"\n`;
+          csv += `"${new Date(e.date).toLocaleDateString()}","${e.vehicle}","${e.driver}","${e.exception_type}","${e.description}","${e.expected_value || ''}","${e.actual_value || ''}","${e.resolved ? 'Resolved' : 'Pending'}"\n`;
         });
         break;
 
@@ -1283,11 +1285,16 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
             {selectedReport === 'exceptions' && reportData.exceptions && (
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-orange-900">Vehicle Exception Report</h3>
+                <h3 className="text-lg font-semibold mb-4 text-orange-900">Vehicle Exception Report (Unresolved Only)</h3>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                  <p className="text-sm text-blue-800">
+                    This report shows only unresolved exceptions. Use the <strong>Custom Report Builder</strong> to analyze all exceptions (resolved and unresolved) to identify trends by driver, vehicle, or exception type.
+                  </p>
+                </div>
                 {reportData.exceptions.length === 0 ? (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                    <p className="text-green-800 font-medium">No exceptions found!</p>
-                    <p className="text-sm text-green-700 mt-2">All vehicle transactions were completed without any anomalies.</p>
+                    <p className="text-green-800 font-medium">No unresolved exceptions!</p>
+                    <p className="text-sm text-green-700 mt-2">All vehicle exceptions have been resolved or no anomalies were detected.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">

@@ -56,7 +56,7 @@ Deno.serve(async (req: Request) => {
         items_vat_amount,
         items_total_incl_vat,
         oil_quantity,
-        oil_price_per_liter,
+        oil_unit_price,
         oil_total_amount,
         oil_type,
         oil_brand
@@ -245,7 +245,7 @@ Deno.serve(async (req: Request) => {
 
     let oilSection = "";
     const oilQuantity = Number(transaction.oil_quantity || 0);
-    const oilPricePerLiter = Number(transaction.oil_price_per_liter || 0);
+    const oilUnitPrice = Number(transaction.oil_unit_price || 0);
     const oilTotalInclVat = Number(transaction.oil_total_amount || 0);
 
     const oilExclVat = oilTotalInclVat / 1.15;
@@ -255,7 +255,7 @@ Deno.serve(async (req: Request) => {
       oilSection = `\n\nOil Purchase:
 Type: ${transaction.oil_type || 'N/A'}${transaction.oil_brand ? ` (${transaction.oil_brand})` : ''}
 Quantity: ${oilQuantity.toFixed(2)}L
-Price per Liter (incl VAT): R ${oilPricePerLiter.toFixed(2)}
+Unit Price (incl VAT): R ${oilUnitPrice.toFixed(2)}
 Oil Amount (incl VAT): R ${oilTotalInclVat.toFixed(2)}`;
     }
 

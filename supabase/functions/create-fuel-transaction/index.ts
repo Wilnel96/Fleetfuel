@@ -22,7 +22,7 @@ interface FuelTransactionRequest {
   netAmount: number;
   previousOdometerReading?: number | null;
   oilQuantity?: number;
-  oilPricePerLiter?: number;
+  oilUnitPrice?: number;
   oilTotalAmount?: number;
   oilType?: string;
   oilBrand?: string;
@@ -208,7 +208,7 @@ Deno.serve(async (req: Request) => {
         verified: true,
         authorized_at: new Date().toISOString(),
         oil_quantity: transactionData.oilQuantity || 0,
-        oil_price_per_liter: transactionData.oilPricePerLiter || 0,
+        oil_unit_price: transactionData.oilUnitPrice || 0,
         oil_total_amount: transactionData.oilTotalAmount || 0,
         oil_type: transactionData.oilType || null,
         oil_brand: transactionData.oilBrand || null,

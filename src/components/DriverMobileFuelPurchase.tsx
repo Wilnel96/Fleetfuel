@@ -83,7 +83,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     totalAmount: '',
     odometerReading: '',
     oilQuantity: '',
-    oilPricePerLiter: '',
+    oilUnitPrice: '',
     oilTotalAmount: '',
     oilType: '',
     oilBrand: '',
@@ -567,8 +567,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           fuelType: drawnVehicle.fuel_type || 'Diesel-50',
           licenseDiskImage: licenseDiskScan?.image,
           oilQuantity: purchasingOil && formData.oilQuantity ? parseFloat(formData.oilQuantity) : 0,
-          oilPricePerLiter: purchasingOil && formData.oilPricePerLiter ? parseFloat(formData.oilPricePerLiter) : 0,
-          oilTotalAmount: purchasingOil && formData.oilTotalAmount ? parseFloat(formData.oilTotalAmount) : 0,
+          oilUnitPrice: purchasingOil && formData.oilUnitPrice ? parseFloat(formData.oilUnitPrice) : 0,
+          oilTotalAmount: purchasingOil && formData.oilUnitPrice ? parseFloat(formData.oilUnitPrice) : 0,
           oilType: purchasingOil ? formData.oilType : null,
           oilBrand: purchasingOil ? formData.oilBrand : null,
         }),
@@ -650,7 +650,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       totalAmount: '',
       odometerReading: '',
       oilQuantity: '',
-      oilPricePerLiter: '',
+      oilUnitPrice: '',
       oilTotalAmount: '',
       oilType: '',
       oilBrand: '',
@@ -1227,7 +1227,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                             setFormData({
                               ...formData,
                               oilQuantity: '',
-                              oilPricePerLiter: '',
+                              oilUnitPrice: '',
                               oilTotalAmount: '',
                               oilType: '',
                               oilBrand: '',
@@ -1257,11 +1257,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                             required={purchasingOil}
                           >
                             <option value="">Select oil type</option>
-                            <option value="5W-30">5W-30</option>
-                            <option value="10W-30">10W-30</option>
-                            <option value="10W-40">10W-40</option>
-                            <option value="15W-40">15W-40</option>
-                            <option value="20W-50">20W-50</option>
+                            <option value="Engine oil">Engine oil</option>
+                            <option value="Brake fluid">Brake fluid</option>
+                            <option value="Transmission oil">Transmission oil</option>
+                            <option value="Coolant">Coolant</option>
+                            <option value="Other">Other</option>
                           </select>
                         </div>
 
@@ -1283,69 +1283,43 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                             step="0.1"
                             value={formData.oilQuantity}
                             onChange={(e) => {
-                              const quantity = e.target.value;
-                              setFormData({ ...formData, oilQuantity: quantity });
-                              const oilTotal = parseFloat(quantity) * parseFloat(formData.oilPricePerLiter || '0');
-                              if (!isNaN(oilTotal)) {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  oilQuantity: quantity,
-                                  oilTotalAmount: oilTotal.toFixed(2)
-                                }));
-                                const fuelTotal = parseFloat(prev.liters) * parseFloat(prev.pricePerLiter);
-                                const grandTotal = fuelTotal + oilTotal;
-                                if (!isNaN(grandTotal)) {
-                                  setFormData(p => ({ ...p, totalAmount: grandTotal.toFixed(2) }));
-                                }
-                              }
+                              setFormData({ ...formData, oilQuantity: e.target.value });
                             }}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3"
-                            placeholder="5.0"
+                            placeholder="0.5"
                             required={purchasingOil}
                           />
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Price per Liter (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
                           <input
                             type="number"
                             step="0.01"
-                            value={formData.oilPricePerLiter}
+                            value={formData.oilUnitPrice}
                             onChange={(e) => {
-                              const price = e.target.value;
-                              setFormData({ ...formData, oilPricePerLiter: price });
-                              const oilTotal = parseFloat(formData.oilQuantity || '0') * parseFloat(price);
-                              if (!isNaN(oilTotal)) {
-                                setFormData(prev => ({
-                                  ...prev,
-                                  oilPricePerLiter: price,
-                                  oilTotalAmount: oilTotal.toFixed(2)
-                                }));
-                                const fuelTotal = parseFloat(prev.liters) * parseFloat(prev.pricePerLiter);
-                                const grandTotal = fuelTotal + oilTotal;
-                                if (!isNaN(grandTotal)) {
-                                  setFormData(p => ({ ...p, totalAmount: grandTotal.toFixed(2) }));
-                                }
+                              const unitPrice = e.target.value;
+                              setFormData(prev => ({
+                                ...prev,
+                                oilUnitPrice: unitPrice,
+                                oilTotalAmount: unitPrice
+                              }));
+
+                              // Update grand total with fuel + oil
+                              const fuelTotal = parseFloat(prev.liters) * parseFloat(prev.pricePerLiter);
+                              const oilTotal = parseFloat(unitPrice || '0');
+                              const grandTotal = fuelTotal + oilTotal;
+                              if (!isNaN(grandTotal)) {
+                                setFormData(p => ({ ...p, totalAmount: grandTotal.toFixed(2) }));
                               }
                             }}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3"
-                            placeholder="150.00"
+                            placeholder="65.00"
                             required={purchasingOil}
                           />
                           <p className="text-xs text-gray-500 mt-1">
-                            Oil is subject to 15% VAT
+                            Enter the total price you paid for the oil (not per liter). Oil is subject to 15% VAT.
                           </p>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Total Amount (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={formData.oilTotalAmount}
-                            readOnly
-                            className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                          />
                         </div>
                       </div>
                     )}

@@ -300,7 +300,14 @@ export default function InvoiceManagement() {
       if (updateError) throw updateError;
 
       await loadInvoices();
-      setSelectedInvoice(null);
+
+      // Refresh the selected invoice to show updated status
+      if (selectedInvoice) {
+        const updatedInvoice = invoices.find(inv => inv.id === invoiceId);
+        if (updatedInvoice) {
+          await viewInvoiceDetails(updatedInvoice);
+        }
+      }
     } catch (err: any) {
       setError('Failed to mark invoice as paid: ' + err.message);
     }

@@ -87,6 +87,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         { name: 'fuel_transactions', displayName: 'Fuel Transactions' },
         { name: 'vehicles', displayName: 'Vehicles' },
         { name: 'drivers', displayName: 'Drivers' },
+        { name: 'vehicle_exceptions', displayName: 'Vehicle Exceptions' },
         { name: 'garages', displayName: 'Garages' },
         ...(clientOrg ? [] : [
           { name: 'organizations', displayName: 'Organizations' },
@@ -129,7 +130,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
                 !['commission_rate', 'commission_amount', 'net_amount', 'organization_id'].includes(col.name)
               );
               console.log('After filtering:', columns.length, columns.map(c => c.name));
-            } else if (['vehicles', 'drivers', 'organization_users'].includes(table.name)) {
+            } else if (['vehicles', 'drivers', 'vehicle_exceptions', 'organization_users'].includes(table.name)) {
               // Remove organization_id from other tables for client organizations
               columns = columns.filter(col => col.name !== 'organization_id');
             }
@@ -242,6 +243,22 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         { name: 'medical_certificate_on_file', type: 'boolean' },
         { name: 'status', type: 'string' },
         { name: 'last_login_at', type: 'string' },
+        { name: 'created_at', type: 'string' },
+        { name: 'updated_at', type: 'string' },
+      ],
+      'vehicle_exceptions': [
+        { name: 'organization_id', type: 'string' },
+        { name: 'vehicle_id', type: 'string' },
+        { name: 'driver_id', type: 'string' },
+        { name: 'transaction_id', type: 'string' },
+        { name: 'exception_type', type: 'string' },
+        { name: 'description', type: 'string' },
+        { name: 'expected_value', type: 'string' },
+        { name: 'actual_value', type: 'string' },
+        { name: 'resolved', type: 'boolean' },
+        { name: 'resolved_at', type: 'string' },
+        { name: 'resolved_by', type: 'string' },
+        { name: 'resolution_notes', type: 'string' },
         { name: 'created_at', type: 'string' },
         { name: 'updated_at', type: 'string' },
       ],
@@ -379,7 +396,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         columns = columns.filter(col =>
           !['commission_rate', 'commission_amount', 'net_amount', 'organization_id'].includes(col.name)
         );
-      } else if (['vehicles', 'drivers', 'profiles', 'organization_users'].includes(tableName)) {
+      } else if (['vehicles', 'drivers', 'vehicle_exceptions', 'profiles', 'organization_users'].includes(tableName)) {
         // Remove organization_id from other tables for client organizations
         columns = columns.filter(col => col.name !== 'organization_id');
       }
@@ -513,6 +530,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         if (selectedTable === 'fuel_transactions' ||
             selectedTable === 'vehicles' ||
             selectedTable === 'drivers' ||
+            selectedTable === 'vehicle_exceptions' ||
             selectedTable === 'garages' ||
             selectedTable === 'daily_eft_batches') {
           console.log('Adding organization filter:', accessibleOrgIds);
@@ -632,6 +650,10 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         columnsWithJoins.push('garage_id,garages!garage_id(name)');
       } else if (col === 'organization_id') {
         columnsWithJoins.push('organization_id,organizations!organization_id(name)');
+      } else if (col === 'transaction_id') {
+        columnsWithJoins.push('transaction_id,fuel_transactions!transaction_id(transaction_date,total_amount)');
+      } else if (col === 'resolved_by') {
+        columnsWithJoins.push('resolved_by,profiles!resolved_by(full_name)');
       } else if (col === 'fuel_card_id') {
         columnsWithJoins.push('fuel_card_id');
       } else {
@@ -685,6 +707,12 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
           processedRow['garage_id'] = row.garages.name || 'N/A';
         } else if (key === 'organizations' && row.organizations) {
           processedRow['organization_id'] = row.organizations.name || 'N/A';
+        } else if (key === 'fuel_transactions' && row.fuel_transactions) {
+          processedRow['transaction_id'] = row.fuel_transactions.transaction_date
+            ? `${new Date(row.fuel_transactions.transaction_date).toLocaleDateString()} - R${row.fuel_transactions.total_amount || 0}`
+            : 'N/A';
+        } else if (key === 'profiles' && row.profiles) {
+          processedRow['resolved_by'] = row.profiles.full_name || 'N/A';
         } else if (key === 'fuel_types' && Array.isArray(row[key])) {
           processedRow[key] = row[key].join(', ');
         } else if (typeof row[key] === 'boolean') {
@@ -883,6 +911,15 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       '_vehicle_model': 'Vehicle Model',
       'total_commission': 'Total Commission',
       'batch_id': 'Batch ID',
+      'exception_type': 'Exception Type',
+      'description': 'Description',
+      'expected_value': 'Expected Value',
+      'actual_value': 'Actual Value',
+      'resolved': 'Resolved',
+      'resolved_at': 'Resolved At',
+      'resolved_by': 'Resolved By',
+      'resolution_notes': 'Resolution Notes',
+      'transaction_id': 'Transaction ID',
     };
 
     return columnNameMap[columnName] || columnName.split('_').map(word =>

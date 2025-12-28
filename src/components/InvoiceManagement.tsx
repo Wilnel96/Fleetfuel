@@ -229,7 +229,19 @@ export default function InvoiceManagement() {
     let filtered = [...invoices];
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(inv => inv.status === statusFilter);
+      if (statusFilter === 'due') {
+        // Show invoices that are issued but not yet overdue
+        filtered = filtered.filter(inv => {
+          const isIssued = inv.status === 'issued';
+          const dueDate = new Date(inv.payment_due_date);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const isPastDue = dueDate < today;
+          return isIssued && !isPastDue;
+        });
+      } else {
+        filtered = filtered.filter(inv => inv.status === statusFilter);
+      }
     }
 
     setFilteredInvoices(filtered);
@@ -465,21 +477,36 @@ export default function InvoiceManagement() {
     return new Date(dateString).toLocaleDateString('en-ZA');
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { bg: string; text: string; icon: any }> = {
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Calendar },
-      paid: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
-      overdue: { bg: 'bg-red-100', text: 'text-red-800', icon: AlertCircle },
-      cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', icon: XCircle },
+  const getStatusBadge = (status: string, dueDate?: string) => {
+    let displayStatus = status;
+    let statusConfig: Record<string, { bg: string; text: string; icon: any; label: string }> = {
+      issued: { bg: 'bg-blue-100', text: 'text-blue-800', icon: FileText, label: 'Issued' },
+      paid: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle, label: 'Paid' },
+      partially_paid: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: DollarSign, label: 'Partially Paid' },
+      overdue: { bg: 'bg-red-100', text: 'text-red-800', icon: AlertCircle, label: 'Overdue' },
+      cancelled: { bg: 'bg-gray-100', text: 'text-gray-800', icon: XCircle, label: 'Cancelled' },
+      due: { bg: 'bg-orange-100', text: 'text-orange-800', icon: Calendar, label: 'Due' },
     };
 
-    const config = statusConfig[status] || statusConfig.pending;
+    // If status is issued, determine if it's due or overdue
+    if (status === 'issued' && dueDate) {
+      const due = new Date(dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (due < today) {
+        displayStatus = 'overdue';
+      } else {
+        displayStatus = 'due';
+      }
+    }
+
+    const config = statusConfig[displayStatus] || statusConfig.issued;
     const Icon = config.icon;
 
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
         <Icon className="w-3 h-3" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {config.label}
       </span>
     );
   };
@@ -612,7 +639,7 @@ export default function InvoiceManagement() {
                 </div>
               </div>
               <div className="text-right">
-                {getStatusBadge(selectedInvoice.status)}
+                {getStatusBadge(selectedInvoice.status, selectedInvoice.payment_due_date)}
                 <div className="mt-4 space-y-1 text-sm">
                   <p className="font-semibold text-gray-900">Payment Terms:</p>
                   <p className="text-gray-600">{selectedInvoice.payment_terms}</p>
@@ -842,8 +869,10 @@ export default function InvoiceManagement() {
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
+                  <option value="issued">Issued</option>
+                  <option value="due">Due (Not Overdue)</option>
                   <option value="paid">Paid</option>
+                  <option value="partially_paid">Partially Paid</option>
                   <option value="overdue">Overdue</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
@@ -906,7 +935,7 @@ export default function InvoiceManagement() {
                     <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
                       {formatCurrency(invoice.amount_outstanding)}
                     </td>
-                    <td className="px-4 py-3 text-sm">{getStatusBadge(invoice.status)}</td>
+                    <td className="px-4 py-3 text-sm">{getStatusBadge(invoice.status, invoice.payment_due_date)}</td>
                     <td className="px-4 py-3 text-sm">
                       <button
                         onClick={() => viewInvoiceDetails(invoice)}

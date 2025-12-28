@@ -72,7 +72,7 @@ export default function InvoiceManagement() {
 
   const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
-  const [invoiceNumberSearch, setInvoiceNumberSearch] = useState('');
+  const [billingPeriodSearch, setBillingPeriodSearch] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [totalVehicles, setTotalVehicles] = useState(0);
   const [totalAmount, setTotalAmount] = useState(0);
@@ -82,7 +82,7 @@ export default function InvoiceManagement() {
   }, []);
 
   useEffect(() => {
-    if (selectedOrgId || invoiceNumberSearch) {
+    if (selectedOrgId || billingPeriodSearch) {
       setHasSearched(true);
       loadInvoices();
     } else {
@@ -90,7 +90,7 @@ export default function InvoiceManagement() {
       setInvoices([]);
       setFilteredInvoices([]);
     }
-  }, [selectedOrgId, invoiceNumberSearch]);
+  }, [selectedOrgId, billingPeriodSearch]);
 
   useEffect(() => {
     filterInvoices();
@@ -142,8 +142,8 @@ export default function InvoiceManagement() {
         query = query.eq('organization_id', selectedOrgId);
       }
 
-      if (invoiceNumberSearch) {
-        query = query.ilike('invoice_number', `%${invoiceNumberSearch}%`);
+      if (billingPeriodSearch) {
+        query = query.or(`billing_period_start.ilike.%${billingPeriodSearch}%,billing_period_end.ilike.%${billingPeriodSearch}%`);
       }
 
       const { data, error: invoicesError } = await query.order('invoice_date', { ascending: false });
@@ -738,15 +738,15 @@ export default function InvoiceManagement() {
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Or Search by Invoice Number
+                Or Search by Billing Period
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Search by invoice number..."
-                  value={invoiceNumberSearch}
-                  onChange={(e) => setInvoiceNumberSearch(e.target.value)}
+                  placeholder="Search by billing period (e.g., 2024-01)..."
+                  value={billingPeriodSearch}
+                  onChange={(e) => setBillingPeriodSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -794,8 +794,8 @@ export default function InvoiceManagement() {
                     <div className="flex flex-col items-center gap-3">
                       <Building2 className="w-12 h-12 text-gray-300" />
                       <div>
-                        <p className="text-gray-600 font-medium">Please select an organization or search by invoice number</p>
-                        <p className="text-sm text-gray-500 mt-1">Select an organization from the dropdown above or enter an invoice number to view invoices</p>
+                        <p className="text-gray-600 font-medium">Please select an organization or search by billing period</p>
+                        <p className="text-sm text-gray-500 mt-1">Select an organization from the dropdown above or enter a billing period to view invoices</p>
                       </div>
                     </div>
                   </td>

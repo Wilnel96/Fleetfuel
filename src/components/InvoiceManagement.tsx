@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft } from 'lucide-react';
+import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Invoice {

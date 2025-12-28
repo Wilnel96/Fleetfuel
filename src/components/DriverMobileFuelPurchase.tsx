@@ -568,7 +568,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           licenseDiskImage: licenseDiskScan?.image,
           oilQuantity: purchasingOil && formData.oilQuantity ? parseFloat(formData.oilQuantity) : 0,
           oilUnitPrice: purchasingOil && formData.oilUnitPrice ? parseFloat(formData.oilUnitPrice) : 0,
-          oilTotalAmount: purchasingOil && formData.oilUnitPrice ? parseFloat(formData.oilUnitPrice) : 0,
+          oilTotalAmount: purchasingOil && formData.oilTotalAmount ? parseFloat(formData.oilTotalAmount) : 0,
           oilType: purchasingOil ? formData.oilType : null,
           oilBrand: purchasingOil ? formData.oilBrand : null,
         }),
@@ -1277,50 +1277,87 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Quantity (Liters)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Number of Units</label>
                           <input
                             type="number"
-                            step="0.1"
+                            step="1"
+                            min="1"
                             value={formData.oilQuantity}
                             onChange={(e) => {
-                              setFormData({ ...formData, oilQuantity: e.target.value });
+                              const quantity = e.target.value;
+                              setFormData(prev => {
+                                const unitPrice = parseFloat(prev.oilUnitPrice || '0');
+                                const qty = parseFloat(quantity || '0');
+                                const oilTotal = qty * unitPrice;
+
+                                // Update grand total with fuel + oil
+                                const fuelTotal = parseFloat(prev.liters || '0') * parseFloat(prev.pricePerLiter || '0');
+                                const grandTotal = fuelTotal + oilTotal;
+
+                                return {
+                                  ...prev,
+                                  oilQuantity: quantity,
+                                  oilTotalAmount: oilTotal > 0 ? oilTotal.toFixed(2) : '',
+                                  totalAmount: !isNaN(grandTotal) ? grandTotal.toFixed(2) : prev.totalAmount
+                                };
+                              });
                             }}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3"
-                            placeholder="0.5"
+                            placeholder="4"
                             required={purchasingOil}
                           />
+                          <p className="text-xs text-gray-500 mt-1">
+                            Number of bottles/units purchased (e.g., 4 bottles)
+                          </p>
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Price per Unit (R) <span className="text-xs text-gray-500">incl. VAT</span></label>
                           <input
                             type="number"
                             step="0.01"
                             value={formData.oilUnitPrice}
                             onChange={(e) => {
                               const unitPrice = e.target.value;
-                              setFormData(prev => ({
-                                ...prev,
-                                oilUnitPrice: unitPrice,
-                                oilTotalAmount: unitPrice
-                              }));
+                              setFormData(prev => {
+                                const qty = parseFloat(prev.oilQuantity || '0');
+                                const price = parseFloat(unitPrice || '0');
+                                const oilTotal = qty * price;
 
-                              // Update grand total with fuel + oil
-                              const fuelTotal = parseFloat(prev.liters) * parseFloat(prev.pricePerLiter);
-                              const oilTotal = parseFloat(unitPrice || '0');
-                              const grandTotal = fuelTotal + oilTotal;
-                              if (!isNaN(grandTotal)) {
-                                setFormData(p => ({ ...p, totalAmount: grandTotal.toFixed(2) }));
-                              }
+                                // Update grand total with fuel + oil
+                                const fuelTotal = parseFloat(prev.liters || '0') * parseFloat(prev.pricePerLiter || '0');
+                                const grandTotal = fuelTotal + oilTotal;
+
+                                return {
+                                  ...prev,
+                                  oilUnitPrice: unitPrice,
+                                  oilTotalAmount: oilTotal > 0 ? oilTotal.toFixed(2) : '',
+                                  totalAmount: !isNaN(grandTotal) ? grandTotal.toFixed(2) : prev.totalAmount
+                                };
+                              });
                             }}
                             className="w-full border border-gray-300 rounded-lg px-4 py-3"
                             placeholder="65.00"
                             required={purchasingOil}
                           />
                           <p className="text-xs text-gray-500 mt-1">
-                            Enter the total price you paid for the oil (not per liter). Oil is subject to 15% VAT.
+                            Price per bottle/unit (e.g., R65 per 0.5L bottle). Oil is subject to 15% VAT.
                           </p>
                         </div>
+
+                        {formData.oilQuantity && formData.oilUnitPrice && (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium text-blue-900">Oil Total:</span>
+                              <span className="text-lg font-bold text-blue-900">
+                                R {formData.oilTotalAmount || '0.00'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-blue-700 mt-1">
+                              {formData.oilQuantity} units × R{formData.oilUnitPrice} = R{formData.oilTotalAmount}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

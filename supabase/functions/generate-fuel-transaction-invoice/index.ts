@@ -248,7 +248,6 @@ Deno.serve(async (req: Request) => {
       console.error("Transaction update error:", updateError);
     }
 
-    let oilSection = "";
     const oilQuantity = Number(transaction.oil_quantity || 0);
     const oilUnitPrice = Number(transaction.oil_unit_price || 0);
     const oilTotalInclVat = Number(transaction.oil_total_amount || 0);
@@ -256,12 +255,26 @@ Deno.serve(async (req: Request) => {
     const oilExclVat = oilTotalInclVat / 1.15;
     const oilVatAmount = oilTotalInclVat - oilExclVat;
 
+    // Build Fuel Details section (compact table format)
+    const fuelDetailsSection = `
+Fuel Details:
+Fuel Type                Liters        Price per Liter    Fuel Amount
+${invoice.fuel_type.padEnd(24)} ${Number(invoice.liters).toFixed(2).padEnd(13)} R ${Number(invoice.price_per_liter).toFixed(2).padEnd(17)} R ${fuelAmount.toFixed(2)}`;
+
+    // Build Oil Purchase section (compact table format) if applicable
+    let oilSection = "";
     if (oilQuantity > 0) {
-      oilSection = `\n\nOil Purchase:
-Type: ${transaction.oil_type || 'N/A'}${transaction.oil_brand ? ` (${transaction.oil_brand})` : ''}
-Quantity: ${oilQuantity.toFixed(2)}L
-Unit Price (incl VAT): R ${oilUnitPrice.toFixed(2)}
-Oil Amount (incl VAT): R ${oilTotalInclVat.toFixed(2)}`;
+      const oilTypeDisplay = transaction.oil_type || 'N/A';
+      const oilBrandDisplay = transaction.oil_brand ? ` (${transaction.oil_brand})` : '';
+      const oilFullDisplay = `${oilTypeDisplay}${oilBrandDisplay}`;
+
+      oilSection = `
+
+Oil Purchase:
+Oil Type                 Quantity      Unit Price (Incl VAT)    Oil Amount (Incl VAT)
+${oilFullDisplay.padEnd(24)} ${oilQuantity.toFixed(0)} Unit${oilQuantity > 1 ? 's' : ' '}     R ${oilUnitPrice.toFixed(2).padEnd(23)} R ${oilTotalInclVat.toFixed(2)}
+
+Amount of VAT included: R ${oilVatAmount.toFixed(2)}`;
     }
 
     let additionalItemsSection = "";
@@ -274,21 +287,21 @@ Oil Amount (incl VAT): R ${oilTotalInclVat.toFixed(2)}`;
 
     const totalVat = itemsVatAmount + oilVatAmount;
 
-    let breakdownSection = "\n";
+    // Build total section
+    let breakdownSection = "\n\n";
     if (oilQuantity > 0 || additionalItems.length > 0) {
-      breakdownSection += `Fuel Amount (VAT Zero-Rated): R ${fuelAmount.toFixed(2)}\n`;
+      breakdownSection += `Fuel Amount (VAT Zero-Rated):        R ${fuelAmount.toFixed(2)}\n`;
       if (oilQuantity > 0) {
-        breakdownSection += `Oil Subtotal (excl VAT): R ${oilExclVat.toFixed(2)}\n`;
+        breakdownSection += `Oil Subtotal (excl VAT):             R ${oilExclVat.toFixed(2)}\n`;
+        breakdownSection += `Oil VAT (15%):                       R ${oilVatAmount.toFixed(2)}\n`;
       }
       if (additionalItems.length > 0) {
         breakdownSection += `Additional Items Subtotal (excl VAT): R ${itemsSubtotalExclVat.toFixed(2)}\n`;
+        breakdownSection += `Additional Items VAT (15%):          R ${itemsVatAmount.toFixed(2)}\n`;
       }
-      if (oilQuantity > 0 || additionalItems.length > 0) {
-        breakdownSection += `VAT (15%): R ${totalVat.toFixed(2)}\n`;
-      }
-      breakdownSection += `\nTotal Amount: R ${Number(invoice.total_amount).toFixed(2)}`;
+      breakdownSection += `\nTotal Amount:                        R ${Number(invoice.total_amount).toFixed(2)}`;
     } else {
-      breakdownSection += `Total Amount (VAT Zero-Rated): R ${Number(invoice.total_amount).toFixed(2)}`;
+      breakdownSection += `Total Amount (VAT Zero-Rated):       R ${Number(invoice.total_amount).toFixed(2)}`;
     }
 
     const emailSubject = `Fuel Transaction Invoice - ${invoiceNumber}`;
@@ -308,11 +321,7 @@ Odometer Reading: ${invoice.odometer_reading} km
 Fuel Station: ${invoice.garage_name}
 Address: ${invoice.garage_address}
 
-Fuel Type: ${invoice.fuel_type}
-Liters: ${Number(invoice.liters).toFixed(2)}L
-Price per Liter: R ${Number(invoice.price_per_liter).toFixed(2)}
-Fuel Amount: R ${fuelAmount.toFixed(2)}
-${oilSection}${additionalItemsSection}${breakdownSection}
+${fuelDetailsSection}${oilSection}${additionalItemsSection}${breakdownSection}
 
 This invoice is for accounting and tax compliance purposes.
 

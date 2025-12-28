@@ -82,7 +82,7 @@ export default function InvoiceManagement() {
   }, []);
 
   useEffect(() => {
-    if (selectedOrgId || billingPeriodSearch) {
+    if (selectedOrgId && selectedOrgId !== 'all') {
       setHasSearched(true);
       loadInvoices();
     } else {
@@ -121,6 +121,14 @@ export default function InvoiceManagement() {
       setLoading(true);
       setError('');
 
+      // Only load invoices if a specific organization is selected
+      if (!selectedOrgId || selectedOrgId === 'all') {
+        setInvoices([]);
+        setFilteredInvoices([]);
+        setLoading(false);
+        return;
+      }
+
       let query = supabase
         .from('invoices')
         .select(`
@@ -136,11 +144,8 @@ export default function InvoiceManagement() {
             country,
             company_registration_number
           )
-        `);
-
-      if (selectedOrgId && selectedOrgId !== 'all') {
-        query = query.eq('organization_id', selectedOrgId);
-      }
+        `)
+        .eq('organization_id', selectedOrgId);
 
       const { data, error: invoicesError } = await query.order('invoice_date', { ascending: false });
 
@@ -734,7 +739,6 @@ export default function InvoiceManagement() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select an organization...</option>
-                <option value="all">All Organizations</option>
                 {organizations.map((org) => (
                   <option key={org.id} value={org.id}>
                     {org.name}
@@ -800,8 +804,8 @@ export default function InvoiceManagement() {
                     <div className="flex flex-col items-center gap-3">
                       <Building2 className="w-12 h-12 text-gray-300" />
                       <div>
-                        <p className="text-gray-600 font-medium">Please select an organization or search by billing period</p>
-                        <p className="text-sm text-gray-500 mt-1">Select an organization from the dropdown above or enter a billing period to view invoices</p>
+                        <p className="text-gray-600 font-medium">Please select an organization</p>
+                        <p className="text-sm text-gray-500 mt-1">Select an organization from the dropdown above to view their invoices</p>
                       </div>
                     </div>
                   </td>

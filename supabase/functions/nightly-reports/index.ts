@@ -49,6 +49,20 @@ Deno.serve(async (req: Request) => {
 
     const today = new Date().toISOString().split('T')[0];
 
+    // Run invoice integrity check first
+    console.log("Running invoice integrity check...");
+    const integrityCheckUrl = `${supabaseUrl}/functions/v1/check-invoice-integrity`;
+    const integrityResponse = await fetch(integrityCheckUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${supabaseServiceKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const integrityResult = await integrityResponse.json();
+    console.log("Invoice integrity check result:", integrityResult);
+
     const { data: sales, error } = await supabase
       .from('garage_daily_sales')
       .select('*')
@@ -122,6 +136,7 @@ Deno.serve(async (req: Request) => {
         garages_processed: Object.keys(garageReports).length,
         emails_sent: emailsSent.length,
         reports: emailsSent,
+        invoice_integrity: integrityResult,
       }),
       {
         headers: {

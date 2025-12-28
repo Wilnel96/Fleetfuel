@@ -82,7 +82,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     pricePerLiter: '',
     totalAmount: '',
     odometerReading: '',
+    oilQuantity: '',
+    oilPricePerLiter: '',
+    oilTotalAmount: '',
+    oilType: '',
+    oilBrand: '',
   });
+  const [purchasingOil, setPurchasingOil] = useState(false);
 
   const [garages, setGarages] = useState<Garage[]>([]);
 
@@ -560,6 +566,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           location: location ? `${location.lat},${location.lng}` : 'Unknown',
           fuelType: drawnVehicle.fuel_type || 'Diesel-50',
           licenseDiskImage: licenseDiskScan?.image,
+          oilQuantity: purchasingOil && formData.oilQuantity ? parseFloat(formData.oilQuantity) : 0,
+          oilPricePerLiter: purchasingOil && formData.oilPricePerLiter ? parseFloat(formData.oilPricePerLiter) : 0,
+          oilTotalAmount: purchasingOil && formData.oilTotalAmount ? parseFloat(formData.oilTotalAmount) : 0,
+          oilType: purchasingOil ? formData.oilType : null,
+          oilBrand: purchasingOil ? formData.oilBrand : null,
         }),
       });
 
@@ -638,7 +649,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       pricePerLiter: '',
       totalAmount: '',
       odometerReading: '',
+      oilQuantity: '',
+      oilPricePerLiter: '',
+      oilTotalAmount: '',
+      oilType: '',
+      oilBrand: '',
     });
+    setPurchasingOil(false);
     setSelectedGarageId('');
     setSuccess(false);
     setFuelEfficiency(null);
@@ -1197,6 +1214,138 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       placeholder="125000"
                       required
                     />
+                  </div>
+
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="block text-sm font-medium text-gray-700">Purchasing Oil?</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPurchasingOil(!purchasingOil);
+                          if (purchasingOil) {
+                            setFormData({
+                              ...formData,
+                              oilQuantity: '',
+                              oilPricePerLiter: '',
+                              oilTotalAmount: '',
+                              oilType: '',
+                              oilBrand: '',
+                            });
+                          }
+                        }}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          purchasingOil ? 'bg-green-600' : 'bg-gray-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            purchasingOil ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {purchasingOil && (
+                      <div className="space-y-3 mt-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Type</label>
+                          <select
+                            value={formData.oilType}
+                            onChange={(e) => setFormData({ ...formData, oilType: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                            required={purchasingOil}
+                          >
+                            <option value="">Select oil type</option>
+                            <option value="5W-30">5W-30</option>
+                            <option value="10W-30">10W-30</option>
+                            <option value="10W-40">10W-40</option>
+                            <option value="15W-40">15W-40</option>
+                            <option value="20W-50">20W-50</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Brand (Optional)</label>
+                          <input
+                            type="text"
+                            value={formData.oilBrand}
+                            onChange={(e) => setFormData({ ...formData, oilBrand: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                            placeholder="e.g., Castrol, Mobil, Shell"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Quantity (Liters)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={formData.oilQuantity}
+                            onChange={(e) => {
+                              const quantity = e.target.value;
+                              setFormData({ ...formData, oilQuantity: quantity });
+                              const oilTotal = parseFloat(quantity) * parseFloat(formData.oilPricePerLiter || '0');
+                              if (!isNaN(oilTotal)) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  oilQuantity: quantity,
+                                  oilTotalAmount: oilTotal.toFixed(2)
+                                }));
+                                const fuelTotal = parseFloat(prev.liters) * parseFloat(prev.pricePerLiter);
+                                const grandTotal = fuelTotal + oilTotal;
+                                if (!isNaN(grandTotal)) {
+                                  setFormData(p => ({ ...p, totalAmount: grandTotal.toFixed(2) }));
+                                }
+                              }
+                            }}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                            placeholder="5.0"
+                            required={purchasingOil}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Price per Liter (R)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.oilPricePerLiter}
+                            onChange={(e) => {
+                              const price = e.target.value;
+                              setFormData({ ...formData, oilPricePerLiter: price });
+                              const oilTotal = parseFloat(formData.oilQuantity || '0') * parseFloat(price);
+                              if (!isNaN(oilTotal)) {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  oilPricePerLiter: price,
+                                  oilTotalAmount: oilTotal.toFixed(2)
+                                }));
+                                const fuelTotal = parseFloat(prev.liters) * parseFloat(prev.pricePerLiter);
+                                const grandTotal = fuelTotal + oilTotal;
+                                if (!isNaN(grandTotal)) {
+                                  setFormData(p => ({ ...p, totalAmount: grandTotal.toFixed(2) }));
+                                }
+                              }
+                            }}
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                            placeholder="150.00"
+                            required={purchasingOil}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Total Amount (R)</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.oilTotalAmount}
+                            readOnly
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

@@ -21,6 +21,11 @@ interface FuelTransactionRequest {
   commissionAmount: number;
   netAmount: number;
   previousOdometerReading?: number | null;
+  oilQuantity?: number;
+  oilPricePerLiter?: number;
+  oilTotalAmount?: number;
+  oilType?: string;
+  oilBrand?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -36,7 +41,6 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get driver token from header
     const driverToken = req.headers.get("X-Driver-Token");
     if (!driverToken) {
       return new Response(
@@ -48,7 +52,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Validate driver session
     const { data: session, error: sessionError } = await supabase
       .from("driver_sessions")
       .select("driver_id, expires_at")
@@ -65,7 +68,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if session is expired
     if (new Date(session.expires_at) < new Date()) {
       return new Response(
         JSON.stringify({ error: "Session expired" }),
@@ -76,7 +78,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get driver details
     const { data: driver, error: driverError } = await supabase
       .from("drivers")
       .select("id, organization_id, status")
@@ -103,10 +104,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Parse request body
     const transactionData: FuelTransactionRequest = await req.json();
 
-    // Validate vehicle belongs to driver's organization
     const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
       .select("organization_id, tank_capacity")
@@ -133,7 +132,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Validate refuel liters against tank capacity
     if (vehicle.tank_capacity) {
       const maxAllowedLiters = Number(vehicle.tank_capacity) + 2;
       if (transactionData.liters > maxAllowedLiters) {
@@ -149,7 +147,6 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Check if the driver has drawn this vehicle
     const { data: hasDrawn, error: drawCheckError } = await supabase
       .rpc("check_vehicle_drawn_by_driver", {
         p_vehicle_id: transactionData.vehicleId,
@@ -177,21 +174,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get organization city for location validation
     const { data: organization } = await supabase
       .from("organizations")
       .select("city")
       .eq("id", driver.organization_id)
       .maybeSingle();
 
-    // Get garage city
     const { data: garage } = await supabase
       .from("garages")
       .select("city")
       .eq("id", transactionData.garageId)
       .maybeSingle();
 
-    // Create fuel transaction
     const { data: transaction, error: insertError } = await supabase
       .from("fuel_transactions")
       .insert({
@@ -213,6 +207,11 @@ Deno.serve(async (req: Request) => {
         number_plate_image: null,
         verified: true,
         authorized_at: new Date().toISOString(),
+        oil_quantity: transactionData.oilQuantity || 0,
+        oil_price_per_liter: transactionData.oilPricePerLiter || 0,
+        oil_total_amount: transactionData.oilTotalAmount || 0,
+        oil_type: transactionData.oilType || null,
+        oil_brand: transactionData.oilBrand || null,
       })
       .select()
       .single();
@@ -228,7 +227,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check for location mismatch and create exception if needed
     if (organization?.city && garage?.city && organization.city !== garage.city) {
       await supabase
         .from("vehicle_exceptions")

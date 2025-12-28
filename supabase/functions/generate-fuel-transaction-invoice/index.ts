@@ -54,7 +54,12 @@ Deno.serve(async (req: Request) => {
         has_additional_items,
         items_subtotal_excl_vat,
         items_vat_amount,
-        items_total_incl_vat
+        items_total_incl_vat,
+        oil_quantity,
+        oil_price_per_liter,
+        oil_total_amount,
+        oil_type,
+        oil_brand
       `)
       .eq("id", fuelTransactionId)
       .maybeSingle();
@@ -150,7 +155,6 @@ Deno.serve(async (req: Request) => {
     const driver = driverResult.data;
     const garage = garageResult.data;
 
-    // Fetch additional items if transaction has them
     let additionalItems: any[] = [];
     if (transaction.has_additional_items) {
       const { data: items, error: itemsError } = await supabase
@@ -163,7 +167,6 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Calculate fuel amount (fuel is VAT zero-rated)
     const fuelAmount = Number(transaction.liters) * Number(transaction.price_per_liter);
     const itemsSubtotalExclVat = Number(transaction.items_subtotal_excl_vat || 0);
     const itemsVatAmount = Number(transaction.items_vat_amount || 0);
@@ -240,7 +243,19 @@ Deno.serve(async (req: Request) => {
       console.error("Transaction update error:", updateError);
     }
 
-    // Build additional items section for email
+    let oilSection = "";
+    const oilQuantity = Number(transaction.oil_quantity || 0);
+    const oilPricePerLiter = Number(transaction.oil_price_per_liter || 0);
+    const oilTotalAmount = Number(transaction.oil_total_amount || 0);
+
+    if (oilQuantity > 0) {
+      oilSection = `\n\nOil Purchase:
+Type: ${transaction.oil_type || 'N/A'}${transaction.oil_brand ? ` (${transaction.oil_brand})` : ''}
+Quantity: ${oilQuantity.toFixed(2)}L
+Price per Liter: R ${oilPricePerLiter.toFixed(2)}
+Oil Amount: R ${oilTotalAmount.toFixed(2)}`;
+    }
+
     let additionalItemsSection = "";
     if (additionalItems.length > 0) {
       additionalItemsSection = "\n\nAdditional Items:\n";
@@ -249,12 +264,16 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Build breakdown section
     let breakdownSection = "\n";
-    if (additionalItems.length > 0) {
+    if (oilQuantity > 0 || additionalItems.length > 0) {
       breakdownSection += `Fuel Amount (VAT Zero-Rated): R ${fuelAmount.toFixed(2)}\n`;
-      breakdownSection += `Additional Items Subtotal: R ${itemsSubtotalExclVat.toFixed(2)}\n`;
-      breakdownSection += `VAT (15%): R ${itemsVatAmount.toFixed(2)}\n`;
+      if (oilQuantity > 0) {
+        breakdownSection += `Oil Amount (VAT Zero-Rated): R ${oilTotalAmount.toFixed(2)}\n`;
+      }
+      if (additionalItems.length > 0) {
+        breakdownSection += `Additional Items Subtotal: R ${itemsSubtotalExclVat.toFixed(2)}\n`;
+        breakdownSection += `VAT (15%): R ${itemsVatAmount.toFixed(2)}\n`;
+      }
       breakdownSection += `\nTotal Amount: R ${Number(invoice.total_amount).toFixed(2)}`;
     } else {
       breakdownSection += `Total Amount (VAT Zero-Rated): R ${Number(invoice.total_amount).toFixed(2)}`;
@@ -281,7 +300,7 @@ Fuel Type: ${invoice.fuel_type}
 Liters: ${Number(invoice.liters).toFixed(2)}L
 Price per Liter: R ${Number(invoice.price_per_liter).toFixed(2)}
 Fuel Amount: R ${fuelAmount.toFixed(2)}
-${additionalItemsSection}${breakdownSection}
+${oilSection}${additionalItemsSection}${breakdownSection}
 
 This invoice is for accounting and tax compliance purposes.
 

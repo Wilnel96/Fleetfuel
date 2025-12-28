@@ -166,7 +166,7 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
     setLoading(true);
 
     try {
-      const { error: insertError } = await supabase
+      const { data: returnTx, error: insertError } = await supabase
         .from('vehicle_transactions')
         .insert({
           organization_id: organizationId,
@@ -176,11 +176,57 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
           odometer_reading: returnOdometer,
           location: location ? `${location.lat},${location.lng}` : 'Unknown',
           related_transaction_id: drawTransaction.id,
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
 
-      setKmDriven(returnOdometer - drawTransaction.odometer_reading);
+      const kmDrivenValue = returnOdometer - drawTransaction.odometer_reading;
+
+      const drawTime = new Date(drawTransaction.created_at);
+      const returnTime = new Date();
+      const hoursElapsed = (returnTime.getTime() - drawTime.getTime()) / (1000 * 60 * 60);
+
+      let shouldLogException = false;
+      let exceptionDescription = '';
+      let exceptionType = '';
+
+      if (kmDrivenValue > 500 && hoursElapsed < 1) {
+        shouldLogException = true;
+        exceptionType = 'excessive_km_short_time';
+        exceptionDescription = `Suspicious: ${kmDrivenValue} km driven in ${hoursElapsed.toFixed(1)} hours (over 500 km in under 1 hour). This suggests either incorrect odometer readings or unauthorized vehicle use.`;
+      } else if (kmDrivenValue < 5 && hoursElapsed > 8) {
+        shouldLogException = true;
+        exceptionType = 'minimal_km_long_time';
+        exceptionDescription = `Suspicious: Only ${kmDrivenValue} km driven in ${hoursElapsed.toFixed(1)} hours (less than 5 km in over 8 hours). Vehicle may have been used without proper tracking.`;
+      } else if (kmDrivenValue === 0 && hoursElapsed > 1) {
+        shouldLogException = true;
+        exceptionType = 'no_km_driven';
+        exceptionDescription = `Suspicious: Vehicle was drawn for ${hoursElapsed.toFixed(1)} hours but no kilometers were driven (odometer unchanged at ${drawTransaction.odometer_reading} km). This may indicate unauthorized use or incorrect readings.`;
+      } else if (hoursElapsed > 24 && kmDrivenValue > 1000) {
+        shouldLogException = true;
+        exceptionType = 'excessive_km_extended_period';
+        exceptionDescription = `Alert: ${kmDrivenValue} km driven over ${hoursElapsed.toFixed(1)} hours (${(hoursElapsed / 24).toFixed(1)} days). This exceeds typical usage patterns and should be verified.`;
+      }
+
+      if (shouldLogException) {
+        await supabase
+          .from('vehicle_exceptions')
+          .insert({
+            vehicle_id: selectedVehicle.id,
+            driver_id: driverId,
+            organization_id: organizationId,
+            exception_type: exceptionType,
+            description: exceptionDescription,
+            expected_value: `Normal usage: ${(hoursElapsed * 60).toFixed(0)} minutes should result in reasonable km`,
+            actual_value: `${kmDrivenValue} km in ${hoursElapsed.toFixed(1)} hours`,
+            transaction_id: returnTx.id,
+            resolved: false,
+          });
+      }
+
+      setKmDriven(kmDrivenValue);
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to return vehicle');

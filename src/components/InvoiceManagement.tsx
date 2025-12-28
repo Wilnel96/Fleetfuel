@@ -82,7 +82,7 @@ export default function InvoiceManagement() {
   }, []);
 
   useEffect(() => {
-    if (selectedOrgId && selectedOrgId !== 'all') {
+    if (selectedOrgId) {
       setHasSearched(true);
       loadInvoices();
     } else {
@@ -121,8 +121,8 @@ export default function InvoiceManagement() {
       setLoading(true);
       setError('');
 
-      // Only load invoices if a specific organization is selected
-      if (!selectedOrgId || selectedOrgId === 'all') {
+      // Only load invoices if an organization is selected
+      if (!selectedOrgId) {
         setInvoices([]);
         setFilteredInvoices([]);
         setLoading(false);
@@ -144,8 +144,12 @@ export default function InvoiceManagement() {
             country,
             company_registration_number
           )
-        `)
-        .eq('organization_id', selectedOrgId);
+        `);
+
+      // Only filter by organization if not "all"
+      if (selectedOrgId !== 'all') {
+        query = query.eq('organization_id', selectedOrgId);
+      }
 
       const { data, error: invoicesError } = await query.order('invoice_date', { ascending: false });
 
@@ -739,6 +743,7 @@ export default function InvoiceManagement() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="">Select an organization...</option>
+                <option value="all">All Organizations</option>
                 {organizations.map((org) => (
                   <option key={org.id} value={org.id}>
                     {org.name}

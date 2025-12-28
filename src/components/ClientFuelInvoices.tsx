@@ -1241,15 +1241,11 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
           <div className="mb-6">
             <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">FUEL STATION</h3>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex gap-8 text-base">
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="flex justify-between items-center text-base">
                 <div>
                   <span className="text-gray-600">Station:</span>
                   <span className="font-bold ml-1">{selectedInvoice.garage_name}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">Address:</span>
-                  <span className="font-bold ml-1">{selectedInvoice.garage_address}</span>
                 </div>
                 {selectedInvoice.garage_vat_number && (
                   <div>
@@ -1257,6 +1253,10 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                     <span className="font-bold ml-1">{selectedInvoice.garage_vat_number}</span>
                   </div>
                 )}
+              </div>
+              <div className="text-base">
+                <span className="text-gray-600">Address:</span>
+                <span className="font-bold ml-1">{selectedInvoice.garage_address}</span>
               </div>
             </div>
           </div>

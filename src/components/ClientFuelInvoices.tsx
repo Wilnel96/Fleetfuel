@@ -590,37 +590,37 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
     yPosition += 3;
     pdf.setFillColor(249, 250, 251);
-    pdf.rect(margin, yPosition, contentWidth, invoice.garage_vat_number ? 12 : 10, 'F');
+    pdf.rect(margin, yPosition, contentWidth, 16, 'F');
 
     yPosition += 4;
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
 
+    const halfWidth = contentWidth / 2;
     pdf.text('Station:', margin + 3, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const stationText = pdf.splitTextToSize(invoice.garage_name, columnWidth - 10);
-    pdf.text(stationText[0], margin + columnWidth - 3, yPosition, { align: 'right' });
-
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(75, 85, 99);
+    const stationText = pdf.splitTextToSize(invoice.garage_name, halfWidth - 15);
+    pdf.text(stationText[0], margin + 18, yPosition);
 
     if (invoice.garage_vat_number) {
-      pdf.text('VAT no:', margin + columnWidth + 3, yPosition);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(invoice.garage_vat_number, margin + (columnWidth * 2) - 3, yPosition, { align: 'right' });
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
+      pdf.text('VAT no:', margin + halfWidth, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.garage_vat_number, margin + halfWidth + 15, yPosition);
     }
 
-    yPosition += 4;
+    yPosition += 5;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
     pdf.text('Address:', margin + 3, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const addressText = pdf.splitTextToSize(invoice.garage_address, contentWidth - 30);
-    pdf.text(addressText[0], margin + 20, yPosition);
+    const addressText = pdf.splitTextToSize(invoice.garage_address, contentWidth - 25);
+    pdf.text(addressText[0], margin + 18, yPosition);
 
     yPosition += 8;
 

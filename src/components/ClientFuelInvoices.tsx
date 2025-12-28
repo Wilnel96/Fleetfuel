@@ -130,97 +130,67 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
               font-family: Arial, sans-serif;
-              padding: 40px;
-              line-height: 1.6;
+              padding: 20px;
+              line-height: 1.4;
               color: #374151;
+              font-size: 11px;
             }
             .header {
               text-align: center;
-              margin-bottom: 30px;
+              margin-bottom: 15px;
               border-bottom: 2px solid #111827;
-              padding-bottom: 24px;
+              padding-bottom: 10px;
             }
             .header h1 {
-              margin: 0 0 8px 0;
+              margin: 0 0 4px 0;
               color: #111827;
-              font-size: 30px;
+              font-size: 22px;
               font-weight: bold;
             }
             .header p {
               color: #4b5563;
-              margin-top: 8px;
-              font-size: 14px;
+              margin-top: 2px;
+              font-size: 11px;
             }
-            .grid-container {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 24px;
-              margin-bottom: 24px;
+            .section {
+              margin-bottom: 10px;
             }
-            .column {
-              display: flex;
-              flex-direction: column;
-              gap: 16px;
-            }
-            .card {
-              margin-bottom: 16px;
-            }
-            .card h3 {
-              font-size: 12px;
-              font-weight: 500;
+            .section h3 {
+              font-size: 11px;
+              font-weight: 700;
               color: #6b7280;
-              margin-bottom: 8px;
+              margin-bottom: 4px;
               text-transform: uppercase;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.3px;
             }
-            .card-content {
+            .section-content {
               background-color: #f9fafb;
-              border-radius: 8px;
-              padding: 16px;
+              border-radius: 4px;
+              padding: 8px;
             }
             .info-row {
-              display: flex;
-              justify-content: space-between;
-              margin: 8px 0;
-            }
-            .info-row:first-child {
-              margin-top: 0;
-            }
-            .info-row:last-child {
-              margin-bottom: 0;
+              display: inline-block;
+              margin-right: 20px;
+              margin-bottom: 3px;
             }
             .info-label {
-              color: #4b5563;
+              color: #6b7280;
+              font-size: 10px;
             }
             .info-value {
               font-weight: 600;
               color: #111827;
-            }
-            .station-info {
-              margin: 8px 0;
-            }
-            .station-info:first-child {
-              margin-top: 0;
-            }
-            .station-info .info-label {
-              display: block;
-              color: #4b5563;
-              margin-bottom: 4px;
-            }
-            .station-info .info-value {
-              display: block;
-              font-weight: 600;
-              color: #111827;
+              margin-left: 4px;
             }
             .total-section {
-              border-top: 2px solid #e5e7eb;
-              padding-top: 24px;
-              margin-top: 24px;
+              border-top: 1px solid #e5e7eb;
+              padding-top: 8px;
+              margin-top: 8px;
             }
             .total-box {
               background-color: #eff6ff;
-              border-radius: 8px;
-              padding: 24px;
+              border-radius: 4px;
+              padding: 10px;
             }
             .total-content {
               display: flex;
@@ -228,28 +198,51 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
               align-items: center;
             }
             .total-label {
-              font-size: 20px;
+              font-size: 14px;
               font-weight: 600;
               color: #111827;
             }
             .total-amount {
-              font-size: 30px;
+              font-size: 18px;
               font-weight: bold;
               color: #2563eb;
             }
             .footer {
-              margin-top: 24px;
+              margin-top: 10px;
               text-align: center;
-              font-size: 14px;
+              font-size: 10px;
               color: #4b5563;
             }
             .footer p {
-              margin: 8px 0;
+              margin: 3px 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th {
+              text-align: left;
+              padding: 3px 6px;
+              font-size: 10px;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            th.right {
+              text-align: right;
+            }
+            td {
+              padding: 4px 6px;
+              font-weight: 600;
+              font-size: 10px;
+            }
+            td.right {
+              text-align: right;
             }
             @media print {
-              body { padding: 20px; }
-              @page { margin: 1.5cm; }
-              .card-content {
+              body { padding: 15px; }
+              @page { margin: 1cm; }
+              .section-content {
                 background-color: #f9fafb !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
@@ -268,96 +261,99 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
             <p>Fuel Empowerment Systems (Pty) Ltd</p>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px;">
-            <div class="card">
-              <h3>Invoice Details</h3>
-              <div class="card-content">
-                <div class="info-row">
-                  <span class="info-label">Invoice Number:</span>
-                  <span class="info-value">${invoice.invoice_number}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Invoice Date:</span>
-                  <span class="info-value">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Transaction Date:</span>
-                  <span class="info-value">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span>
-                </div>
+          <div class="section">
+            <h3>Invoice</h3>
+            <div class="section-content">
+              <div class="info-row">
+                <span class="info-label">Number:</span>
+                <span class="info-value">${invoice.invoice_number}</span>
               </div>
-            </div>
-
-            <div class="card">
-              <h3>Vehicle & Driver</h3>
-              <div class="card-content">
-                <div class="info-row">
-                  <span class="info-label">Vehicle:</span>
-                  <span class="info-value">${invoice.vehicle_registration}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Driver:</span>
-                  <span class="info-value">${invoice.driver_name}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Odometer:</span>
-                  <span class="info-value">${invoice.odometer_reading.toLocaleString()} km</span>
-                </div>
+              <div class="info-row">
+                <span class="info-label">Date:</span>
+                <span class="info-value">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
               </div>
-            </div>
-
-            <div class="card">
-              <h3>Fuel Station</h3>
-              <div class="card-content">
-                <div class="station-info">
-                  <span class="info-label">Station:</span>
-                  <span class="info-value">${invoice.garage_name}</span>
-                </div>
-                <div class="station-info">
-                  <span class="info-label">Address:</span>
-                  <span class="info-value">${invoice.garage_address}</span>
-                </div>
+              <div class="info-row">
+                <span class="info-label">Transaction Date:</span>
+                <span class="info-value">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span>
               </div>
             </div>
           </div>
 
-          <div class="card" style="margin-bottom: 16px;">
+          <div class="section">
+            <h3>Vehicle & Driver</h3>
+            <div class="section-content">
+              <div class="info-row">
+                <span class="info-label">Vehicle:</span>
+                <span class="info-value">${invoice.vehicle_registration}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Driver:</span>
+                <span class="info-value">${invoice.driver_name}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Odometer:</span>
+                <span class="info-value">${invoice.odometer_reading.toLocaleString()} km</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Fuel Station</h3>
+            <div class="section-content">
+              <div class="info-row">
+                <span class="info-label">Station:</span>
+                <span class="info-value">${invoice.garage_name}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Address:</span>
+                <span class="info-value">${invoice.garage_address}</span>
+              </div>
+              ${invoice.garage_vat_number ? `
+              <div class="info-row">
+                <span class="info-label">VAT Number:</span>
+                <span class="info-value">${invoice.garage_vat_number}</span>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <div class="section">
             <h3>Fuel Details</h3>
-            <div class="card-content">
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                  <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Type</th>
-                  <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Liters</th>
-                  <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Price per Liter</th>
-                  <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Amount</th>
+            <div class="section-content">
+              <table>
+                <tr>
+                  <th>Fuel Type</th>
+                  <th class="right">Liters</th>
+                  <th class="right">Price per Liter</th>
+                  <th class="right">Fuel Amount</th>
                 </tr>
                 <tr>
-                  <td style="padding: 8px; font-weight: 600;">${invoice.fuel_type}</td>
-                  <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
-                  <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
-                  <td style="text-align: right; padding: 8px; font-weight: 600;">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</td>
+                  <td>${invoice.fuel_type}</td>
+                  <td class="right">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
+                  <td class="right">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
+                  <td class="right">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</td>
                 </tr>
               </table>
             </div>
           </div>
           ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
-          <div class="card" style="margin-bottom: 16px;">
+          <div class="section">
             <h3>Oil Purchase</h3>
-            <div class="card-content">
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                  <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Type</th>
-                  <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Quantity</th>
-                  <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Unit Price (Incl VAT)</th>
-                  <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Amount (Incl VAT)</th>
+            <div class="section-content">
+              <table>
+                <tr>
+                  <th>Oil Type</th>
+                  <th class="right">Quantity</th>
+                  <th class="right">Unit Price (Incl VAT)</th>
+                  <th class="right">Oil Amount (Incl VAT)</th>
                 </tr>
                 <tr>
-                  <td style="padding: 8px; font-weight: 600;">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
-                  <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
-                  <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_unit_price.toString()).toFixed(2)}</td>
-                  <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_total_amount.toString()).toFixed(2)}</td>
+                  <td>${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
+                  <td class="right">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
+                  <td class="right">R ${parseFloat(invoice.oil_unit_price.toString()).toFixed(2)}</td>
+                  <td class="right">R ${parseFloat(invoice.oil_total_amount.toString()).toFixed(2)}</td>
                 </tr>
               </table>
-              <div style="padding-top: 8px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between;">
+              <div style="padding-top: 6px; margin-top: 6px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between; font-size: 10px;">
                 <span style="color: #4b5563;">Amount of VAT included:</span>
                 <span style="font-weight: 600;">R ${(parseFloat(invoice.oil_total_amount.toString()) - (parseFloat(invoice.oil_total_amount.toString()) / 1.15)).toFixed(2)}</span>
               </div>
@@ -698,124 +694,124 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
   const generateInvoiceHTML = (invoice: FuelInvoice) => {
     return `
-      <div class="invoice-page">
-        <div class="header">
-          <h1>FUEL TRANSACTION INVOICE</h1>
-          <p>Fuel Empowerment Systems (Pty) Ltd</p>
+      <div class="invoice-page" style="font-size: 11px; line-height: 1.4;">
+        <div class="header" style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #111827; padding-bottom: 10px;">
+          <h1 style="margin: 0 0 4px 0; color: #111827; font-size: 22px; font-weight: bold;">FUEL TRANSACTION INVOICE</h1>
+          <p style="color: #4b5563; margin-top: 2px; font-size: 11px;">Fuel Empowerment Systems (Pty) Ltd</p>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px;">
-          <div>
-            <h3 style="font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 6px;">INVOICE</h3>
-            <div style="background: #f9fafb; padding: 8px; border-radius: 6px; font-size: 11px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #6b7280;">Number:</span>
-                <span style="font-weight: 700;">${invoice.invoice_number}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #6b7280;">Date:</span>
-                <span style="font-weight: 700;">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280;">Trans. Date:</span>
-                <span style="font-weight: 700;">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3 style="font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 6px;">VEHICLE & DRIVER</h3>
-            <div style="background: #f9fafb; padding: 8px; border-radius: 6px; font-size: 11px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #6b7280;">Vehicle:</span>
-                <span style="font-weight: 700;">${invoice.vehicle_registration}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #6b7280;">Driver:</span>
-                <span style="font-weight: 700;">${invoice.driver_name}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280;">Odometer:</span>
-                <span style="font-weight: 700;">${invoice.odometer_reading.toLocaleString()} km</span>
-              </div>
-            </div>
-          </div>
-          <div>
-            <h3 style="font-size: 12px; font-weight: 700; color: #6b7280; margin-bottom: 6px;">FUEL STATION</h3>
-            <div style="background: #f9fafb; padding: 8px; border-radius: 6px; font-size: 11px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #6b7280;">Station:</span>
-                <span style="font-weight: 700; text-align: right;">${invoice.garage_name}</span>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <span style="color: #6b7280;">Address:</span>
-                <span style="font-weight: 700; text-align: right;">${invoice.garage_address}</span>
-              </div>
-              ${invoice.garage_vat_number ? `
-              <div style="display: flex; justify-content: space-between;">
-                <span style="color: #6b7280;">VAT Number:</span>
-                <span style="font-weight: 700;">${invoice.garage_vat_number}</span>
-              </div>
-              ` : ''}
-            </div>
+        <div style="margin-bottom: 10px;">
+          <h3 style="font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;">INVOICE</h3>
+          <div style="background: #f9fafb; padding: 8px; border-radius: 4px; font-size: 11px;">
+            <span style="display: inline-block; margin-right: 20px;">
+              <span style="color: #6b7280; font-size: 10px;">Number:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.invoice_number}</span>
+            </span>
+            <span style="display: inline-block; margin-right: 20px;">
+              <span style="color: #6b7280; font-size: 10px;">Date:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+            </span>
+            <span style="display: inline-block;">
+              <span style="color: #6b7280; font-size: 10px;">Transaction Date:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}</span>
+            </span>
           </div>
         </div>
 
-        <div class="card" style="margin-bottom: 16px;">
-          <h3>Fuel Details</h3>
-          <div class="card-content">
+        <div style="margin-bottom: 10px;">
+          <h3 style="font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;">VEHICLE & DRIVER</h3>
+          <div style="background: #f9fafb; padding: 8px; border-radius: 4px; font-size: 11px;">
+            <span style="display: inline-block; margin-right: 20px;">
+              <span style="color: #6b7280; font-size: 10px;">Vehicle:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.vehicle_registration}</span>
+            </span>
+            <span style="display: inline-block; margin-right: 20px;">
+              <span style="color: #6b7280; font-size: 10px;">Driver:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.driver_name}</span>
+            </span>
+            <span style="display: inline-block;">
+              <span style="color: #6b7280; font-size: 10px;">Odometer:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.odometer_reading.toLocaleString()} km</span>
+            </span>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <h3 style="font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;">FUEL STATION</h3>
+          <div style="background: #f9fafb; padding: 8px; border-radius: 4px; font-size: 11px;">
+            <span style="display: inline-block; margin-right: 20px;">
+              <span style="color: #6b7280; font-size: 10px;">Station:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.garage_name}</span>
+            </span>
+            <span style="display: inline-block; margin-right: 20px;">
+              <span style="color: #6b7280; font-size: 10px;">Address:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.garage_address}</span>
+            </span>
+            ${invoice.garage_vat_number ? `
+            <span style="display: inline-block;">
+              <span style="color: #6b7280; font-size: 10px;">VAT Number:</span>
+              <span style="font-weight: 700; margin-left: 4px;">${invoice.garage_vat_number}</span>
+            </span>
+            ` : ''}
+          </div>
+        </div>
+
+        <div style="margin-bottom: 10px;">
+          <h3 style="font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;">FUEL DETAILS</h3>
+          <div style="background: #f9fafb; padding: 8px; border-radius: 4px;">
             <table style="width: 100%; border-collapse: collapse;">
               <tr style="border-bottom: 1px solid #e5e7eb;">
-                <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Type</th>
-                <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Liters</th>
-                <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Price per Liter</th>
-                <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Amount</th>
+                <th style="text-align: left; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Fuel Type</th>
+                <th style="text-align: right; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Liters</th>
+                <th style="text-align: right; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Price per Liter</th>
+                <th style="text-align: right; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Fuel Amount</th>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: 600;">${invoice.fuel_type}</td>
-                <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
-                <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
-                <td style="text-align: right; padding: 8px; font-weight: 600;">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</td>
+                <td style="padding: 4px 6px; font-weight: 600; font-size: 10px;">${invoice.fuel_type}</td>
+                <td style="text-align: right; padding: 4px 6px; font-weight: 600; font-size: 10px;">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
+                <td style="text-align: right; padding: 4px 6px; font-weight: 600; font-size: 10px;">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
+                <td style="text-align: right; padding: 4px 6px; font-weight: 600; font-size: 10px;">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</td>
               </tr>
             </table>
           </div>
         </div>
         ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
-        <div class="card" style="margin-bottom: 16px;">
-          <h3>Oil Purchase</h3>
-          <div class="card-content">
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+        <div style="margin-bottom: 10px;">
+          <h3 style="font-size: 11px; font-weight: 700; color: #6b7280; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.3px;">OIL PURCHASE</h3>
+          <div style="background: #f9fafb; padding: 8px; border-radius: 4px;">
+            <table style="width: 100%; border-collapse: collapse;">
               <tr style="border-bottom: 1px solid #e5e7eb;">
-                <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Type</th>
-                <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Quantity</th>
-                <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Unit Price (Incl VAT)</th>
-                <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Amount (Incl VAT)</th>
+                <th style="text-align: left; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Oil Type</th>
+                <th style="text-align: right; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Quantity</th>
+                <th style="text-align: right; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Unit Price (Incl VAT)</th>
+                <th style="text-align: right; padding: 3px 6px; font-size: 10px; font-weight: 500; color: #6b7280;">Oil Amount (Incl VAT)</th>
               </tr>
               <tr>
-                <td style="padding: 8px; font-weight: 600;">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
-                <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
-                <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}</td>
-                <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}</td>
+                <td style="padding: 4px 6px; font-weight: 600; font-size: 10px;">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
+                <td style="text-align: right; padding: 4px 6px; font-weight: 600; font-size: 10px;">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
+                <td style="text-align: right; padding: 4px 6px; font-weight: 600; font-size: 10px;">R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}</td>
+                <td style="text-align: right; padding: 4px 6px; font-weight: 600; font-size: 10px;">R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}</td>
               </tr>
             </table>
-            <div style="padding-top: 8px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between;">
+            <div style="padding-top: 6px; margin-top: 6px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between; font-size: 10px;">
               <span style="color: #4b5563;">Amount of VAT included:</span>
               <span style="font-weight: 600;">R ${(parseFloat(invoice.oil_total_amount?.toString() || '0') - (parseFloat(invoice.oil_total_amount?.toString() || '0') / 1.15)).toFixed(2)}</span>
             </div>
           </div>
         </div>` : ''}
 
-        <div class="total-section">
-          <div class="total-box">
-            <div class="total-content">
-              <span class="total-label">TOTAL AMOUNT:</span>
-              <span class="total-amount">R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}</span>
+        <div style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
+          <div style="background: #eff6ff; border-radius: 4px; padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 14px; font-weight: 600; color: #111827;">TOTAL AMOUNT:</span>
+              <span style="font-size: 18px; font-weight: bold; color: #2563eb;">R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}</span>
             </div>
           </div>
         </div>
 
-        <div class="footer">
-          <p>This invoice is for accounting and tax compliance purposes.</p>
-          <p>Thank you for your business.</p>
+        <div style="margin-top: 10px; text-align: center; font-size: 10px; color: #4b5563;">
+          <p style="margin: 3px 0;">This invoice is for accounting and tax compliance purposes.</p>
+          <p style="margin: 3px 0;">Thank you for your business.</p>
         </div>
       </div>
     `;

@@ -53,6 +53,7 @@ interface ManagementOrganization {
 }
 
 export default function InvoiceManagement() {
+  const [activeTab, setActiveTab] = useState<'fee' | 'fuel'>('fee');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -595,6 +596,41 @@ export default function InvoiceManagement() {
       )}
 
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="border-b border-gray-200">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('fee')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'fee'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <FileText className="w-4 h-4" />
+                Fee Invoices
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('fuel')}
+              className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+                activeTab === 'fuel'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Fuel className="w-4 h-4" />
+                Fuel Invoices
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {activeTab === 'fee' && (
+      <>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
@@ -773,6 +809,767 @@ export default function InvoiceManagement() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {activeTab === 'fuel' && (
+        <FuelInvoicesTab />
+      )}
+    </div>
+  );
+}
+
+interface FuelInvoice {
+  id: string;
+  organization_id: string;
+  invoice_number: string;
+  invoice_date: string;
+  transaction_date: string;
+  fuel_type: string;
+  liters: number;
+  price_per_liter: number;
+  total_amount: number;
+  vehicle_registration: string;
+  driver_name: string;
+  garage_name: string;
+  garage_address: string;
+  garage_vat_number?: string;
+  odometer_reading: number;
+  oil_quantity?: number;
+  oil_unit_price?: number;
+  oil_total_amount?: number;
+  oil_type?: string;
+  oil_brand?: string;
+  organization?: {
+    name: string;
+    vat_number?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    province?: string;
+    postal_code?: string;
+  };
+}
+
+function FuelInvoicesTab() {
+  const [fuelInvoices, setFuelInvoices] = useState<FuelInvoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = useState<FuelInvoice | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [searchType, setSearchType] = useState<'organization' | 'invoice'>('organization');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+
+  const searchInvoices = async () => {
+    if (!searchTerm.trim()) {
+      setError('Please enter a search term');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      setHasSearched(true);
+
+      let query = supabase
+        .from('fuel_transaction_invoices')
+        .select(`
+          *,
+          organization:organizations(
+            name,
+            vat_number,
+            address_line1,
+            address_line2,
+            city,
+            province,
+            postal_code
+          )
+        `);
+
+      if (searchType === 'organization') {
+        const { data: orgs, error: orgError } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .ilike('name', `%${searchTerm}%`);
+
+        if (orgError) throw orgError;
+
+        if (!orgs || orgs.length === 0) {
+          setFuelInvoices([]);
+          setLoading(false);
+          return;
+        }
+
+        const orgIds = orgs.map(o => o.id);
+        query = query.in('organization_id', orgIds);
+      } else {
+        query = query.ilike('invoice_number', `%${searchTerm}%`);
+      }
+
+      const { data, error: invoicesError } = await query.order('transaction_date', { ascending: false });
+
+      if (invoicesError) throw invoicesError;
+
+      setFuelInvoices(data || []);
+    } catch (err: any) {
+      setError('Failed to search invoices: ' + err.message);
+      setFuelInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    if (fuelInvoices.length === 0) return;
+
+    const headers = ['Invoice #', 'Transaction Date', 'Organization', 'Vehicle', 'Driver', 'Garage', 'Fuel Type', 'Liters', 'Price/Liter', 'Fuel Amount', 'Oil Amount', 'Total Amount'];
+    const rows = fuelInvoices.map(inv => [
+      inv.invoice_number,
+      new Date(inv.transaction_date).toLocaleDateString('en-ZA'),
+      inv.organization?.name || '',
+      inv.vehicle_registration,
+      inv.driver_name,
+      inv.garage_name,
+      inv.fuel_type,
+      parseFloat(inv.liters.toString()).toFixed(2),
+      parseFloat(inv.price_per_liter.toString()).toFixed(2),
+      (parseFloat(inv.liters.toString()) * parseFloat(inv.price_per_liter.toString())).toFixed(2),
+      (inv.oil_total_amount ? parseFloat(inv.oil_total_amount.toString()).toFixed(2) : '0.00'),
+      parseFloat(inv.total_amount.toString()).toFixed(2)
+    ]);
+
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fuel-invoices-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  };
+
+  const printInvoice = (invoice: FuelInvoice) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const fuelAmount = parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString());
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Fuel Invoice ${invoice.invoice_number}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              line-height: 1.5;
+              color: #374151;
+              font-size: 12px;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 15px;
+              border-bottom: 2px solid #111827;
+              padding-bottom: 10px;
+            }
+            .header h1 {
+              margin: 0 0 4px 0;
+              color: #111827;
+              font-size: 24px;
+              font-weight: bold;
+            }
+            .header p {
+              color: #4b5563;
+              margin-top: 2px;
+              font-size: 12px;
+            }
+            .section {
+              margin-bottom: 10px;
+            }
+            .section h3 {
+              font-size: 12px;
+              font-weight: 700;
+              color: #6b7280;
+              margin-bottom: 4px;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+            }
+            .section-content {
+              background-color: #f9fafb;
+              border-radius: 4px;
+              padding: 10px;
+            }
+            .info-row {
+              display: inline-block;
+              margin-right: 30px;
+              margin-bottom: 3px;
+            }
+            .info-row-spread {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .info-label {
+              color: #6b7280;
+              font-size: 11px;
+            }
+            .info-value {
+              font-weight: 600;
+              color: #111827;
+              margin-left: 4px;
+            }
+            .total-section {
+              border-top: 1px solid #e5e7eb;
+              padding-top: 8px;
+              margin-top: 8px;
+            }
+            .total-box {
+              background-color: #eff6ff;
+              border-radius: 4px;
+              padding: 10px;
+            }
+            .total-content {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .total-label {
+              font-size: 14px;
+              font-weight: 600;
+              color: #111827;
+            }
+            .total-amount {
+              font-size: 18px;
+              font-weight: bold;
+              color: #2563eb;
+            }
+            .footer {
+              margin-top: 10px;
+              text-align: center;
+              font-size: 11px;
+              color: #4b5563;
+            }
+            .footer p {
+              margin: 3px 0;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th {
+              text-align: left;
+              padding: 4px 8px;
+              font-size: 11px;
+              font-weight: 500;
+              color: #6b7280;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            th.right {
+              text-align: right;
+            }
+            td {
+              padding: 5px 8px;
+              font-weight: 600;
+              font-size: 11px;
+            }
+            td.right {
+              text-align: right;
+            }
+            @media print {
+              body { padding: 15px; }
+              @page { margin: 1cm; }
+              .section-content {
+                background-color: #f9fafb !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              .total-box {
+                background-color: #eff6ff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>FUEL TRANSACTION INVOICE</h1>
+            <p>Fuel Empowerment Systems (Pty) Ltd</p>
+          </div>
+
+          <div class="section">
+            <h3>Invoice</h3>
+            <div class="section-content">
+              <div class="info-row-spread">
+                <div>
+                  <span class="info-label">Number:</span>
+                  <span class="info-value">${invoice.invoice_number}</span>
+                </div>
+                <div>
+                  <span class="info-label">Date:</span>
+                  <span class="info-value">${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+                </div>
+                <div>
+                  <span class="info-label">Transaction Date & Time:</span>
+                  <span class="info-value">${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')} ${new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Organization</h3>
+            <div class="section-content">
+              <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">${invoice.organization?.name || 'N/A'}</span>
+              </div>
+              ${invoice.organization?.vat_number ? `<div class="info-row">
+                <span class="info-label">VAT Number:</span>
+                <span class="info-value">${invoice.organization.vat_number}</span>
+              </div>` : ''}
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Vehicle & Driver</h3>
+            <div class="section-content">
+              <div class="info-row-spread">
+                <div>
+                  <span class="info-label">Vehicle:</span>
+                  <span class="info-value">${invoice.vehicle_registration}</span>
+                </div>
+                <div>
+                  <span class="info-label">Driver:</span>
+                  <span class="info-value">${invoice.driver_name}</span>
+                </div>
+                <div>
+                  <span class="info-label">Odometer:</span>
+                  <span class="info-value">${invoice.odometer_reading.toLocaleString()} km</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Fuel Station</h3>
+            <div class="section-content">
+              <div class="info-row-spread">
+                <div>
+                  <span class="info-label">Station:</span>
+                  <span class="info-value">${invoice.garage_name}</span>
+                </div>
+                ${invoice.garage_vat_number ? `<div>
+                  <span class="info-label">VAT no:</span>
+                  <span class="info-value">${invoice.garage_vat_number}</span>
+                </div>` : ''}
+              </div>
+              <div class="info-row">
+                <span class="info-label">Address:</span>
+                <span class="info-value">${invoice.garage_address}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Fuel Details</h3>
+            <div class="section-content">
+              <table>
+                <tr>
+                  <th>Fuel Type</th>
+                  <th class="right">Liters</th>
+                  <th class="right">Price per Liter</th>
+                  <th class="right">Fuel Amount</th>
+                </tr>
+                <tr>
+                  <td>${invoice.fuel_type}</td>
+                  <td class="right">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
+                  <td class="right">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
+                  <td class="right">R ${fuelAmount.toFixed(2)}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
+          <div class="section">
+            <h3>Oil Purchase</h3>
+            <div class="section-content">
+              <table>
+                <tr>
+                  <th>Oil Type</th>
+                  <th class="right">Quantity</th>
+                  <th class="right">Unit Price (Incl VAT)</th>
+                  <th class="right">Oil Amount (Incl VAT)</th>
+                </tr>
+                <tr>
+                  <td>${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
+                  <td class="right">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
+                  <td class="right">R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}</td>
+                  <td class="right">R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}</td>
+                </tr>
+              </table>
+              <div class="total-section">
+                <div class="info-row">
+                  <span class="info-label">Amount of VAT included:</span>
+                  <span class="info-value">R ${((parseFloat(invoice.oil_total_amount?.toString() || '0') - (parseFloat(invoice.oil_total_amount?.toString() || '0') / 1.15))).toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          ` : ''}
+
+          <div class="section">
+            <div class="total-box">
+              <div class="total-content">
+                <span class="total-label">TOTAL AMOUNT:</span>
+                <span class="total-amount">R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>This invoice is for accounting and tax compliance purposes.</p>
+            <p>Thank you for your business.</p>
+          </div>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Search Fuel Invoices</h3>
+            <p className="text-sm text-gray-600 mt-1">Search by organization name or invoice number</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search By
+              </label>
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as 'organization' | 'invoice')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="organization">Organization Name</option>
+                <option value="invoice">Invoice Number</option>
+              </select>
+            </div>
+            <div className="flex-[2]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {searchType === 'organization' ? 'Organization Name' : 'Invoice Number'}
+              </label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder={searchType === 'organization' ? 'Enter organization name...' : 'Enter invoice number...'}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchInvoices()}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <button
+                  onClick={searchInvoices}
+                  disabled={loading || !searchTerm.trim()}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-3 text-red-800">
+                <AlertCircle className="w-5 h-5" />
+                <span>{error}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {hasSearched && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Search Results ({fuelInvoices.length})
+              </h3>
+            </div>
+            {fuelInvoices.length > 0 && (
+              <button
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            )}
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organization</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Garage</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {fuelInvoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                      No fuel invoices found matching your search
+                    </td>
+                  </tr>
+                ) : (
+                  fuelInvoices.map((invoice) => (
+                    <tr key={invoice.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-blue-600">{invoice.invoice_number}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">
+                        {new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{invoice.organization?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{invoice.vehicle_registration}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{invoice.driver_name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{invoice.garage_name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{invoice.fuel_type}</td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-900">
+                        {parseFloat(invoice.liters.toString()).toFixed(2)} L
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right font-semibold text-gray-900">
+                        R {parseFloat(invoice.total_amount.toString()).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setSelectedInvoice(invoice)}
+                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => printInvoice(invoice)}
+                            className="p-1 text-gray-600 hover:bg-gray-100 rounded"
+                            title="Print Invoice"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {selectedInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
+              <h3 className="text-xl font-bold text-gray-900">Fuel Invoice Details</h3>
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-8">
+              <div className="border-b-2 border-gray-900 pb-6 mb-6">
+                <h1 className="text-3xl font-bold text-gray-900 text-center">FUEL TRANSACTION INVOICE</h1>
+                <p className="text-center text-gray-600 mt-2 text-base">Fuel Empowerment Systems (Pty) Ltd</p>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">INVOICE</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-center text-base">
+                    <div>
+                      <span className="text-gray-600">Number:</span>
+                      <span className="font-bold ml-1">{selectedInvoice.invoice_number}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Date:</span>
+                      <span className="font-bold ml-1">{new Date(selectedInvoice.invoice_date).toLocaleDateString('en-ZA')}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Transaction Date & Time:</span>
+                      <span className="font-bold ml-1">
+                        {new Date(selectedInvoice.transaction_date).toLocaleDateString('en-ZA')} {new Date(selectedInvoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">ORGANIZATION</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-base">
+                    <span className="text-gray-600">Name:</span>
+                    <span className="font-bold ml-1">{selectedInvoice.organization?.name || 'N/A'}</span>
+                  </div>
+                  {selectedInvoice.organization?.vat_number && (
+                    <div className="text-base mt-2">
+                      <span className="text-gray-600">VAT Number:</span>
+                      <span className="font-bold ml-1">{selectedInvoice.organization.vat_number}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">VEHICLE & DRIVER</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-center text-base">
+                    <div>
+                      <span className="text-gray-600">Vehicle:</span>
+                      <span className="font-bold ml-1">{selectedInvoice.vehicle_registration}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Driver:</span>
+                      <span className="font-bold ml-1">{selectedInvoice.driver_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Odometer:</span>
+                      <span className="font-bold ml-1">{selectedInvoice.odometer_reading.toLocaleString()} km</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">FUEL STATION</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between items-center text-base">
+                    <div>
+                      <span className="text-gray-600">Station:</span>
+                      <span className="font-bold ml-1">{selectedInvoice.garage_name}</span>
+                    </div>
+                    {selectedInvoice.garage_vat_number && (
+                      <div>
+                        <span className="text-gray-600">VAT Number:</span>
+                        <span className="font-bold ml-1">{selectedInvoice.garage_vat_number}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-base">
+                    <span className="text-gray-600">Address:</span>
+                    <span className="font-bold ml-1">{selectedInvoice.garage_address}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">FUEL DETAILS</h3>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-4 gap-3 mb-2 text-sm font-medium text-gray-600">
+                    <div>Fuel Type</div>
+                    <div className="text-right">Liters</div>
+                    <div className="text-right">Price per Liter</div>
+                    <div className="text-right">Fuel Amount</div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3 text-base font-bold">
+                    <div>{selectedInvoice.fuel_type}</div>
+                    <div className="text-right">{parseFloat(selectedInvoice.liters.toString()).toFixed(2)}</div>
+                    <div className="text-right">R {parseFloat(selectedInvoice.price_per_liter.toString()).toFixed(2)}</div>
+                    <div className="text-right">R {(parseFloat(selectedInvoice.liters.toString()) * parseFloat(selectedInvoice.price_per_liter.toString())).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedInvoice.oil_quantity && parseFloat(selectedInvoice.oil_quantity.toString()) > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-wide">OIL PURCHASE</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div>
+                      <div className="grid grid-cols-4 gap-3 mb-2 text-sm font-medium text-gray-600">
+                        <div>Oil Type</div>
+                        <div className="text-right">Quantity</div>
+                        <div className="text-right">Unit Price (Incl VAT)</div>
+                        <div className="text-right">Oil Amount (Incl VAT)</div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 text-base font-bold">
+                        <div>{selectedInvoice.oil_type || 'N/A'}{selectedInvoice.oil_brand ? ` (${selectedInvoice.oil_brand})` : ''}</div>
+                        <div className="text-right">{parseFloat(selectedInvoice.oil_quantity.toString()).toFixed(0)} Unit{parseFloat(selectedInvoice.oil_quantity.toString()) > 1 ? 's' : ''}</div>
+                        <div className="text-right">R {parseFloat(selectedInvoice.oil_unit_price?.toString() || '0').toFixed(2)}</div>
+                        <div className="text-right">R {parseFloat(selectedInvoice.oil_total_amount?.toString() || '0').toFixed(2)}</div>
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-gray-300">
+                      <div className="flex justify-between text-base">
+                        <span className="text-gray-600">Amount of VAT included:</span>
+                        <span className="font-bold">R {((parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') - (parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') / 1.15))).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t-2 border-gray-200 pt-6">
+                <div className="bg-blue-50 rounded-lg p-6">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xl font-semibold text-gray-900">TOTAL AMOUNT:</span>
+                    <span className="text-3xl font-bold text-blue-600">
+                      R {parseFloat(selectedInvoice.total_amount.toString()).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 text-base text-gray-600 text-center">
+                <p>This invoice is for accounting and tax compliance purposes.</p>
+                <p className="mt-2">Thank you for your business.</p>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end gap-3">
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => printInvoice(selectedInvoice)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Print
+              </button>
             </div>
           </div>
         </div>

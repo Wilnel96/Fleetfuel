@@ -142,15 +142,21 @@ export default function InvoiceManagement() {
         query = query.eq('organization_id', selectedOrgId);
       }
 
-      if (billingPeriodSearch) {
-        query = query.or(`billing_period_start.ilike.%${billingPeriodSearch}%,billing_period_end.ilike.%${billingPeriodSearch}%`);
-      }
-
       const { data, error: invoicesError } = await query.order('invoice_date', { ascending: false });
 
       if (invoicesError) throw invoicesError;
 
-      setInvoices(data || []);
+      // Client-side filtering for billing period search
+      let filteredData = data || [];
+      if (billingPeriodSearch) {
+        const searchLower = billingPeriodSearch.toLowerCase();
+        filteredData = filteredData.filter(invoice =>
+          invoice.billing_period_start?.toLowerCase().includes(searchLower) ||
+          invoice.billing_period_end?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      setInvoices(filteredData);
     } catch (err: any) {
       setError('Failed to load invoices: ' + err.message);
     } finally {

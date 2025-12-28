@@ -351,11 +351,22 @@ export default function InvoiceManagement() {
     if (!confirm('Mark this invoice as paid?')) return;
 
     try {
+      // First, get the invoice to know its total amount
+      const { data: invoice, error: fetchError } = await supabase
+        .from('invoices')
+        .select('total_amount')
+        .eq('id', invoiceId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!invoice) throw new Error('Invoice not found');
+
+      // Update the invoice to mark it as paid
       const { error: updateError } = await supabase
         .from('invoices')
         .update({
           status: 'paid',
-          amount_paid: supabase.rpc('get_invoice_total', { invoice_id: invoiceId }),
+          amount_paid: invoice.total_amount,
           amount_outstanding: 0,
           paid_at: new Date().toISOString(),
         })

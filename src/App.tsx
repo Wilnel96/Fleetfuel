@@ -92,7 +92,7 @@ function App() {
         timeoutRef.current = null;
       }
 
-      if (session) {
+      if (session && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION' || _event === 'TOKEN_REFRESHED')) {
         console.log('Auth state - Session detected, loading profile...');
         setSession(session);
         setUserMode('admin');

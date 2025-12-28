@@ -36,12 +36,8 @@ export default function Auth({ onBack }: AuthProps = {}) {
       console.log('[Auth] User ID:', data.user?.id);
       console.log('[Auth] Access token:', data.session?.access_token ? 'Present' : 'Missing');
 
-      console.log('[Auth] Waiting for auth state change to trigger...');
-
-      setTimeout(() => {
-        console.log('[Auth] Timeout: Resetting loading state after 3 seconds');
-        setLoading(false);
-      }, 3000);
+      // Auth state change listener in App.tsx will handle navigation
+      // Keep loading state active until that happens
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);
       setError(err.message || 'Authentication failed');

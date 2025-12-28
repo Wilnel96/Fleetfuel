@@ -211,7 +211,7 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
       }
 
       if (shouldLogException) {
-        await supabase
+        const { error: exceptionError } = await supabase
           .from('vehicle_exceptions')
           .insert({
             vehicle_id: selectedVehicle.id,
@@ -224,6 +224,10 @@ export default function ReturnVehicle({ organizationId, driverId, onBack }: Retu
             transaction_id: returnTx.id,
             resolved: false,
           });
+
+        if (exceptionError) {
+          console.error('Failed to log vehicle exception:', exceptionError);
+        }
       }
 
       setKmDriven(kmDrivenValue);

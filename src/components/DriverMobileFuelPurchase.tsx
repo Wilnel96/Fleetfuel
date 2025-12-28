@@ -587,8 +587,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             vehicle_id: drawnVehicle.id,
             driver_id: driver.id,
             organization_id: driver.organizationId,
-            exception_type: 'location_mismatch',
-            description: `Location mismatch detected during fuel purchase. Driver location was ${distanceFromGarage.toFixed(2)} km away from garage ${selectedGarage.name}.`,
+            exception_type: 'gps_location_mismatch',
+            description: `GPS location mismatch detected during fuel purchase. Driver location was ${distanceFromGarage.toFixed(2)} km away from garage ${selectedGarage.name}.`,
             expected_value: selectedGarage.latitude && selectedGarage.longitude
               ? `${selectedGarage.latitude},${selectedGarage.longitude}`
               : 'Unknown',

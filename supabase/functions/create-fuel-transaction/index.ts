@@ -235,7 +235,7 @@ Deno.serve(async (req: Request) => {
           vehicle_id: transactionData.vehicleId,
           driver_id: driver.id,
           transaction_id: transaction.id,
-          exception_type: "Location Mismatch",
+          exception_type: "garage_location_mismatch",
           description: `Driver refueled at a garage in ${garage.city}, but organization is based in ${organization.city}`,
           expected_value: organization.city,
           actual_value: garage.city,

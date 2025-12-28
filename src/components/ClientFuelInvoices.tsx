@@ -20,6 +20,12 @@ interface FuelInvoice {
   odometer_reading: number;
   email_sent: boolean;
   email_sent_at: string | null;
+  oil_quantity?: number;
+  oil_unit_price?: number;
+  oil_total_amount?: number;
+  oil_type?: string;
+  oil_brand?: string;
+  fuel_amount?: number;
 }
 
 interface ClientFuelInvoicesProps {
@@ -331,8 +337,34 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                     <span class="info-label">Price per Liter:</span>
                     <span class="info-value">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</span>
                   </div>
+                  <div class="info-row">
+                    <span class="info-label">Fuel Amount:</span>
+                    <span class="info-value">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
+              ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
+              <div class="card">
+                <h3>Oil Purchase</h3>
+                <div class="card-content">
+                  <div class="info-row">
+                    <span class="info-label">Oil Type:</span>
+                    <span class="info-value">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Quantity:</span>
+                    <span class="info-value">${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Unit Price (incl VAT):</span>
+                    <span class="info-value">R ${parseFloat(invoice.oil_unit_price.toString()).toFixed(2)}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">Oil Amount (incl VAT):</span>
+                    <span class="info-value">R ${parseFloat(invoice.oil_total_amount.toString()).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>` : ''}
             </div>
           </div>
 
@@ -406,6 +438,9 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
   };
 
   const exportSingleInvoiceToCSV = (invoice: FuelInvoice) => {
+    const fuelAmount = parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString());
+    const hasOil = invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0;
+
     const csvData = [
       ['Field', 'Value'],
       ['Invoice Number', invoice.invoice_number],
@@ -423,6 +458,14 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       ['Fuel Type', invoice.fuel_type],
       ['Liters', parseFloat(invoice.liters.toString()).toFixed(2)],
       ['Price per Liter', `R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`],
+      ['Fuel Amount', `R ${fuelAmount.toFixed(2)}`],
+      ...(hasOil ? [
+        [''],
+        ['Oil Type', `${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}`],
+        ['Oil Quantity', `${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units`],
+        ['Oil Unit Price (incl VAT)', `R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}`],
+        ['Oil Amount (incl VAT)', `R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}`]
+      ] : []),
       [''],
       ['TOTAL AMOUNT', `R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`]
     ];
@@ -618,7 +661,65 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setTextColor(17, 24, 39);
     pdf.text(`R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
 
+    fuelYPosition += 6;
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(75, 85, 99);
+    pdf.text('Fuel Amount:', rightColumnX + 3, fuelYPosition);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(17, 24, 39);
+    const fuelAmount = parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString());
+    pdf.text(`R ${fuelAmount.toFixed(2)}`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
     yPosition += 15;
+
+    const hasOil = invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0;
+    if (hasOil) {
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('OIL PURCHASE', leftColumnX, yPosition);
+
+      yPosition += 5;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(leftColumnX, yPosition, columnWidth, 28, 'F');
+
+      yPosition += 6;
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Oil Type:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const oilTypeText = `${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}`;
+      pdf.text(oilTypeText, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Quantity:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Unit Price (incl VAT):', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Oil Amount (incl VAT):', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(`R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 15;
+    }
+
     pdf.setDrawColor(229, 231, 235);
     pdf.setLineWidth(0.5);
     pdf.line(margin, yPosition, pageWidth - margin, yPosition);
@@ -731,8 +832,34 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                   <span class="info-label">Price per Liter:</span>
                   <span class="info-value">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</span>
                 </div>
+                <div class="info-row">
+                  <span class="info-label">Fuel Amount:</span>
+                  <span class="info-value">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</span>
+                </div>
               </div>
             </div>
+            ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
+            <div class="card">
+              <h3>Oil Purchase</h3>
+              <div class="card-content">
+                <div class="info-row">
+                  <span class="info-label">Oil Type:</span>
+                  <span class="info-value">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Quantity:</span>
+                  <span class="info-value">${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Unit Price (incl VAT):</span>
+                  <span class="info-value">R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Oil Amount (incl VAT):</span>
+                  <span class="info-value">R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}</span>
+                </div>
+              </div>
+            </div>` : ''}
           </div>
         </div>
 
@@ -946,7 +1073,65 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.setTextColor(17, 24, 39);
       pdf.text(`R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
 
+      fuelYPosition += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Fuel Amount:', rightColumnX + 3, fuelYPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const fuelAmountAll = parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString());
+      pdf.text(`R ${fuelAmountAll.toFixed(2)}`, rightColumnX + columnWidth - 3, fuelYPosition, { align: 'right' });
+
       yPosition += 15;
+
+      const hasOilAll = invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0;
+      if (hasOilAll) {
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text('OIL PURCHASE', leftColumnX, yPosition);
+
+        yPosition += 5;
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(leftColumnX, yPosition, columnWidth, 28, 'F');
+
+        yPosition += 6;
+        pdf.setFontSize(9);
+        pdf.setTextColor(75, 85, 99);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Oil Type:', leftColumnX + 3, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        const oilTypeTextAll = `${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}`;
+        pdf.text(oilTypeTextAll, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 6;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('Quantity:', leftColumnX + 3, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 6;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('Unit Price (incl VAT):', leftColumnX + 3, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 6;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('Oil Amount (incl VAT):', leftColumnX + 3, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 15;
+      }
+
       pdf.setDrawColor(229, 231, 235);
       pdf.setLineWidth(0.5);
       pdf.line(margin, yPosition, pageWidth - margin, yPosition);
@@ -1109,8 +1294,36 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                     <span className="text-gray-600">Price per Liter:</span>
                     <span className="font-semibold">R {parseFloat(selectedInvoice.price_per_liter.toString()).toFixed(2)}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Fuel Amount:</span>
+                    <span className="font-semibold">R {(parseFloat(selectedInvoice.liters.toString()) * parseFloat(selectedInvoice.price_per_liter.toString())).toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
+
+              {selectedInvoice.oil_quantity && parseFloat(selectedInvoice.oil_quantity.toString()) > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 mb-2">Oil Purchase</h3>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Oil Type:</span>
+                      <span className="font-semibold">{selectedInvoice.oil_type || 'N/A'}{selectedInvoice.oil_brand ? ` (${selectedInvoice.oil_brand})` : ''}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Quantity:</span>
+                      <span className="font-semibold">{parseFloat(selectedInvoice.oil_quantity.toString()).toFixed(2)} units</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Unit Price (incl VAT):</span>
+                      <span className="font-semibold">R {parseFloat(selectedInvoice.oil_unit_price?.toString() || '0').toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Oil Amount (incl VAT):</span>
+                      <span className="font-semibold">R {parseFloat(selectedInvoice.oil_total_amount?.toString() || '0').toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

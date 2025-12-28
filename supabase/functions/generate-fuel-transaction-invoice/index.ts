@@ -219,6 +219,11 @@ Deno.serve(async (req: Request) => {
         odometer_reading: transaction.odometer_reading,
         transaction_date: transaction.transaction_date,
         email_recipient: organization.billing_contact_email || null,
+        oil_quantity: transaction.oil_quantity || 0,
+        oil_unit_price: transaction.oil_unit_price || 0,
+        oil_total_amount: transaction.oil_total_amount || 0,
+        oil_type: transaction.oil_type || null,
+        oil_brand: transaction.oil_brand || null,
       })
       .select()
       .single();

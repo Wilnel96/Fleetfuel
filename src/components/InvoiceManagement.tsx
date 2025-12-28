@@ -1146,20 +1146,43 @@ function FuelInvoicesTab() {
   const [selectedInvoice, setSelectedInvoice] = useState<FuelInvoice | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [searchType, setSearchType] = useState<'organization' | 'invoice'>('organization');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
+  const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState('');
+  const [invoiceNumberFilter, setInvoiceNumberFilter] = useState('');
 
-  const searchInvoices = async () => {
-    if (!searchTerm.trim()) {
-      setError('Please enter a search term');
-      return;
+  useEffect(() => {
+    fetchOrganizations();
+  }, []);
+
+  useEffect(() => {
+    if (selectedOrgId) {
+      loadInvoices();
+    } else {
+      setFuelInvoices([]);
     }
+  }, [selectedOrgId, invoiceNumberFilter]);
+
+  const fetchOrganizations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .eq('is_management_org', false)
+        .order('name');
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (err: any) {
+      setError('Failed to load organizations: ' + err.message);
+    }
+  };
+
+  const loadInvoices = async () => {
+    if (!selectedOrgId) return;
 
     try {
       setLoading(true);
       setError('');
-      setHasSearched(true);
 
       let query = supabase
         .from('fuel_transaction_invoices')
@@ -1174,26 +1197,11 @@ function FuelInvoicesTab() {
             province,
             postal_code
           )
-        `);
+        `)
+        .eq('organization_id', selectedOrgId);
 
-      if (searchType === 'organization') {
-        const { data: orgs, error: orgError } = await supabase
-          .from('organizations')
-          .select('id, name')
-          .ilike('name', `%${searchTerm}%`);
-
-        if (orgError) throw orgError;
-
-        if (!orgs || orgs.length === 0) {
-          setFuelInvoices([]);
-          setLoading(false);
-          return;
-        }
-
-        const orgIds = orgs.map(o => o.id);
-        query = query.in('organization_id', orgIds);
-      } else {
-        query = query.ilike('invoice_number', `%${searchTerm}%`);
+      if (invoiceNumberFilter.trim()) {
+        query = query.ilike('invoice_number', `%${invoiceNumberFilter}%`);
       }
 
       const { data, error: invoicesError } = await query.order('transaction_date', { ascending: false });
@@ -1202,7 +1210,7 @@ function FuelInvoicesTab() {
 
       setFuelInvoices(data || []);
     } catch (err: any) {
-      setError('Failed to search invoices: ' + err.message);
+      setError('Failed to load invoices: ' + err.message);
       setFuelInvoices([]);
     } finally {
       setLoading(false);
@@ -1535,8 +1543,8 @@ function FuelInvoicesTab() {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Search Fuel Invoices</h3>
-            <p className="text-sm text-gray-600 mt-1">Search by organization name or invoice number</p>
+            <h3 className="text-lg font-semibold text-gray-900">Fuel Invoices</h3>
+            <p className="text-sm text-gray-600 mt-1">View and manage fuel transaction invoices</p>
           </div>
         </div>
 
@@ -1544,40 +1552,35 @@ function FuelInvoicesTab() {
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search By
+                Organization
               </label>
               <select
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value as 'organization' | 'invoice')}
+                value={selectedOrgId}
+                onChange={(e) => setSelectedOrgId(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="organization">Organization Name</option>
-                <option value="invoice">Invoice Number</option>
+                <option value="">Select an organization...</option>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
               </select>
             </div>
-            <div className="flex-[2]">
+            <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                {searchType === 'organization' ? 'Organization Name' : 'Invoice Number'}
+                Filter by Invoice Number (optional)
               </label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder={searchType === 'organization' ? 'Enter organization name...' : 'Enter invoice number...'}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && searchInvoices()}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <button
-                  onClick={searchInvoices}
-                  disabled={loading || !searchTerm.trim()}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Searching...' : 'Search'}
-                </button>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Enter invoice number..."
+                  value={invoiceNumberFilter}
+                  onChange={(e) => setInvoiceNumberFilter(e.target.value)}
+                  disabled={!selectedOrgId}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
               </div>
             </div>
           </div>
@@ -1593,15 +1596,15 @@ function FuelInvoicesTab() {
         </div>
       </div>
 
-      {hasSearched && (
+      {selectedOrgId && (
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Search Results ({fuelInvoices.length})
+                Invoices ({loading ? '...' : fuelInvoices.length})
               </h3>
             </div>
-            {fuelInvoices.length > 0 && (
+            {fuelInvoices.length > 0 && !loading && (
               <button
                 onClick={exportToCSV}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -1612,30 +1615,36 @@ function FuelInvoicesTab() {
             )}
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction Date</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organization</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Garage</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {fuelInvoices.length === 0 ? (
+          {loading ? (
+            <div className="py-12 text-center text-gray-500">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+              <p>Loading invoices...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
-                      No fuel invoices found matching your search
-                    </td>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Transaction Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Organization</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Garage</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
-                ) : (
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {fuelInvoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                        {invoiceNumberFilter ? 'No invoices found matching your filter' : 'No invoices found for this organization'}
+                      </td>
+                    </tr>
+                  ) : (
                   fuelInvoices.map((invoice) => (
                     <tr key={invoice.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-blue-600">{invoice.invoice_number}</td>
@@ -1676,7 +1685,8 @@ function FuelInvoicesTab() {
                 )}
               </tbody>
             </table>
-          </div>
+            </div>
+          )}
         </div>
       )}
 

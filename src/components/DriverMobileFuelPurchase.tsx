@@ -901,7 +901,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                 <div className="flex-1">
                   <p className="text-sm font-bold text-amber-900 mb-1">Spending Limit Notice</p>
                   <p className="text-xs text-amber-800 mb-2">
-                    Your organization has a {spendingLimitInfo.type} spending limit. You can refuel up to:
+                    Your organization has a {spendingLimitInfo.type} spending limit. Total transaction (fuel + oil) must not exceed:
                   </p>
                 </div>
               </div>
@@ -911,12 +911,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   <span className="text-base font-bold text-amber-900">R {spendingLimitInfo.availableAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-amber-800">Maximum liters:</span>
+                  <span className="text-sm text-amber-800">Maximum liters (fuel only):</span>
                   <span className="text-base font-bold text-amber-900">{spendingLimitInfo.maxLiters.toFixed(1)} L</span>
                 </div>
                 <div className="border-t border-amber-200 pt-2">
                   <p className="text-xs text-amber-700 text-center">
-                    Price: R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
+                    Fuel price: R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
                   </p>
                 </div>
               </div>
@@ -942,8 +942,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
             <p className="text-sm font-medium text-gray-900 mb-2">Next Steps:</p>
             <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
-              <li>Proceed to refuel your vehicle{spendingLimitInfo && !spendingLimitInfo.isBlocked ? ' (up to limit shown above)' : ''}</li>
+              <li>Proceed to refuel your vehicle{spendingLimitInfo && !spendingLimitInfo.isBlocked ? ' (total must stay within limit shown above)' : ''}</li>
               <li>Note the fuel amount and odometer reading</li>
+              <li>If purchasing oil, note quantity and price</li>
               <li>Return here to enter the details</li>
             </ol>
           </div>
@@ -1131,7 +1132,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       <div className="flex-1">
                         <p className="text-xs font-bold text-amber-900 mb-1">Spending Limit Active</p>
                         <p className="text-xs text-amber-800">
-                          Maximum: <strong>{spendingLimitInfo.maxLiters.toFixed(1)} L</strong> (R {spendingLimitInfo.availableAmount.toFixed(2)} available)
+                          Total transaction (fuel + oil) must not exceed <strong>R {spendingLimitInfo.availableAmount.toFixed(2)}</strong>
                         </p>
                       </div>
                     </div>
@@ -1140,35 +1141,16 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Liters
-                      {spendingLimitInfo && !spendingLimitInfo.isBlocked && (
-                        <span className="text-amber-600 ml-2 text-xs">(Max: {spendingLimitInfo.maxLiters.toFixed(1)} L)</span>
-                      )}
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Liters</label>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.liters}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const numValue = parseFloat(value);
-
-                        if (spendingLimitInfo && !spendingLimitInfo.isBlocked && numValue > spendingLimitInfo.maxLiters) {
-                          setFormData({ ...formData, liters: spendingLimitInfo.maxLiters.toFixed(2) });
-                        } else {
-                          setFormData({ ...formData, liters: value });
-                        }
-                      }}
+                      onChange={(e) => setFormData({ ...formData, liters: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg px-4 py-3"
                       placeholder="50.00"
                       required
                     />
-                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.liters) > spendingLimitInfo.maxLiters && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Amount capped at maximum available: {spendingLimitInfo.maxLiters.toFixed(1)} L
-                      </p>
-                    )}
                   </div>
 
                   <div>
@@ -1197,17 +1179,14 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       readOnly
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
                     />
-                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && (() => {
-                      const fuelAmount = parseFloat(formData.liters || '0') * parseFloat(formData.pricePerLiter || '0');
-                      return fuelAmount > spendingLimitInfo.availableAmount;
-                    })() && (
-                      <p className="text-xs text-red-600 mt-1">
-                        Fuel amount exceeds available limit
+                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount && (
+                      <p className="text-xs text-red-600 mt-1 font-semibold">
+                        Total Amount more than available Spending Limit
                       </p>
                     )}
                     {purchasingOil && formData.oilTotalAmount && (
                       <p className="text-xs text-gray-500 mt-1">
-                        Includes R{formData.oilTotalAmount} for oil (not subject to fuel spending limit)
+                        Includes R{formData.oilTotalAmount} for oil
                       </p>
                     )}
                   </div>
@@ -1386,10 +1365,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                     !formData.pricePerLiter ||
                     !formData.odometerReading ||
                     (purchasingOil && (!formData.oilQuantity || !formData.oilUnitPrice || !formData.oilType)) ||
-                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && (() => {
-                      const fuelAmount = parseFloat(formData.liters || '0') * parseFloat(formData.pricePerLiter || '0');
-                      return fuelAmount > spendingLimitInfo.availableAmount;
-                    })())
+                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount)
                   }
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >

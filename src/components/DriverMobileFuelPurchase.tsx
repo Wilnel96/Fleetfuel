@@ -1197,9 +1197,17 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       readOnly
                       className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
                     />
-                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount) > spendingLimitInfo.availableAmount && (
+                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && (() => {
+                      const fuelAmount = parseFloat(formData.liters || '0') * parseFloat(formData.pricePerLiter || '0');
+                      return fuelAmount > spendingLimitInfo.availableAmount;
+                    })() && (
                       <p className="text-xs text-red-600 mt-1">
-                        Amount exceeds available limit
+                        Fuel amount exceeds available limit
+                      </p>
+                    )}
+                    {purchasingOil && formData.oilTotalAmount && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Includes R{formData.oilTotalAmount} for oil (not subject to fuel spending limit)
                       </p>
                     )}
                   </div>
@@ -1378,7 +1386,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                     !formData.pricePerLiter ||
                     !formData.odometerReading ||
                     (purchasingOil && (!formData.oilQuantity || !formData.oilUnitPrice || !formData.oilType)) ||
-                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount) > spendingLimitInfo.availableAmount)
+                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && (() => {
+                      const fuelAmount = parseFloat(formData.liters || '0') * parseFloat(formData.pricePerLiter || '0');
+                      return fuelAmount > spendingLimitInfo.availableAmount;
+                    })())
                   }
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >

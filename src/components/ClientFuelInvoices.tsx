@@ -524,26 +524,31 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
 
-    const columnWidth = contentWidth / 3;
     pdf.text('Number:', margin + 3, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(invoice.invoice_number, margin + columnWidth - 3, yPosition, { align: 'right' });
+    pdf.text(` ${invoice.invoice_number}`, margin + 3 + pdf.getTextWidth('Number:'), yPosition);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Date:', margin + columnWidth + 3, yPosition);
+    const dateLabel = 'Date:';
+    const dateX = margin + (contentWidth / 2) - (pdf.getTextWidth(dateLabel) / 2);
+    pdf.text(dateLabel, dateX, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), margin + (columnWidth * 2) - 3, yPosition, { align: 'right' });
+    pdf.text(` ${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}`, dateX + pdf.getTextWidth(dateLabel), yPosition);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Transaction Date & Time:', margin + (columnWidth * 2) + 3, yPosition);
+    const transLabel = 'Transaction Date & Time:';
+    const transDate = new Date(invoice.transaction_date).toLocaleDateString('en-ZA');
+    const transTime = new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+    const transValue = ` ${transDate} ${transTime}`;
+    const transWidth = pdf.getTextWidth(transLabel) + pdf.getTextWidth(transValue);
+    pdf.text(transLabel, margin + contentWidth - 3 - transWidth, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const transDateTime = `${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')} ${new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}`;
-    pdf.text(transDateTime, margin + contentWidth - 3, yPosition, { align: 'right' });
+    pdf.text(transValue, margin + contentWidth - 3 - pdf.getTextWidth(transValue), yPosition);
 
     yPosition += 12;
 
@@ -564,22 +569,26 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.text('Vehicle:', margin + 3, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(invoice.vehicle_registration, margin + columnWidth - 3, yPosition, { align: 'right' });
+    pdf.text(` ${invoice.vehicle_registration}`, margin + 3 + pdf.getTextWidth('Vehicle:'), yPosition);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Driver:', margin + columnWidth + 3, yPosition);
+    const driverLabel = 'Driver:';
+    const driverX = margin + (contentWidth / 2) - (pdf.getTextWidth(driverLabel) / 2);
+    pdf.text(driverLabel, driverX, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const driverText = pdf.splitTextToSize(invoice.driver_name, columnWidth - 10);
-    pdf.text(driverText[0], margin + (columnWidth * 2) - 3, yPosition, { align: 'right' });
+    pdf.text(` ${invoice.driver_name}`, driverX + pdf.getTextWidth(driverLabel), yPosition);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
-    pdf.text('Odometer:', margin + (columnWidth * 2) + 3, yPosition);
+    const odoLabel = 'Odometer:';
+    const odoValue = ` ${invoice.odometer_reading.toLocaleString()} km`;
+    const odoWidth = pdf.getTextWidth(odoLabel) + pdf.getTextWidth(odoValue);
+    pdf.text(odoLabel, margin + contentWidth - 3 - odoWidth, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, margin + contentWidth - 3, yPosition, { align: 'right' });
+    pdf.text(odoValue, margin + contentWidth - 3 - pdf.getTextWidth(odoValue), yPosition);
 
     yPosition += 12;
 
@@ -597,20 +606,21 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
 
-    const halfWidth = contentWidth / 2;
     pdf.text('Station:', margin + 3, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const stationText = pdf.splitTextToSize(invoice.garage_name, halfWidth - 15);
-    pdf.text(stationText[0], margin + 18, yPosition);
+    pdf.text(` ${invoice.garage_name}`, margin + 3 + pdf.getTextWidth('Station:'), yPosition);
 
     if (invoice.garage_vat_number) {
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('VAT no:', margin + halfWidth, yPosition);
+      const vatLabel = 'VAT no:';
+      const vatValue = ` ${invoice.garage_vat_number}`;
+      const vatWidth = pdf.getTextWidth(vatLabel) + pdf.getTextWidth(vatValue);
+      pdf.text(vatLabel, margin + contentWidth - 3 - vatWidth, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(invoice.garage_vat_number, margin + halfWidth + 15, yPosition);
+      pdf.text(vatValue, margin + contentWidth - 3 - pdf.getTextWidth(vatValue), yPosition);
     }
 
     yPosition += 5;
@@ -619,8 +629,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     pdf.text('Address:', margin + 3, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
-    const addressText = pdf.splitTextToSize(invoice.garage_address, contentWidth - 25);
-    pdf.text(addressText[0], margin + 18, yPosition);
+    pdf.text(` ${invoice.garage_address}`, margin + 3 + pdf.getTextWidth('Address:'), yPosition);
 
     yPosition += 8;
 
@@ -900,97 +909,126 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
       yPosition += 8;
 
-      const columnWidth = (contentWidth - 10) / 3;
-      const col1X = margin;
-      const col2X = margin + columnWidth + 5;
-      const col3X = margin + (columnWidth * 2) + 10;
-
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(107, 114, 128);
-      pdf.text('INVOICE', col1X, yPosition);
-      pdf.text('VEHICLE & DRIVER', col2X, yPosition);
-      pdf.text('FUEL STATION', col3X, yPosition);
+      pdf.text('INVOICE', margin, yPosition);
 
       yPosition += 3;
-
       pdf.setFillColor(249, 250, 251);
-      pdf.rect(col1X, yPosition, columnWidth, 18, 'F');
-      pdf.rect(col2X, yPosition, columnWidth, 18, 'F');
-      pdf.rect(col3X, yPosition, columnWidth, 18, 'F');
+      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
 
       yPosition += 4;
       pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
 
-      pdf.text('Number:', col1X + 2, yPosition);
+      pdf.text('Number:', margin + 3, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(invoice.invoice_number, col1X + columnWidth - 2, yPosition, { align: 'right' });
+      pdf.text(` ${invoice.invoice_number}`, margin + 3 + pdf.getTextWidth('Number:'), yPosition);
 
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Vehicle:', col2X + 2, yPosition);
+      const dateLabelAll = 'Date:';
+      const dateXAll = margin + (contentWidth / 2) - (pdf.getTextWidth(dateLabelAll) / 2);
+      pdf.text(dateLabelAll, dateXAll, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(invoice.vehicle_registration, col2X + columnWidth - 2, yPosition, { align: 'right' });
+      pdf.text(` ${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}`, dateXAll + pdf.getTextWidth(dateLabelAll), yPosition);
 
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Station:', col3X + 2, yPosition);
+      const transLabelAll = 'Transaction Date & Time:';
+      const transDateAll = new Date(invoice.transaction_date).toLocaleDateString('en-ZA');
+      const transTimeAll = new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+      const transValueAll = ` ${transDateAll} ${transTimeAll}`;
+      const transWidthAll = pdf.getTextWidth(transLabelAll) + pdf.getTextWidth(transValueAll);
+      pdf.text(transLabelAll, margin + contentWidth - 3 - transWidthAll, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      const stationTextAll = pdf.splitTextToSize(invoice.garage_name, columnWidth - 4);
-      pdf.text(stationTextAll[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
+      pdf.text(transValueAll, margin + contentWidth - 3 - pdf.getTextWidth(transValueAll), yPosition);
 
-      yPosition += 5;
+      yPosition += 12;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('VEHICLE & DRIVER', margin, yPosition);
+
+      yPosition += 3;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+
+      yPosition += 4;
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Date:', col1X + 2, yPosition);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(new Date(invoice.invoice_date).toLocaleDateString('en-ZA'), col1X + columnWidth - 2, yPosition, { align: 'right' });
 
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Driver:', col2X + 2, yPosition);
+      pdf.text('Vehicle:', margin + 3, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      const driverTextAll = pdf.splitTextToSize(invoice.driver_name, columnWidth - 4);
-      pdf.text(driverTextAll[0], col2X + columnWidth - 2, yPosition, { align: 'right' });
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Address:', col3X + 2, yPosition);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      const addressTextAll = pdf.splitTextToSize(invoice.garage_address, columnWidth - 4);
-      pdf.text(addressTextAll[0], col3X + columnWidth - 2, yPosition, { align: 'right' });
-
-      yPosition += 5;
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(75, 85, 99);
-      pdf.text('Trans. Date:', col1X + 2, yPosition);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(new Date(invoice.transaction_date).toLocaleDateString('en-ZA'), col1X + columnWidth - 2, yPosition, { align: 'right' });
+      pdf.text(` ${invoice.vehicle_registration}`, margin + 3 + pdf.getTextWidth('Vehicle:'), yPosition);
 
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
-      pdf.text('Odometer:', col2X + 2, yPosition);
+      const driverLabelAll = 'Driver:';
+      const driverXAll = margin + (contentWidth / 2) - (pdf.getTextWidth(driverLabelAll) / 2);
+      pdf.text(driverLabelAll, driverXAll, yPosition);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(17, 24, 39);
-      pdf.text(`${invoice.odometer_reading.toLocaleString()} km`, col2X + columnWidth - 2, yPosition, { align: 'right' });
+      pdf.text(` ${invoice.driver_name}`, driverXAll + pdf.getTextWidth(driverLabelAll), yPosition);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      const odoLabelAll = 'Odometer:';
+      const odoValueAll = ` ${invoice.odometer_reading.toLocaleString()} km`;
+      const odoWidthAll = pdf.getTextWidth(odoLabelAll) + pdf.getTextWidth(odoValueAll);
+      pdf.text(odoLabelAll, margin + contentWidth - 3 - odoWidthAll, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(odoValueAll, margin + contentWidth - 3 - pdf.getTextWidth(odoValueAll), yPosition);
+
+      yPosition += 12;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('FUEL STATION', margin, yPosition);
+
+      yPosition += 3;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, contentWidth, 16, 'F');
+
+      yPosition += 4;
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+
+      pdf.text('Station:', margin + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.garage_name}`, margin + 3 + pdf.getTextWidth('Station:'), yPosition);
 
       if (invoice.garage_vat_number) {
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(75, 85, 99);
-        pdf.text('VAT no:', col3X + 2, yPosition);
+        const vatLabelAll = 'VAT no:';
+        const vatValueAll = ` ${invoice.garage_vat_number}`;
+        const vatWidthAll = pdf.getTextWidth(vatLabelAll) + pdf.getTextWidth(vatValueAll);
+        pdf.text(vatLabelAll, margin + contentWidth - 3 - vatWidthAll, yPosition);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(17, 24, 39);
-        pdf.text(invoice.garage_vat_number, col3X + columnWidth - 2, yPosition, { align: 'right' });
+        pdf.text(vatValueAll, margin + contentWidth - 3 - pdf.getTextWidth(vatValueAll), yPosition);
       }
+
+      yPosition += 5;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Address:', margin + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.garage_address}`, margin + 3 + pdf.getTextWidth('Address:'), yPosition);
 
       yPosition += 8;
 

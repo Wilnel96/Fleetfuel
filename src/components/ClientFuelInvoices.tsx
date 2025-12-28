@@ -325,43 +325,43 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
               <div class="card">
                 <h3>Fuel Details</h3>
                 <div class="card-content">
-                  <div class="info-row">
-                    <span class="info-label">Fuel Type:</span>
-                    <span class="info-value">${invoice.fuel_type}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Liters:</span>
-                    <span class="info-value">${parseFloat(invoice.liters.toString()).toFixed(2)} L</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Price per Liter:</span>
-                    <span class="info-value">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Fuel Amount:</span>
-                    <span class="info-value">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</span>
-                  </div>
+                  <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                      <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Type</th>
+                      <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Liters</th>
+                      <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Price per Liter</th>
+                      <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Amount</th>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px; font-weight: 600;">${invoice.fuel_type}</td>
+                      <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
+                      <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
+                      <td style="text-align: right; padding: 8px; font-weight: 600;">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</td>
+                    </tr>
+                  </table>
                 </div>
               </div>
               ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
               <div class="card">
                 <h3>Oil Purchase</h3>
                 <div class="card-content">
-                  <div class="info-row">
-                    <span class="info-label">Oil Type:</span>
-                    <span class="info-value">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Quantity:</span>
-                    <span class="info-value">${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Unit Price (incl VAT):</span>
-                    <span class="info-value">R ${parseFloat(invoice.oil_unit_price.toString()).toFixed(2)}</span>
-                  </div>
-                  <div class="info-row">
-                    <span class="info-label">Oil Amount (incl VAT):</span>
-                    <span class="info-value">R ${parseFloat(invoice.oil_total_amount.toString()).toFixed(2)}</span>
+                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+                    <tr style="border-bottom: 1px solid #e5e7eb;">
+                      <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Type</th>
+                      <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Quantity</th>
+                      <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Unit Price (Incl VAT)</th>
+                      <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Amount (Incl VAT)</th>
+                    </tr>
+                    <tr>
+                      <td style="padding: 8px; font-weight: 600;">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
+                      <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
+                      <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_unit_price.toString()).toFixed(2)}</td>
+                      <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_total_amount.toString()).toFixed(2)}</td>
+                    </tr>
+                  </table>
+                  <div style="padding-top: 8px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between;">
+                    <span style="color: #4b5563;">Amount of VAT included:</span>
+                    <span style="font-weight: 600;">R ${(parseFloat(invoice.oil_total_amount.toString()) - (parseFloat(invoice.oil_total_amount.toString()) / 1.15)).toFixed(2)}</span>
                   </div>
                 </div>
               </div>` : ''}
@@ -717,7 +717,21 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       pdf.setTextColor(17, 24, 39);
       pdf.text(`R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
 
-      yPosition += 15;
+      yPosition += 8;
+      pdf.setDrawColor(209, 213, 219);
+      pdf.setLineWidth(0.3);
+      pdf.line(leftColumnX + 3, yPosition - 2, leftColumnX + columnWidth - 3, yPosition - 2);
+
+      yPosition += 2;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Amount of VAT included:', leftColumnX + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      const oilVAT = parseFloat(invoice.oil_total_amount?.toString() || '0') - (parseFloat(invoice.oil_total_amount?.toString() || '0') / 1.15);
+      pdf.text(`R ${oilVAT.toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 13;
     }
 
     pdf.setDrawColor(229, 231, 235);
@@ -820,43 +834,43 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
             <div class="card">
               <h3>Fuel Details</h3>
               <div class="card-content">
-                <div class="info-row">
-                  <span class="info-label">Fuel Type:</span>
-                  <span class="info-value">${invoice.fuel_type}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Liters:</span>
-                  <span class="info-value">${parseFloat(invoice.liters.toString()).toFixed(2)} L</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Price per Liter:</span>
-                  <span class="info-value">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Fuel Amount:</span>
-                  <span class="info-value">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</span>
-                </div>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Type</th>
+                    <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Liters</th>
+                    <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Price per Liter</th>
+                    <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Fuel Amount</th>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px; font-weight: 600;">${invoice.fuel_type}</td>
+                    <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.liters.toString()).toFixed(2)}</td>
+                    <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}</td>
+                    <td style="text-align: right; padding: 8px; font-weight: 600;">R ${(parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString())).toFixed(2)}</td>
+                  </tr>
+                </table>
               </div>
             </div>
             ${invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0 ? `
             <div class="card">
               <h3>Oil Purchase</h3>
               <div class="card-content">
-                <div class="info-row">
-                  <span class="info-label">Oil Type:</span>
-                  <span class="info-value">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Quantity:</span>
-                  <span class="info-value">${parseFloat(invoice.oil_quantity.toString()).toFixed(2)} units</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Unit Price (incl VAT):</span>
-                  <span class="info-value">R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Oil Amount (incl VAT):</span>
-                  <span class="info-value">R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}</span>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+                  <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <th style="text-align: left; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Type</th>
+                    <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Quantity</th>
+                    <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Unit Price (Incl VAT)</th>
+                    <th style="text-align: right; padding: 4px 8px; font-size: 11px; font-weight: 500; color: #6b7280;">Oil Amount (Incl VAT)</th>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px; font-weight: 600;">${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}</td>
+                    <td style="text-align: right; padding: 8px; font-weight: 600;">${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}</td>
+                    <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}</td>
+                    <td style="text-align: right; padding: 8px; font-weight: 600;">R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}</td>
+                  </tr>
+                </table>
+                <div style="padding-top: 8px; border-top: 1px solid #d1d5db; display: flex; justify-content: space-between;">
+                  <span style="color: #4b5563;">Amount of VAT included:</span>
+                  <span style="font-weight: 600;">R ${(parseFloat(invoice.oil_total_amount?.toString() || '0') - (parseFloat(invoice.oil_total_amount?.toString() || '0') / 1.15)).toFixed(2)}</span>
                 </div>
               </div>
             </div>` : ''}
@@ -1129,7 +1143,21 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         pdf.setTextColor(17, 24, 39);
         pdf.text(`R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
 
-        yPosition += 15;
+        yPosition += 8;
+        pdf.setDrawColor(209, 213, 219);
+        pdf.setLineWidth(0.3);
+        pdf.line(leftColumnX + 3, yPosition - 2, leftColumnX + columnWidth - 3, yPosition - 2);
+
+        yPosition += 2;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('Amount of VAT included:', leftColumnX + 3, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        const oilVATAll = parseFloat(invoice.oil_total_amount?.toString() || '0') - (parseFloat(invoice.oil_total_amount?.toString() || '0') / 1.15);
+        pdf.text(`R ${oilVATAll.toFixed(2)}`, leftColumnX + columnWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 13;
       }
 
       pdf.setDrawColor(229, 231, 235);
@@ -1281,22 +1309,18 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
 
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Fuel Details</h3>
-                <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fuel Type:</span>
-                    <span className="font-semibold">{selectedInvoice.fuel_type}</span>
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="grid grid-cols-4 gap-2 mb-2 text-xs font-medium text-gray-600">
+                    <div>Fuel Type</div>
+                    <div className="text-right">Liters</div>
+                    <div className="text-right">Price per Liter</div>
+                    <div className="text-right">Fuel Amount</div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Liters:</span>
-                    <span className="font-semibold">{parseFloat(selectedInvoice.liters.toString()).toFixed(2)} L</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Price per Liter:</span>
-                    <span className="font-semibold">R {parseFloat(selectedInvoice.price_per_liter.toString()).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Fuel Amount:</span>
-                    <span className="font-semibold">R {(parseFloat(selectedInvoice.liters.toString()) * parseFloat(selectedInvoice.price_per_liter.toString())).toFixed(2)}</span>
+                  <div className="grid grid-cols-4 gap-2 text-sm font-semibold">
+                    <div>{selectedInvoice.fuel_type}</div>
+                    <div className="text-right">{parseFloat(selectedInvoice.liters.toString()).toFixed(2)}</div>
+                    <div className="text-right">R {parseFloat(selectedInvoice.price_per_liter.toString()).toFixed(2)}</div>
+                    <div className="text-right">R {(parseFloat(selectedInvoice.liters.toString()) * parseFloat(selectedInvoice.price_per_liter.toString())).toFixed(2)}</div>
                   </div>
                 </div>
               </div>
@@ -1304,22 +1328,26 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
               {selectedInvoice.oil_quantity && parseFloat(selectedInvoice.oil_quantity.toString()) > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 mb-2">Oil Purchase</h3>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Oil Type:</span>
-                      <span className="font-semibold">{selectedInvoice.oil_type || 'N/A'}{selectedInvoice.oil_brand ? ` (${selectedInvoice.oil_brand})` : ''}</span>
+                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                    <div>
+                      <div className="grid grid-cols-4 gap-2 mb-2 text-xs font-medium text-gray-600">
+                        <div>Oil Type</div>
+                        <div className="text-right">Quantity</div>
+                        <div className="text-right">Unit Price (Incl VAT)</div>
+                        <div className="text-right">Oil Amount (Incl VAT)</div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-2 text-sm font-semibold">
+                        <div>{selectedInvoice.oil_type || 'N/A'}{selectedInvoice.oil_brand ? ` (${selectedInvoice.oil_brand})` : ''}</div>
+                        <div className="text-right">{parseFloat(selectedInvoice.oil_quantity.toString()).toFixed(0)} Unit{parseFloat(selectedInvoice.oil_quantity.toString()) > 1 ? 's' : ''}</div>
+                        <div className="text-right">R {parseFloat(selectedInvoice.oil_unit_price?.toString() || '0').toFixed(2)}</div>
+                        <div className="text-right">R {parseFloat(selectedInvoice.oil_total_amount?.toString() || '0').toFixed(2)}</div>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Quantity:</span>
-                      <span className="font-semibold">{parseFloat(selectedInvoice.oil_quantity.toString()).toFixed(2)} units</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Unit Price (incl VAT):</span>
-                      <span className="font-semibold">R {parseFloat(selectedInvoice.oil_unit_price?.toString() || '0').toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Oil Amount (incl VAT):</span>
-                      <span className="font-semibold">R {parseFloat(selectedInvoice.oil_total_amount?.toString() || '0').toFixed(2)}</span>
+                    <div className="pt-2 border-t border-gray-300">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Amount of VAT included:</span>
+                        <span className="font-semibold">R {((parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') - (parseFloat(selectedInvoice.oil_total_amount?.toString() || '0') / 1.15))).toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

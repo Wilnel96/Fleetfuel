@@ -118,6 +118,24 @@ export default function EFTBatchProcessing() {
         return;
       }
 
+      // First check if this organization uses EFT Payment
+      const { data: organization, error: orgError } = await supabase
+        .from('organizations')
+        .select('payment_option')
+        .eq('id', profile.organization_id)
+        .single();
+
+      if (orgError) {
+        console.error('Error fetching organization:', orgError);
+        throw new Error('Failed to fetch organization details: ' + orgError.message);
+      }
+
+      if (organization.payment_option !== 'EFT Payment') {
+        alert(`This organization uses ${organization.payment_option || 'an unspecified payment method'}. EFT batch processing is only available for organizations with EFT Payment option.`);
+        setProcessing(false);
+        return;
+      }
+
       const { data: transactions, error: transactionsError } = await supabase
         .from('fuel_transactions')
         .select('*, garages(*)')

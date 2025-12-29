@@ -58,7 +58,7 @@ Deno.serve(async (req: Request) => {
     // Get all client organizations (not management org, not super admin org)
     const { data: organizations, error: orgError } = await supabase
       .from('organizations')
-      .select('id, name, monthly_fee_per_vehicle, parent_org_id')
+      .select('id, name, monthly_fee_per_vehicle, parent_org_id, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
       .eq('status', 'active')
       .not('parent_org_id', 'is', null);
 
@@ -161,7 +161,7 @@ Deno.serve(async (req: Request) => {
             });
         }
 
-        // Create invoice
+        // Create invoice with payment option details
         const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
           .insert({
@@ -178,6 +178,9 @@ Deno.serve(async (req: Request) => {
             amount_outstanding: totalAmount,
             payment_terms,
             payment_due_date: paymentDueDateStr,
+            payment_option: org.payment_option || null,
+            fuel_payment_terms: org.fuel_payment_terms || null,
+            fuel_payment_interest_rate: org.fuel_payment_interest_rate || null,
             status: 'issued',
             issued_at: new Date().toISOString(),
           })

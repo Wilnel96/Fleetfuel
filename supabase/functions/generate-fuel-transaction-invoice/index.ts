@@ -90,7 +90,7 @@ Deno.serve(async (req: Request) => {
     const [orgResult, vehicleResult, driverResult, garageResult] = await Promise.all([
       supabase
         .from("organizations")
-        .select("name, billing_contact_email, billing_contact_name")
+        .select("name, billing_contact_email, billing_contact_name, payment_option, fuel_payment_terms, fuel_payment_interest_rate")
         .eq("id", transaction.organization_id)
         .maybeSingle(),
       supabase
@@ -224,6 +224,9 @@ Deno.serve(async (req: Request) => {
         oil_total_amount: transaction.oil_total_amount || 0,
         oil_type: transaction.oil_type || null,
         oil_brand: transaction.oil_brand || null,
+        payment_option: organization.payment_option || null,
+        fuel_payment_terms: organization.fuel_payment_terms || null,
+        fuel_payment_interest_rate: organization.fuel_payment_interest_rate || null,
       })
       .select()
       .single();

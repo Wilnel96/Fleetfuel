@@ -16,6 +16,9 @@ interface Invoice {
   amount_outstanding: number;
   payment_terms: string;
   payment_due_date: string;
+  payment_option?: string;
+  fuel_payment_terms?: string;
+  fuel_payment_interest_rate?: number;
   status: string;
   organization?: {
     name: string;
@@ -371,6 +374,20 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
               <div className="text-right">
                 {getStatusBadge(selectedInvoice.status)}
                 <div className="mt-4 space-y-1 text-sm">
+                  {selectedInvoice.payment_option && (
+                    <div className="mb-2 pb-2 border-b">
+                      <p className="font-semibold text-gray-900">Payment Option:</p>
+                      <p className="text-gray-600">{selectedInvoice.payment_option}</p>
+                      {selectedInvoice.payment_option === 'EFT Payment' && selectedInvoice.fuel_payment_terms && (
+                        <>
+                          <p className="text-xs text-gray-500 mt-1">Fuel Terms: {selectedInvoice.fuel_payment_terms}</p>
+                          {selectedInvoice.fuel_payment_interest_rate && selectedInvoice.fuel_payment_terms !== 'Same Day' && (
+                            <p className="text-xs text-gray-500">Interest Rate: {selectedInvoice.fuel_payment_interest_rate}%</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
                   <p className="font-semibold text-gray-900">Payment Terms:</p>
                   <p className="text-gray-600">{selectedInvoice.payment_terms}</p>
                   <p className="text-red-600 font-bold mt-2">Payment Due: {formatDate(selectedInvoice.payment_due_date)}</p>
@@ -544,6 +561,7 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Due Date</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Total</th>
                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase">Outstanding</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Payment Option</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Actions</th>
               </tr>
@@ -551,7 +569,7 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
             <tbody className="divide-y divide-gray-200">
               {invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     No invoices found
                   </td>
                 </tr>
@@ -569,6 +587,19 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
                       {formatCurrency(invoice.amount_outstanding)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {invoice.payment_option ? (
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                          invoice.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
+                          invoice.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
+                          'bg-amber-100 text-amber-800'
+                        }`}>
+                          {invoice.payment_option}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">Not set</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-sm">{getStatusBadge(invoice.status)}</td>
                     <td className="px-4 py-3 text-sm">

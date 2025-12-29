@@ -242,6 +242,7 @@ Deno.serve(async (req: Request) => {
       const distanceMeters = calculateDistance(vehicleLat, vehicleLon, garageLat, garageLon);
 
       if (distanceMeters > 500) {
+        const distanceKm = (distanceMeters / 1000).toFixed(2);
         await supabase
           .from("vehicle_exceptions")
           .insert({
@@ -251,7 +252,7 @@ Deno.serve(async (req: Request) => {
             transaction_id: transaction.id,
             transaction_type: "fuel",
             exception_type: "garage_location_mismatch",
-            description: `Vehicle location is ${Math.round(distanceMeters)}m away from the garage in ${garage.city}. Possible location spoofing.`,
+            description: `Vehicle location is ${distanceKm} km away from the garage in ${garage.city}. Possible location spoofing.`,
             expected_value: `${garageLat},${garageLon}`,
             actual_value: transactionData.location,
             resolved: false,

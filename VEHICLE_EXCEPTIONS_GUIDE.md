@@ -43,9 +43,10 @@ The Vehicle Exception Report tracks anomalies and suspicious patterns in vehicle
 
 ### 7. GPS Location Mismatch (`gps_location_mismatch`)
 **When Created:** During fuel purchase
-**Trigger Condition:** Driver's GPS location is more than 5 km away from the selected garage's coordinates
-**Automatic:** Yes, created when driver proceeds despite distance warning
-**Example:** Driver selects a garage but their GPS shows they are 8 km away
+**Trigger Condition:** Driver's GPS location is more than 0.5 km (500 meters) away from the selected garage's coordinates
+**Automatic:** Yes, created automatically by the backend system
+**Example:** Driver selects a garage but their GPS shows they are 2.5 km away
+**Display Format:** Distance is shown in kilometers (e.g., "2.50 km" instead of "2500m")
 
 ## Viewing Exceptions
 

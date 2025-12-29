@@ -38,7 +38,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const reportTypes: ReportType[] = [
-    { id: 'overview', name: 'Overview Summary', description: 'General fuel purchase statistics', icon: BarChart3 },
+    { id: 'overview', name: 'Fuel Transactions', description: 'General fuel purchase statistics', icon: BarChart3 },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
     { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
     { id: 'exceptions', name: 'Vehicle Exception Report', description: 'Unresolved exceptions only (use Custom Report Builder for historical analysis)', icon: AlertCircle },

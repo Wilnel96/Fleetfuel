@@ -307,6 +307,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
             expected_value: expectedOdometer.toString(),
             actual_value: odometerReading,
             transaction_id: transaction.id,
+            transaction_type: 'vehicle_draw',
             resolved: false,
           });
 
@@ -339,6 +340,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
             expected_value: requiredLicense,
             actual_value: driverLicenseCode,
             transaction_id: transaction.id,
+            transaction_type: 'vehicle_draw',
             resolved: false,
           });
 

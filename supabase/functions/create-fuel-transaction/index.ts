@@ -249,6 +249,7 @@ Deno.serve(async (req: Request) => {
             vehicle_id: transactionData.vehicleId,
             driver_id: driver.id,
             transaction_id: transaction.id,
+            transaction_type: "fuel",
             exception_type: "garage_location_mismatch",
             description: `Vehicle location is ${Math.round(distanceMeters)}m away from the garage in ${garage.city}. Possible location spoofing.`,
             expected_value: `${garageLat},${garageLon}`,

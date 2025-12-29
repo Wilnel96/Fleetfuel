@@ -174,15 +174,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: organization } = await supabase
-      .from("organizations")
-      .select("city")
-      .eq("id", driver.organization_id)
-      .maybeSingle();
-
     const { data: garage } = await supabase
       .from("garages")
-      .select("city")
+      .select("city, latitude, longitude")
       .eq("id", transactionData.garageId)
       .maybeSingle();
 
@@ -227,20 +221,41 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (organization?.city && garage?.city && organization.city !== garage.city) {
-      await supabase
-        .from("vehicle_exceptions")
-        .insert({
-          organization_id: driver.organization_id,
-          vehicle_id: transactionData.vehicleId,
-          driver_id: driver.id,
-          transaction_id: transaction.id,
-          exception_type: "garage_location_mismatch",
-          description: `Driver refueled at a garage in ${garage.city}, but organization is based in ${organization.city}`,
-          expected_value: organization.city,
-          actual_value: garage.city,
-          resolved: false,
-        });
+    if (transactionData.location && transactionData.location !== "Unknown" && garage?.latitude && garage?.longitude) {
+      const [vehicleLat, vehicleLon] = transactionData.location.split(',').map(Number);
+      const garageLat = Number(garage.latitude);
+      const garageLon = Number(garage.longitude);
+
+      const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371000;
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      const distanceMeters = calculateDistance(vehicleLat, vehicleLon, garageLat, garageLon);
+
+      if (distanceMeters > 500) {
+        await supabase
+          .from("vehicle_exceptions")
+          .insert({
+            organization_id: driver.organization_id,
+            vehicle_id: transactionData.vehicleId,
+            driver_id: driver.id,
+            transaction_id: transaction.id,
+            exception_type: "garage_location_mismatch",
+            description: `Vehicle location is ${Math.round(distanceMeters)}m away from the garage in ${garage.city}. Possible location spoofing.`,
+            expected_value: `${garageLat},${garageLon}`,
+            actual_value: transactionData.location,
+            resolved: false,
+          });
+      }
     }
 
     try {

@@ -30,6 +30,9 @@ interface Organization {
   vat_reporting_basis: string | null;
   credit_control_enabled: boolean | null;
   suspend_services_after_days: number | null;
+  payment_option: string | null;
+  fuel_payment_terms: string | null;
+  fuel_payment_interest_rate: number | null;
 }
 
 interface ClientFinancialInfoProps {
@@ -69,7 +72,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       setLoading(true);
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
-        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days')
+        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
         .neq('name', 'My Organization')
         .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
         .order('name');
@@ -127,6 +130,9 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
           vat_reporting_basis: editForm.vat_reporting_basis,
           credit_control_enabled: editForm.credit_control_enabled,
           suspend_services_after_days: editForm.suspend_services_after_days,
+          payment_option: editForm.payment_option,
+          fuel_payment_terms: editForm.fuel_payment_terms,
+          fuel_payment_interest_rate: editForm.fuel_payment_interest_rate,
         })
         .eq('id', editingId);
 
@@ -447,7 +453,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                 </div>
 
                 <div className="border-t pt-2 mt-2">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Invoicing Configuration</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Fee Invoice Configuration (Payable to MyFuelApp Management)</h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Payment Method</label>
@@ -565,16 +571,77 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                     )}
                   </div>
                 </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Fuel Payment Configuration (Client to Garages)</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Option</label>
+                      <select
+                        value={editForm.payment_option || ''}
+                        onChange={(e) => setEditForm({ ...editForm, payment_option: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="EFT Payment">EFT Payment</option>
+                        <option value="Cash on Delivery">Cash on Delivery</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Terms</label>
+                      <select
+                        value={editForm.fuel_payment_terms || ''}
+                        onChange={(e) => setEditForm({ ...editForm, fuel_payment_terms: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="Same Day">Same Day</option>
+                        <option value="Next Day">Next Day</option>
+                        <option value="7-Days">7-Days</option>
+                        <option value="14-Days">14-Days</option>
+                        <option value="30-Days">30-Days</option>
+                        <option value="60-Days">60-Days</option>
+                        <option value="90-Days">90-Days</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Interest Rate (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={editForm.fuel_payment_interest_rate || ''}
+                        onChange={(e) => setEditForm({ ...editForm, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="e.g. 1.5"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500 italic">
+                    Note: Fuel payment interest rate only applies if payment terms are not "Same Day"
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex items-start justify-between">
-                <div>
+                <div className="flex-1">
                   <h3 className="text-base font-semibold text-gray-900">{org.name}</h3>
-                  <p className="text-xs text-gray-500">
-                    Fee: R{org.monthly_fee_per_vehicle?.toFixed(2) || '0.00'}/vehicle • Month End: {org.month_end_day || 'N/A'}
-                    {org.payment_method && ` • ${org.payment_method}`}
-                    {org.payment_terms && ` (${org.payment_terms})`}
-                  </p>
+                  <div className="text-xs text-gray-600 mt-1 space-y-1">
+                    <p>
+                      <span className="font-medium">Fee:</span> R{org.monthly_fee_per_vehicle?.toFixed(2) || '0.00'}/vehicle •
+                      <span className="font-medium"> Month End:</span> {org.month_end_day || 'N/A'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Fee Payment:</span> {org.payment_method || 'Not Set'}
+                      {org.payment_terms && ` (${org.payment_terms})`}
+                    </p>
+                    <p>
+                      <span className="font-medium">Fuel Payment:</span> {org.payment_option || 'Not Set'}
+                      {org.fuel_payment_terms && ` (${org.fuel_payment_terms})`}
+                      {org.fuel_payment_interest_rate && org.fuel_payment_terms !== 'Same Day' &&
+                        ` • ${org.fuel_payment_interest_rate}% interest`}
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => handleEdit(org)}

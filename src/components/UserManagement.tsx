@@ -11,7 +11,7 @@ interface OrganizationUser {
   id: string;
   email: string;
   password: string | null;
-  name: string;
+  first_name: string;
   surname: string;
   title: string;
   phone_office: string | null;
@@ -81,7 +81,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
   const [newUser, setNewUser] = useState({
     email: '',
     password: '',
-    name: '',
+    first_name: '',
     surname: '',
     title: 'User',
     phone_office: '',
@@ -401,8 +401,8 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
       setError('');
       setSuccess('');
 
-      if (!newUser.email || !newUser.password || !newUser.name) {
-        throw new Error('Email, password, and name are required');
+      if (!newUser.email || !newUser.password || !newUser.first_name) {
+        throw new Error('Email, password, and first name are required');
       }
 
       if (newUser.password.length < 6) {
@@ -422,7 +422,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
           users: [{
             email: newUser.email,
             password: newUser.password,
-            name: newUser.name,
+            name: newUser.first_name,
             surname: newUser.surname,
             title: newUser.title,
             phone_office: newUser.phone_office || null,
@@ -449,7 +449,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
         requestBody = {
           email: newUser.email,
           password: newUser.password,
-          name: newUser.name,
+          name: newUser.first_name,
           surname: newUser.surname,
           title: newUser.title,
           phone_office: newUser.phone_office || null,
@@ -561,7 +561,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
           body: JSON.stringify({
             email: editingUser.email,
             password: newPassword,
-            name: editingUser.name,
+            name: editingUser.first_name,
             surname: editingUser.surname,
             title: editingUser.title,
             phone_office: editingUser.phone_office || null,
@@ -633,7 +633,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
       const { error: updateError } = await supabase
         .from('organization_users')
         .update({
-          name: editingUser.name,
+          first_name: editingUser.first_name,
           surname: editingUser.surname,
           title: editingUser.title,
           phone_office: editingUser.phone_office || null,
@@ -716,7 +716,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
     const confirmMessage = fromUser.id === currentOrgUserId
       ? 'Are you sure you want to transfer your main user status to this user? This will remove your main user status and give them full control.'
-      : `Are you sure you want to transfer main user status from ${fromUser.name} ${fromUser.surname} to ${toUser.name} ${toUser.surname}? This will give them full control of the organization.`;
+      : `Are you sure you want to transfer main user status from ${fromUser.first_name} ${fromUser.surname} to ${toUser.first_name} ${toUser.surname}? This will give them full control of the organization.`;
 
     if (!confirm(confirmMessage)) return;
 
@@ -734,7 +734,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
       if (rpcError) throw rpcError;
 
-      setSuccess(`Main user status transferred successfully to ${toUser.name} ${toUser.surname}`);
+      setSuccess(`Main user status transferred successfully to ${toUser.first_name} ${toUser.surname}`);
       setEditingUser(null);
       loadUsers();
       setTimeout(() => setSuccess(''), 3000);
@@ -951,7 +951,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
               </button>
               <button
                 onClick={handleAddUser}
-                disabled={!newUser.email || !newUser.password || !newUser.name}
+                disabled={!newUser.email || !newUser.password || !newUser.first_name}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
@@ -1054,8 +1054,8 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 </label>
                 <input
                   type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  value={newUser.first_name}
+                  onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
                   className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 />
@@ -1388,7 +1388,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 </button>
                 <button
                   onClick={handleSaveEdit}
-                  disabled={!editingUser.name}
+                  disabled={!editingUser.first_name}
                   className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
                 >
                   Save Changes
@@ -1429,8 +1429,8 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 <label className="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
                 <input
                   type="text"
-                  value={editingUser.name || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
+                  value={editingUser.first_name || ''}
+                  onChange={(e) => setEditingUser({ ...editingUser, first_name: e.target.value })}
                   className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   readOnly={false}
                   required
@@ -1729,7 +1729,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                   <div className="bg-blue-50 border border-blue-200 rounded p-2">
                     <h5 className="text-xs font-semibold text-blue-900 mb-1">Transfer Main User Status</h5>
                     <p className="text-xs text-blue-700 mb-2">
-                      Transfer main user status from {editingUser.id === currentOrgUserId ? 'yourself' : `${editingUser.name} ${editingUser.surname}`} to another user. This will give them full control of the organization.
+                      Transfer main user status from {editingUser.id === currentOrgUserId ? 'yourself' : `${editingUser.first_name} ${editingUser.surname}`} to another user. This will give them full control of the organization.
                     </p>
                     <select
                       onChange={(e) => {

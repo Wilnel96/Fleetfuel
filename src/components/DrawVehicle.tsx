@@ -180,12 +180,23 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       .eq('id', driverId)
       .maybeSingle();
 
-    if (!driver) return false;
+    if (!driver) {
+      console.error('checkDriverLicenseQualifies: Driver not found');
+      return false;
+    }
 
     const licenseCode = driver.license_type || 'Code B';
     setDriverLicenseCode(licenseCode);
 
     const vehicleLicenseRequired = vehicle.license_code_required || 'Code B';
+
+    console.log('Checking license qualification:', {
+      driver_id: driverId,
+      vehicle_id: vehicle.id,
+      vehicle_reg: vehicle.registration_number,
+      driver_license: licenseCode,
+      vehicle_requires: vehicleLicenseRequired
+    });
 
     // Call the database function to check if driver qualifies
     const { data, error } = await supabase
@@ -199,7 +210,10 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       return false;
     }
 
-    return data === true;
+    const isQualified = data === true;
+    console.log('License qualification result:', isQualified);
+
+    return isQualified;
   };
 
   const findVehicleByLicenseDisk = async (barcodeData: string): Promise<{ vehicle: Vehicle } | null> => {
@@ -246,6 +260,14 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const handleSubmit = async (logOdometerException: boolean, logLicenseException: boolean = false) => {
     if (!odometerReading || !selectedVehicle) return;
 
+    console.log('handleSubmit called with:', {
+      logOdometerException,
+      logLicenseException,
+      licenseWarningState: licenseWarning,
+      driverLicenseCode,
+      vehicleLicenseRequired: selectedVehicle.license_code_required
+    });
+
     setError('');
     setLoading(true);
 
@@ -266,6 +288,14 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       if (insertError) throw insertError;
 
       if (logOdometerException && expectedOdometer !== null) {
+        console.log('Attempting to log odometer exception:', {
+          driver_id: driverId,
+          vehicle_id: selectedVehicle.id,
+          organization_id: organizationId,
+          expected_odometer: expectedOdometer,
+          actual_odometer: odometerReading
+        });
+
         const { error: exceptionError } = await supabase
           .from('vehicle_exceptions')
           .insert({
@@ -281,12 +311,23 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
           });
 
         if (exceptionError) {
-          console.error('Failed to log odometer exception:', exceptionError);
+          console.error('FAILED to log odometer exception:', exceptionError);
+          setError(`Warning: Vehicle drawn but odometer exception logging failed: ${exceptionError.message}`);
+        } else {
+          console.log('Odometer exception logged successfully');
         }
       }
 
       if (logLicenseException) {
         const requiredLicense = selectedVehicle.license_code_required || 'Code B';
+        console.log('Attempting to log license exception:', {
+          driver_id: driverId,
+          vehicle_id: selectedVehicle.id,
+          organization_id: organizationId,
+          driver_license: driverLicenseCode,
+          required_license: requiredLicense
+        });
+
         const { error: exceptionError } = await supabase
           .from('vehicle_exceptions')
           .insert({
@@ -302,7 +343,10 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
           });
 
         if (exceptionError) {
-          console.error('Failed to log license exception:', exceptionError);
+          console.error('FAILED to log license exception:', exceptionError);
+          setError(`Warning: Vehicle drawn but exception logging failed: ${exceptionError.message}`);
+        } else {
+          console.log('License exception logged successfully');
         }
       }
 

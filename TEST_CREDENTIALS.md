@@ -33,6 +33,19 @@ Password: Fleet2024!
 
 **Organization:** NELMARK TRADING
 
+### Option 2: TEST TRANSPORT SOLUTIONS
+```
+Email: admin@test-transport.co.za
+Password: (needs to be reset - see below)
+```
+
+**Organization:** TEST TRANSPORT SOLUTIONS (PTY) LTD
+
+**Note:** If you need to reset the password for this account:
+1. Log in as super admin (willem@fleetfuel.com)
+2. Open `reset_password.html` in your browser
+3. Set a new password for the Test Transport admin account
+
 **Capabilities:**
 - Search and view all garages in the system
 - Add/edit/delete vehicles in their own organization only

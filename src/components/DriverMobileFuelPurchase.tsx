@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Fuel, Camera, MapPin, AlertCircle, CheckCircle, LogOut } from 'lucide-react';
+import { Fuel, Camera, MapPin, AlertCircle, CheckCircle, LogOut, XCircle } from 'lucide-react';
 import BarcodeScanner from './BarcodeScanner';
 import { supabase } from '../lib/supabase';
 import { DriverData } from './DriverAuth';
@@ -65,7 +65,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [locationMismatch, setLocationMismatch] = useState(false);
   const [distanceFromGarage, setDistanceFromGarage] = useState<number | null>(null);
 
-  const [currentStep, setCurrentStep] = useState<'garage_selection' | 'location_confirmation' | 'license_scan' | 'spending_check' | 'authorized' | 'fuel_details'>('garage_selection');
+  const [currentStep, setCurrentStep] = useState<'garage_selection' | 'location_confirmation' | 'license_scan' | 'spending_check' | 'authorized' | 'fuel_details' | 'pin_entry' | 'scan_to_till' | 'authorization_pending'>('garage_selection');
   const [selectedGarageId, setSelectedGarageId] = useState('');
   const [spendingLimitInfo, setSpendingLimitInfo] = useState<{
     hasLimit: boolean;
@@ -93,6 +93,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
   const [garages, setGarages] = useState<Garage[]>([]);
   const [garageAccountNumber, setGarageAccountNumber] = useState<string>('');
+  const [isLocalAccount, setIsLocalAccount] = useState(false);
+  const [pinInput, setPinInput] = useState('');
 
   useEffect(() => {
     loadDrawnVehicle();
@@ -200,6 +202,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         .maybeSingle();
 
       if (org?.payment_option === 'Local Account') {
+        setIsLocalAccount(true);
         const { data: garageAccounts } = await supabase
           .from('organization_garage_accounts')
           .select('garage_id, account_number')
@@ -227,6 +230,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           setError('No authorized garages found. Please contact your administrator to set up garage accounts.');
         }
       } else {
+        setIsLocalAccount(false);
         const { data } = await supabase
           .from('garages')
           .select('*')
@@ -649,7 +653,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         parseFloat(formData.liters)
       );
       setFuelEfficiency(efficiency);
-      setSuccess(true);
+
+      // For local accounts, move to PIN entry step. For EFT, show success
+      if (isLocalAccount) {
+        setCurrentStep('pin_entry');
+      } else {
+        setSuccess(true);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to submit transaction');
     } finally {
@@ -1013,13 +1023,146 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     );
   }
 
+  // PIN Entry Step for Local Accounts
+  if (currentStep === 'pin_entry') {
+    return (
+      <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+          <div className="text-center mb-6">
+            <AlertCircle className="w-16 h-16 text-amber-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Enter PIN and Scan to Garage Account System to Finalize</h2>
+            <p className="text-gray-600 text-sm">
+              Transaction created. Please enter your PIN below.
+            </p>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Driver PIN
+            </label>
+            <input
+              type="password"
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value)}
+              placeholder="Enter your 4-digit PIN"
+              maxLength={4}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-center text-2xl tracking-widest"
+              autoFocus
+            />
+          </div>
+
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-800">{error}</p>
+            </div>
+          )}
+
+          <button
+            onClick={() => {
+              if (pinInput.length !== 4) {
+                setError('Please enter a 4-digit PIN');
+                return;
+              }
+              if (pinInput !== driver.pin) {
+                setError('Incorrect PIN. Please try again.');
+                setPinInput('');
+                return;
+              }
+              setError('');
+              setCurrentStep('scan_to_till');
+            }}
+            disabled={pinInput.length !== 4}
+            className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Continue
+          </button>
+
+          <button
+            onClick={() => {
+              setCurrentStep('garage_selection');
+              setPinInput('');
+              setError('');
+            }}
+            className="w-full mt-3 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Scan to Till Step for Local Accounts
+  if (currentStep === 'scan_to_till') {
+    const selectedGarage = garages.find(g => g.id === selectedGarageId);
+    return (
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
+          <Camera className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Scan to Till and Wait for Acknowledgement</h2>
+
+          {selectedGarage?.accountNumber && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium text-blue-900 mb-1">Local Account Number</p>
+              <p className="text-2xl font-bold text-blue-600">{selectedGarage.accountNumber}</p>
+            </div>
+          )}
+
+          <p className="text-gray-600 mb-2">
+            Vehicle: <strong>{drawnVehicle?.registration_number}</strong>
+          </p>
+          <p className="text-gray-600 mb-2">
+            Amount: <strong>R {parseFloat(formData.totalAmount).toFixed(2)}</strong>
+          </p>
+          <p className="text-gray-600 mb-6">
+            Liters: <strong>{parseFloat(formData.liters).toFixed(2)} L</strong>
+          </p>
+
+          <p className="text-sm text-gray-500 mb-6 italic">
+            Please scan this transaction to the till system and wait for the garage attendant to authorize or decline the transaction.
+          </p>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                setSuccess(true);
+                setCurrentStep('garage_selection');
+              }}
+              className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-lg"
+            >
+              <CheckCircle className="w-6 h-6" />
+              Authorized
+            </button>
+
+            <button
+              onClick={() => {
+                setError('Transaction was not authorized by the garage. Please try again or contact the garage.');
+                setCurrentStep('garage_selection');
+                resetForm();
+              }}
+              className="w-full bg-red-600 text-white py-4 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-lg"
+            >
+              <XCircle className="w-6 h-6" />
+              Not Authorized
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
           <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Transaction Authorized!</h2>
-          <p className="text-gray-600 mb-6">Fuel purchase authorized. Payment will be processed via daily EFT run.</p>
+          <p className="text-gray-600 mb-6">
+            {isLocalAccount
+              ? 'Fuel purchase authorized. Payment will be processed via your local account.'
+              : 'Fuel purchase authorized. Payment will be processed via daily EFT run.'
+            }
+          </p>
 
           {fuelEfficiency !== null && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -1040,7 +1183,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             }}
             className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
           >
-            OK
+            {isLocalAccount ? 'Return to Main Menu' : 'OK'}
           </button>
         </div>
       </div>

@@ -15,6 +15,9 @@ interface ClientOrganization {
   country: string | null;
   website: string | null;
   status: string | null;
+  payment_option: string | null;
+  fuel_payment_terms: string | null;
+  fuel_payment_interest_rate: number | null;
 }
 
 interface ClientOrgInfoProps {
@@ -108,6 +111,9 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
           country: editForm.country,
           website: editForm.website,
           status: editForm.status,
+          payment_option: editForm.payment_option || null,
+          fuel_payment_terms: editForm.payment_option === 'EFT Payment' ? (editForm.fuel_payment_terms || null) : null,
+          fuel_payment_interest_rate: editForm.payment_option === 'EFT Payment' && editForm.fuel_payment_terms !== 'Same Day' ? editForm.fuel_payment_interest_rate : null,
         })
         .eq('id', editingId);
 
@@ -318,6 +324,88 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     </select>
                   </div>
                 </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Payment Configuration</h4>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Option</label>
+                      <select
+                        value={editForm.payment_option || ''}
+                        onChange={(e) => setEditForm({
+                          ...editForm,
+                          payment_option: e.target.value,
+                          fuel_payment_terms: e.target.value !== 'EFT Payment' ? null : editForm.fuel_payment_terms,
+                          fuel_payment_interest_rate: e.target.value !== 'EFT Payment' ? null : editForm.fuel_payment_interest_rate,
+                        })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="">-- Select --</option>
+                        <option value="EFT Payment">EFT Payment</option>
+                        <option value="Card Payment">Card Payment</option>
+                        <option value="Local Account">Local Account</option>
+                      </select>
+                    </div>
+
+                    {editForm.payment_option === 'EFT Payment' && (
+                      <div className="bg-green-50 border border-green-200 rounded p-2 space-y-2">
+                        <p className="text-xs text-green-900 font-medium">
+                          Client pays garages directly via collated EFT runs
+                        </p>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Terms</label>
+                          <select
+                            value={editForm.fuel_payment_terms || ''}
+                            onChange={(e) => setEditForm({
+                              ...editForm,
+                              fuel_payment_terms: e.target.value,
+                              fuel_payment_interest_rate: e.target.value === 'Same Day' ? null : editForm.fuel_payment_interest_rate,
+                            })}
+                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                          >
+                            <option value="">-- Select --</option>
+                            <option value="Same Day">Same Day</option>
+                            <option value="Next Day">Next Day</option>
+                            <option value="30-Days">30-Days</option>
+                          </select>
+                        </div>
+                        {editForm.fuel_payment_terms && editForm.fuel_payment_terms !== 'Same Day' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Interest Rate (%)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={editForm.fuel_payment_interest_rate || ''}
+                              onChange={(e) => setEditForm({ ...editForm, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
+                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                              placeholder="e.g. 1.5"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Interest applied when terms are not Same Day
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {editForm.payment_option === 'Card Payment' && (
+                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                        <p className="text-xs text-blue-900 font-medium">
+                          MyFuelApp funds garage payments upfront. Client repays MyFuelApp for fuel costs plus management fees.
+                        </p>
+                      </div>
+                    )}
+
+                    {editForm.payment_option === 'Local Account' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded p-2">
+                        <p className="text-xs text-amber-900 font-medium">
+                          MyFuelApp funds garage payments using client's local account arrangements. Client repays MyFuelApp for fuel costs plus management fees.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
               <div>
@@ -339,8 +427,21 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       >
                         {org.status === 'active' ? 'Active' : 'Inactive'}
                       </span>
+                      {org.payment_option && (
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded ${
+                          org.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
+                          org.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
+                          org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {org.payment_option}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-xs text-gray-500">Reg No: {org.company_registration_number || 'N/A'}</p>
+                    <p className="text-xs text-gray-500">
+                      Reg No: {org.company_registration_number || 'N/A'}
+                      {!org.payment_option && <span className="text-red-600 font-medium ml-2">⚠ Payment not configured</span>}
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span
@@ -414,6 +515,41 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                         }`}>
                           {org.status || 'Active'}
                         </span>
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 border-t pt-3 mt-3">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Payment Configuration</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Fuel Payment Option</label>
+                          {org.payment_option ? (
+                            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                              org.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
+                              org.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
+                              org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {org.payment_option}
+                            </span>
+                          ) : (
+                            <p className="text-red-600 text-sm font-medium">Not configured</p>
+                          )}
+                        </div>
+                        {org.payment_option === 'EFT Payment' && (
+                          <>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 mb-0.5">Fuel Payment Terms</label>
+                              <p className="text-gray-900">{org.fuel_payment_terms || 'Not Set'}</p>
+                            </div>
+                            {org.fuel_payment_terms && org.fuel_payment_terms !== 'Same Day' && (
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-0.5">Fuel Payment Interest Rate</label>
+                                <p className="text-gray-900">{org.fuel_payment_interest_rate ? `${org.fuel_payment_interest_rate}%` : 'Not Set'}</p>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

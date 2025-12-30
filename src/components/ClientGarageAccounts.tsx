@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle } from 'lucide-react';
 
 interface Garage {
   id: string;
@@ -30,6 +30,8 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   const [error, setError] = useState('');
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountNumberInput, setAccountNumberInput] = useState('');
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [selectedGarageForAccount, setSelectedGarageForAccount] = useState<Garage | null>(null);
 
   useEffect(() => {
     loadData();
@@ -64,37 +66,75 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   };
 
   const toggleGarage = async (garageId: string) => {
-    try {
-      setSaving(garageId);
-      setError('');
+    const existingAccount = garageAccounts.find(a => a.garage_id === garageId);
 
-      const existingAccount = garageAccounts.find(a => a.garage_id === garageId);
+    if (existingAccount) {
+      // Existing account - toggle active status
+      try {
+        setSaving(garageId);
+        setError('');
 
-      if (existingAccount) {
         const { error: updateError } = await supabase
           .from('organization_garage_accounts')
           .update({ is_active: !existingAccount.is_active })
           .eq('id', existingAccount.id);
 
         if (updateError) throw updateError;
-      } else {
-        const { error: insertError } = await supabase
-          .from('organization_garage_accounts')
-          .insert({
-            organization_id: organizationId,
-            garage_id: garageId,
-            is_active: true,
-          });
 
-        if (insertError) throw insertError;
+        await loadData();
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setSaving(null);
       }
+    } else {
+      // New garage - show modal to enter account number
+      const garage = garages.find(g => g.id === garageId);
+      if (garage) {
+        setSelectedGarageForAccount(garage);
+        setAccountNumberInput('');
+        setShowAccountModal(true);
+      }
+    }
+  };
+
+  const handleSaveNewGarageAccount = async () => {
+    if (!selectedGarageForAccount || !accountNumberInput.trim()) {
+      setError('Account number is required');
+      return;
+    }
+
+    try {
+      setSaving(selectedGarageForAccount.id);
+      setError('');
+
+      const { error: insertError } = await supabase
+        .from('organization_garage_accounts')
+        .insert({
+          organization_id: organizationId,
+          garage_id: selectedGarageForAccount.id,
+          is_active: true,
+          account_number: accountNumberInput.trim(),
+        });
+
+      if (insertError) throw insertError;
 
       await loadData();
+      setShowAccountModal(false);
+      setSelectedGarageForAccount(null);
+      setAccountNumberInput('');
     } catch (err: any) {
       setError(err.message);
     } finally {
       setSaving(null);
     }
+  };
+
+  const handleCancelAccountModal = () => {
+    setShowAccountModal(false);
+    setSelectedGarageForAccount(null);
+    setAccountNumberInput('');
+    setError('');
   };
 
   const isGarageActive = (garageId: string): boolean => {
@@ -148,21 +188,92 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   }
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="block text-xs font-medium text-gray-700">
-          Select Garages Where {organizationName} Has Local Accounts
-        </label>
-        <span className="text-xs text-gray-500">
-          {garageAccounts.filter(a => a.is_active).length} of {garages.length} selected
-        </span>
-      </div>
+    <>
+      {/* Account Number Entry Modal */}
+      {showAccountModal && selectedGarageForAccount && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-start gap-3 mb-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Enter Account Number
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Adding <strong>{selectedGarageForAccount.name}</strong> to authorized garages
+                </p>
+              </div>
+            </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded p-2">
-          <p className="text-xs text-red-800">{error}</p>
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Local Account Number <span className="text-red-600">*</span>
+              </label>
+              <input
+                type="text"
+                value={accountNumberInput}
+                onChange={(e) => setAccountNumberInput(e.target.value)}
+                placeholder="Enter the account number for this garage"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                autoFocus
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveNewGarageAccount();
+                  }
+                }}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                This is the account number {organizationName} has with {selectedGarageForAccount.name}'s accounting system.
+              </p>
+              {error && (
+                <p className="text-xs text-red-600 mt-2">{error}</p>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleCancelAccountModal}
+                disabled={saving === selectedGarageForAccount.id}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveNewGarageAccount}
+                disabled={!accountNumberInput.trim() || saving === selectedGarageForAccount.id}
+                className="flex-1 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {saving === selectedGarageForAccount.id ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Add Garage'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-medium text-gray-700">
+            Select Garages Where {organizationName} Has Local Accounts
+          </label>
+          <span className="text-xs text-gray-500">
+            {garageAccounts.filter(a => a.is_active).length} of {garages.length} selected
+          </span>
+        </div>
+
+        {error && !showAccountModal && (
+          <div className="bg-red-50 border border-red-200 rounded p-2">
+            <p className="text-xs text-red-800">{error}</p>
+          </div>
+        )}
 
       <div className="max-h-60 overflow-y-auto border border-gray-300 rounded">
         {garages.length === 0 ? (
@@ -205,7 +316,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                   </div>
 
                   {isActive && account && (
-                    <div className="mt-2 ml-6 pl-2 border-l-2 border-amber-300">
+                    <div className={`mt-2 ml-6 pl-2 border-l-2 ${account.account_number ? 'border-amber-300' : 'border-red-300'}`}>
                       {isEditingAccount ? (
                         <div className="flex items-center gap-2">
                           <input
@@ -243,9 +354,12 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                             <p className="text-xs text-gray-600">
                               <span className="font-medium">Account Number: </span>
                               {account.account_number ? (
-                                <span className="text-gray-900">{account.account_number}</span>
+                                <span className="text-gray-900 font-semibold">{account.account_number}</span>
                               ) : (
-                                <span className="text-red-600 italic">Not set</span>
+                                <span className="text-red-600 font-semibold flex items-center gap-1">
+                                  <AlertCircle className="w-3 h-3" />
+                                  REQUIRED - Click to add
+                                </span>
                               )}
                             </p>
                           </div>
@@ -254,7 +368,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                               e.stopPropagation();
                               handleEditAccountNumber(account);
                             }}
-                            className="p-1 text-amber-600 hover:bg-amber-100 rounded"
+                            className={`p-1 rounded ${account.account_number ? 'text-amber-600 hover:bg-amber-100' : 'text-red-600 hover:bg-red-50 animate-pulse'}`}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
@@ -272,6 +386,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
       <p className="text-xs text-gray-500">
         Drivers from this organization will only be able to refuel at selected garages.
       </p>
-    </div>
+      </div>
+    </>
   );
 }

@@ -47,9 +47,10 @@ interface Garage {
 
 interface MobileGarageDirectoryProps {
   onBack: () => void;
+  organizationId?: string;
 }
 
-export default function MobileGarageDirectory({ onBack }: MobileGarageDirectoryProps) {
+export default function MobileGarageDirectory({ onBack, organizationId }: MobileGarageDirectoryProps) {
   const [garages, setGarages] = useState<Garage[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,19 +61,39 @@ export default function MobileGarageDirectory({ onBack }: MobileGarageDirectoryP
 
   useEffect(() => {
     loadGarages();
-  }, []);
+  }, [organizationId]);
 
   const loadGarages = async () => {
     setLoading(true);
-    const { data: garagesData } = await supabase
-      .from('garages')
-      .select('*')
-      .eq('status', 'active')
-      .order('name');
 
-    if (garagesData) {
-      setGarages(garagesData);
+    if (organizationId) {
+      // For drivers: only show garages where the organization has an account
+      const { data: accountsData } = await supabase
+        .from('organization_garage_accounts')
+        .select('garage_id, garages(*)')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true);
+
+      if (accountsData) {
+        const garagesWithAccounts = accountsData
+          .map(account => account.garages)
+          .filter(garage => garage && garage.status === 'active')
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setGarages(garagesWithAccounts as Garage[]);
+      }
+    } else {
+      // For non-drivers: show all active garages
+      const { data: garagesData } = await supabase
+        .from('garages')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
+
+      if (garagesData) {
+        setGarages(garagesData);
+      }
     }
+
     setLoading(false);
   };
 

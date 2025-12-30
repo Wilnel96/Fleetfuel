@@ -72,7 +72,12 @@ export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppPro
   }
 
   if (currentView === 'directory') {
-    return <MobileGarageDirectory onBack={() => setCurrentView('menu')} />;
+    return (
+      <MobileGarageDirectory
+        onBack={() => setCurrentView('menu')}
+        organizationId={driver.organizationId}
+      />
+    );
   }
 
   return (

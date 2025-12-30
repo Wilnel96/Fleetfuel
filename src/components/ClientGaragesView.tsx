@@ -140,9 +140,43 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
   const loadGarages = async () => {
     try {
       setLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profile?.organization_id) {
+        throw new Error('Organization not found');
+      }
+
+      const { data: garageAccounts, error: accountsError } = await supabase
+        .from('organization_garage_accounts')
+        .select('garage_id')
+        .eq('organization_id', profile.organization_id)
+        .eq('is_active', true);
+
+      if (accountsError) throw accountsError;
+
+      const garageIds = garageAccounts?.map(account => account.garage_id) || [];
+
+      if (garageIds.length === 0) {
+        setGarages([]);
+        setFilteredGarages([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error: fetchError } = await supabase
         .from('garages')
         .select('*')
+        .in('id', garageIds)
         .order('name');
 
       if (fetchError) throw fetchError;

@@ -144,7 +144,11 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
     }
   };
 
-  const handleForcePINReset = async () => {
+  const handleResetPIN = async () => {
+    if (!confirm('This will completely reset the driver\'s PIN. They will need to set up a new PIN on their next login. Continue?')) {
+      return;
+    }
+
     try {
       setSaving(true);
       setError('');
@@ -152,16 +156,21 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
       const { error: updateError } = await supabase
         .from('driver_payment_settings')
         .update({
-          require_pin_change: true,
+          pin_hash: null,
+          pin_salt: null,
+          is_pin_active: false,
+          require_pin_change: false,
+          failed_pin_attempts: 0,
+          locked_until: null,
         })
         .eq('driver_id', driverId);
 
       if (updateError) throw updateError;
 
-      setSuccess('Driver will be required to change PIN on next login');
+      setSuccess('PIN has been reset. Driver must set up a new PIN on next login.');
       await loadDriverData();
     } catch (err: any) {
-      setError(err.message || 'Failed to force PIN reset');
+      setError(err.message || 'Failed to reset PIN');
     } finally {
       setSaving(false);
     }
@@ -385,12 +394,15 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
             </h3>
 
             <button
-              onClick={handleForcePINReset}
+              onClick={handleResetPIN}
               disabled={saving}
-              className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 text-sm"
+              className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 text-sm font-medium"
             >
-              Force PIN Reset
+              Reset PIN (Forgotten PIN)
             </button>
+            <p className="text-xs text-gray-500 px-1">
+              Completely resets the driver's PIN. Use this when a driver has forgotten their PIN. They will be required to set up a new PIN on their next login.
+            </p>
           </div>
 
           <div className="flex space-x-3 pt-4 border-t border-gray-200">

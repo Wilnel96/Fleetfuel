@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Edit2, Trash2, Search, AlertCircle, CheckCircle, X, Scan, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Search, AlertCircle, CheckCircle, X, Scan, RotateCcw, ArrowLeft, DollarSign } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import LicenseScanner, { ParsedLicenseData } from './LicenseScanner';
+import { DriverPaymentSettings } from './DriverPaymentSettings';
 
 interface Driver {
   id: string;
@@ -89,6 +90,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const [showScanner, setShowScanner] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [idDobMismatch, setIdDobMismatch] = useState<string>('');
+  const [selectedDriverForPayment, setSelectedDriverForPayment] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<DriverFormData>({
     first_name: '',
@@ -721,9 +723,16 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                             <button
                               onClick={() => openModal(driver)}
                               className="text-blue-600 hover:text-blue-700"
-                              title="Edit"
+                              title="Edit Driver"
                             >
                               <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setSelectedDriverForPayment(driver.id)}
+                              className="text-green-600 hover:text-green-700"
+                              title="Payment Settings & PIN Reset"
+                            >
+                              <DollarSign className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(driver.id)}
@@ -1142,6 +1151,13 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             </form>
           </div>
         </div>
+      )}
+
+      {selectedDriverForPayment && (
+        <DriverPaymentSettings
+          driverId={selectedDriverForPayment}
+          onClose={() => setSelectedDriverForPayment(null)}
+        />
       )}
     </div>
   );

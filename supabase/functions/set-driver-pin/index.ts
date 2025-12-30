@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.83.0';
-import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
+import bcrypt from 'npm:bcryptjs@2.4.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,15 +84,13 @@ Deno.serve(async (req: Request) => {
     }
 
     // Hash the new PIN
-    const salt = await bcrypt.genSalt(12);
-    const hashedPin = await bcrypt.hash(pin, salt);
+    const hashedPin = await bcrypt.hash(pin, 12);
 
     // Update driver payment settings
     const { error: updateError } = await supabase
       .from('driver_payment_settings')
       .update({
         pin_hash: hashedPin,
-        pin_salt: salt,
         is_pin_active: true,
         pin_last_changed: new Date().toISOString(),
         require_pin_change: false,

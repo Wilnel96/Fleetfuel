@@ -1126,7 +1126,6 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             <button
               onClick={() => {
                 setSuccess(true);
-                setCurrentStep('garage_selection');
               }}
               className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-lg"
             >
@@ -1137,7 +1136,6 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             <button
               onClick={() => {
                 setError('Transaction was not authorized by the garage. Please try again or contact the garage.');
-                setCurrentStep('garage_selection');
                 resetForm();
               }}
               className="w-full bg-red-600 text-white py-4 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-lg"

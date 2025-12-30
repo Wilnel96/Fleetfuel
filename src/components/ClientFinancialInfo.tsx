@@ -256,36 +256,6 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                      Daily Spending Limit (R)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="No limit"
-                      value={editForm.daily_spending_limit ?? ''}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, daily_spending_limit: e.target.value ? parseFloat(e.target.value) : null })
-                      }
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                      Monthly Spending Limit (R)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="No limit"
-                      value={editForm.monthly_spending_limit ?? ''}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, monthly_spending_limit: e.target.value ? parseFloat(e.target.value) : null })
-                      }
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
                       Month End Day
                     </label>
                     <input
@@ -576,6 +546,38 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                 <div className="border-t pt-2 mt-2">
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">Fuel Payment Configuration (Client to Garages)</h4>
                   <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                          Daily Fuel Spend Limit (R)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="No limit"
+                          value={editForm.daily_spending_limit ?? ''}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, daily_spending_limit: e.target.value ? parseFloat(e.target.value) : null })
+                          }
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                          Monthly Fuel Spend Limit (R)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="No limit"
+                          value={editForm.monthly_spending_limit ?? ''}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, monthly_spending_limit: e.target.value ? parseFloat(e.target.value) : null })
+                          }
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        />
+                      </div>
+                    </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Option</label>
                       <select

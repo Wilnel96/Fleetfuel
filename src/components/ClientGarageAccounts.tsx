@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X } from 'lucide-react';
 
 interface Garage {
   id: string;
@@ -14,6 +14,7 @@ interface GarageAccount {
   garage_id: string;
   is_active: boolean;
   notes: string | null;
+  account_number: string | null;
 }
 
 interface ClientGarageAccountsProps {
@@ -27,6 +28,8 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [accountNumberInput, setAccountNumberInput] = useState('');
 
   useEffect(() => {
     loadData();
@@ -44,7 +47,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           .order('name'),
         supabase
           .from('organization_garage_accounts')
-          .select('id, garage_id, is_active, notes')
+          .select('id, garage_id, is_active, notes, account_number')
           .eq('organization_id', organizationId),
       ]);
 
@@ -99,6 +102,42 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
     return account ? account.is_active : false;
   };
 
+  const getGarageAccount = (garageId: string): GarageAccount | undefined => {
+    return garageAccounts.find(a => a.garage_id === garageId);
+  };
+
+  const handleEditAccountNumber = (account: GarageAccount) => {
+    setEditingAccountId(account.id);
+    setAccountNumberInput(account.account_number || '');
+  };
+
+  const handleSaveAccountNumber = async (accountId: string) => {
+    try {
+      setSaving(accountId);
+      setError('');
+
+      const { error: updateError } = await supabase
+        .from('organization_garage_accounts')
+        .update({ account_number: accountNumberInput || null })
+        .eq('id', accountId);
+
+      if (updateError) throw updateError;
+
+      await loadData();
+      setEditingAccountId(null);
+      setAccountNumberInput('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAccountId(null);
+    setAccountNumberInput('');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-4">
@@ -134,32 +173,95 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           <div className="divide-y divide-gray-200">
             {garages.map((garage) => {
               const isActive = isGarageActive(garage.id);
-              const isSaving = saving === garage.id;
+              const account = getGarageAccount(garage.id);
+              const isSaving = saving === garage.id || (account && saving === account.id);
+              const isEditingAccount = account && editingAccountId === account.id;
 
               return (
                 <div
                   key={garage.id}
-                  className={`flex items-center justify-between p-2 hover:bg-gray-50 cursor-pointer ${
-                    isActive ? 'bg-amber-50' : ''
-                  }`}
-                  onClick={() => !isSaving && toggleGarage(garage.id)}
+                  className={`p-2 ${isActive ? 'bg-amber-50' : ''}`}
                 >
-                  <div className="flex items-center space-x-2 flex-1">
-                    <Building2 className={`w-4 h-4 ${isActive ? 'text-amber-600' : 'text-gray-400'}`} />
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-900">{garage.name}</p>
-                      <p className="text-xs text-gray-500">{garage.city}, {garage.province}</p>
+                  <div
+                    className="flex items-center justify-between hover:bg-gray-50 cursor-pointer p-1 rounded"
+                    onClick={() => !isSaving && !isEditingAccount && toggleGarage(garage.id)}
+                  >
+                    <div className="flex items-center space-x-2 flex-1">
+                      <Building2 className={`w-4 h-4 ${isActive ? 'text-amber-600' : 'text-gray-400'}`} />
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-gray-900">{garage.name}</p>
+                        <p className="text-xs text-gray-500">{garage.city}, {garage.province}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      {isSaving ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                      ) : isActive ? (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <XCircle className="w-4 h-4 text-gray-300" />
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center">
-                    {isSaving ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                    ) : isActive ? (
-                      <CheckCircle className="w-4 h-4 text-green-600" />
-                    ) : (
-                      <XCircle className="w-4 h-4 text-gray-300" />
-                    )}
-                  </div>
+
+                  {isActive && account && (
+                    <div className="mt-2 ml-6 pl-2 border-l-2 border-amber-300">
+                      {isEditingAccount ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={accountNumberInput}
+                            onChange={(e) => setAccountNumberInput(e.target.value)}
+                            placeholder="Enter account number for this garage"
+                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSaveAccountNumber(account.id);
+                            }}
+                            disabled={isSaving}
+                            className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
+                          >
+                            <Save className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelEdit();
+                            }}
+                            disabled={isSaving}
+                            className="p-1 text-gray-600 hover:bg-gray-50 rounded disabled:opacity-50"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium">Account Number: </span>
+                              {account.account_number ? (
+                                <span className="text-gray-900">{account.account_number}</span>
+                              ) : (
+                                <span className="text-red-600 italic">Not set</span>
+                              )}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditAccountNumber(account);
+                            }}
+                            className="p-1 text-amber-600 hover:bg-amber-100 rounded"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

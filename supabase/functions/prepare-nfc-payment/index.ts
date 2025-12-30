@@ -166,7 +166,7 @@ Deno.serve(async (req: Request) => {
     // Get organization's payment option
     const { data: organization, error: orgError } = await supabase
       .from('organizations')
-      .select('payment_option, local_account_number')
+      .select('payment_option')
       .eq('id', organizationId)
       .maybeSingle();
 
@@ -204,8 +204,7 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const localAccountNumber = organization.local_account_number || '';
-      const vehicleNumber = vehicle.vehicle_number || '';
+      const vehicleNumber = vehicle.vehicle_number || vehicle.registration_number;
 
       // Create NFC payment transaction record (without card reference)
       const { data: nfcTransaction, error: nfcError } = await supabase
@@ -236,10 +235,10 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // Prepare NFC payload with account numbers (no encryption needed per requirements)
+      // Prepare NFC payload with vehicle number only
+      // Garage-specific account number is shown on screen, not transmitted via NFC
       nfcPayload = await encryptNFCPayload({
         paymentType: 'local_account',
-        localAccountNumber,
         vehicleNumber,
         registrationNumber: vehicle.registration_number,
         amount,
@@ -260,7 +259,7 @@ Deno.serve(async (req: Request) => {
         transactionId: nfcTransaction.id,
         payload: nfcPayload,
         paymentType: 'local_account',
-        accountInfo: `Acct: ${localAccountNumber} / Vehicle: ${vehicleNumber || vehicle.registration_number}`,
+        accountInfo: `Vehicle: ${vehicleNumber}`,
         amount,
       };
     } else {

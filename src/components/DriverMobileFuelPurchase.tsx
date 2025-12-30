@@ -29,6 +29,7 @@ interface Garage {
   fuel_prices?: Record<string, number>;
   latitude?: number;
   longitude?: number;
+  accountNumber?: string | null;
 }
 
 interface ScanData {
@@ -91,6 +92,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [purchasingOil, setPurchasingOil] = useState(false);
 
   const [garages, setGarages] = useState<Garage[]>([]);
+  const [garageAccountNumber, setGarageAccountNumber] = useState<string>('');
 
   useEffect(() => {
     loadDrawnVehicle();
@@ -200,7 +202,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       if (org?.payment_option === 'Local Account') {
         const { data: garageAccounts } = await supabase
           .from('organization_garage_accounts')
-          .select('garage_id')
+          .select('garage_id, account_number')
           .eq('organization_id', driver.organizationId)
           .eq('is_active', true);
 
@@ -213,7 +215,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             .eq('status', 'active')
             .order('name');
 
-          if (data) setGarages(data);
+          if (data) {
+            const garagesWithAccounts = data.map(garage => ({
+              ...garage,
+              accountNumber: garageAccounts.find(acc => acc.garage_id === garage.id)?.account_number || null
+            }));
+            setGarages(garagesWithAccounts);
+          }
         } else {
           setGarages([]);
           setError('No authorized garages found. Please contact your administrator to set up garage accounts.');
@@ -1127,7 +1135,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   <label className="block text-sm font-medium text-gray-700 mb-1">Select Garage</label>
                   <select
                     value={selectedGarageId}
-                    onChange={(e) => setSelectedGarageId(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedGarageId(e.target.value);
+                      const selectedGarage = garages.find(g => g.id === e.target.value);
+                      if (selectedGarage?.accountNumber) {
+                        setGarageAccountNumber(selectedGarage.accountNumber);
+                      } else {
+                        setGarageAccountNumber('');
+                      }
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3"
                     required
                   >
@@ -1138,6 +1154,33 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       </option>
                     ))}
                   </select>
+
+                  {selectedGarageId && garageAccountNumber && drawnVehicle && (
+                    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                      <p className="text-sm font-medium text-amber-900 mb-1">
+                        <strong>Account Details for Garage Till:</strong>
+                      </p>
+                      <div className="space-y-1 text-sm">
+                        <p className="text-amber-900">
+                          <span className="font-medium">Account Number:</span> <span className="font-bold text-lg">{garageAccountNumber}</span>
+                        </p>
+                        <p className="text-amber-900">
+                          <span className="font-medium">Vehicle Number:</span> <span className="font-bold text-lg">{drawnVehicle.vehicle_number || drawnVehicle.registration_number}</span>
+                        </p>
+                      </div>
+                      <p className="text-xs text-amber-700 mt-2 italic">
+                        Provide these numbers to the garage attendant for payment processing.
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedGarageId && !garageAccountNumber && drawnVehicle && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs text-yellow-800">
+                        <strong>Note:</strong> Account number not configured for this garage. Contact your administrator.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <button

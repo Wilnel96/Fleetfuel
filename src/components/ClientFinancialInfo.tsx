@@ -34,6 +34,7 @@ interface Organization {
   payment_option: string | null;
   fuel_payment_terms: string | null;
   fuel_payment_interest_rate: number | null;
+  local_account_number: string | null;
 }
 
 interface ClientFinancialInfoProps {
@@ -73,7 +74,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       setLoading(true);
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
-        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
+        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate, local_account_number')
         .neq('name', 'My Organization')
         .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
         .order('name');
@@ -134,6 +135,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
           payment_option: editForm.payment_option,
           fuel_payment_terms: editForm.fuel_payment_terms,
           fuel_payment_interest_rate: editForm.fuel_payment_interest_rate,
+          local_account_number: editForm.local_account_number,
         })
         .eq('id', editingId);
 
@@ -604,10 +606,23 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                     )}
 
                     {editForm.payment_option === 'Local Account' && (
-                      <div className="bg-amber-50 border border-amber-200 rounded p-2">
+                      <div className="bg-amber-50 border border-amber-200 rounded p-2 space-y-2">
                         <p className="text-xs text-amber-900 font-medium">
                           Client has local accounts with garages. MyFuelApp manages fuel transactions and billing. Client pays MyFuelApp for management fees only. Fuel costs are settled through existing local account arrangements.
                         </p>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Local Account Number</label>
+                          <input
+                            type="text"
+                            value={editForm.local_account_number || ''}
+                            onChange={(e) => setEditForm({ ...editForm, local_account_number: e.target.value })}
+                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                            placeholder="Enter client's local account number"
+                          />
+                          <p className="text-xs text-gray-500 mt-1">
+                            This account number will be used with vehicle numbers for NFC payments at garages. Driver PIN verification required.
+                          </p>
+                        </div>
                       </div>
                     )}
 
@@ -672,6 +687,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                       <span className="font-medium">Fuel Payment:</span> {
                         org.payment_option === 'Card Payment' ? 'Credit/Debit Card Payment' : org.payment_option || 'Not Set'
                       }
+                      {org.payment_option === 'Local Account' && org.local_account_number && ` (Acct: ${org.local_account_number})`}
                       {org.payment_option === 'EFT Payment' && org.fuel_payment_terms && ` (${org.fuel_payment_terms})`}
                       {org.fuel_payment_interest_rate && org.fuel_payment_terms !== 'Same Day' &&
                         ` • ${org.fuel_payment_interest_rate}% interest`}

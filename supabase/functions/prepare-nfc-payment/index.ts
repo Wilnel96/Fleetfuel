@@ -12,6 +12,7 @@ interface PreparePaymentRequest {
   pin: string;
   amount: number;
   organizationId: string;
+  vehicleId?: string;
   fuelTransactionId?: string;
   deviceInfo?: any;
   location?: { lat: number; lng: number };
@@ -43,7 +44,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const requestData: PreparePaymentRequest = await req.json();
-    const { driverId, pin, amount, organizationId, fuelTransactionId, deviceInfo, location } = requestData;
+    const { driverId, pin, amount, organizationId, vehicleId, fuelTransactionId, deviceInfo, location } = requestData;
 
     // Validate required fields
     if (!driverId || !pin || !amount || !organizationId) {
@@ -162,88 +163,194 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Get organization's default payment card
-    const { data: paymentCard, error: cardError } = await supabase
-      .from('organization_payment_cards')
-      .select('*, encryption_keys(*)')
-      .eq('organization_id', organizationId)
-      .eq('is_active', true)
-      .eq('is_default', true)
+    // Get organization's payment option
+    const { data: organization, error: orgError } = await supabase
+      .from('organizations')
+      .select('payment_option, local_account_number')
+      .eq('id', organizationId)
       .maybeSingle();
 
-    if (cardError || !paymentCard) {
+    if (orgError || !organization) {
       return new Response(
-        JSON.stringify({ error: 'No active payment card found' }),
+        JSON.stringify({ error: 'Organization not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Decrypt card data
-    const dataKey = await decryptKey(masterEncryptionKey, paymentCard.encryption_keys.key_encrypted);
-    const cardNumber = await decryptField(dataKey, paymentCard.card_number_encrypted, paymentCard.iv_card_number);
-    const cardHolderName = await decryptField(dataKey, paymentCard.card_holder_name_encrypted, paymentCard.iv_holder_name);
-    const expiryMonth = await decryptField(dataKey, paymentCard.expiry_month_encrypted, paymentCard.iv_expiry_month);
-    const expiryYear = await decryptField(dataKey, paymentCard.expiry_year_encrypted, paymentCard.iv_expiry_year);
-    const cvv = await decryptField(dataKey, paymentCard.cvv_encrypted, paymentCard.iv_cvv);
+    const paymentOption = organization.payment_option;
+    let nfcPayload: string;
+    let displayInfo: any = {};
 
-    // Create NFC payment transaction record
-    const { data: nfcTransaction, error: nfcError } = await supabase
-      .from('nfc_payment_transactions')
-      .insert({
-        driver_id: driverId,
-        organization_card_id: paymentCard.id,
+    if (paymentOption === 'Local Account') {
+      // Handle Local Account payment
+      if (!vehicleId) {
+        return new Response(
+          JSON.stringify({ error: 'Vehicle ID required for Local Account payment' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Get vehicle number
+      const { data: vehicle, error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('vehicle_number, registration_number')
+        .eq('id', vehicleId)
+        .maybeSingle();
+
+      if (vehicleError || !vehicle) {
+        return new Response(
+          JSON.stringify({ error: 'Vehicle not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const localAccountNumber = organization.local_account_number || '';
+      const vehicleNumber = vehicle.vehicle_number || '';
+
+      // Create NFC payment transaction record (without card reference)
+      const { data: nfcTransaction, error: nfcError } = await supabase
+        .from('nfc_payment_transactions')
+        .insert({
+          driver_id: driverId,
+          organization_card_id: null,
+          amount,
+          payment_status: 'pin_verified',
+          pin_entered_at: new Date().toISOString(),
+          pin_verified_at: new Date().toISOString(),
+          device_info: deviceInfo || null,
+          location_lat: location?.lat || null,
+          location_lng: location?.lng || null,
+        })
+        .select()
+        .single();
+
+      if (nfcError || !nfcTransaction) {
+        throw new Error('Failed to create NFC payment transaction');
+      }
+
+      // Link to fuel transaction if provided
+      if (fuelTransactionId) {
+        await supabase.rpc('link_nfc_payment_to_fuel_transaction', {
+          p_nfc_payment_id: nfcTransaction.id,
+          p_fuel_transaction_id: fuelTransactionId,
+        });
+      }
+
+      // Prepare NFC payload with account numbers (no encryption needed per requirements)
+      nfcPayload = await encryptNFCPayload({
+        paymentType: 'local_account',
+        localAccountNumber,
+        vehicleNumber,
+        registrationNumber: vehicle.registration_number,
         amount,
-        payment_status: 'pin_verified',
-        pin_entered_at: new Date().toISOString(),
-        pin_verified_at: new Date().toISOString(),
-        device_info: deviceInfo || null,
-        location_lat: location?.lat || null,
-        location_lng: location?.lng || null,
-      })
-      .select()
-      .single();
-
-    if (nfcError || !nfcTransaction) {
-      throw new Error('Failed to create NFC payment transaction');
-    }
-
-    // Link to fuel transaction if provided
-    if (fuelTransactionId) {
-      await supabase.rpc('link_nfc_payment_to_fuel_transaction', {
-        p_nfc_payment_id: nfcTransaction.id,
-        p_fuel_transaction_id: fuelTransactionId,
+        transactionId: nfcTransaction.id,
       });
-    }
 
-    // Prepare encrypted NFC payload (re-encrypt for transmission)
-    const nfcPayload = await encryptNFCPayload({
-      cardNumber,
-      cardHolderName,
-      expiryMonth,
-      expiryYear,
-      cvv,
-      amount,
-      transactionId: nfcTransaction.id,
-    });
+      // Update NFC transaction status
+      await supabase
+        .from('nfc_payment_transactions')
+        .update({
+          payment_status: 'nfc_ready',
+          nfc_activated_at: new Date().toISOString(),
+        })
+        .eq('id', nfcTransaction.id);
 
-    // Update NFC transaction status
-    await supabase
-      .from('nfc_payment_transactions')
-      .update({ 
-        payment_status: 'nfc_ready',
-        nfc_activated_at: new Date().toISOString(),
-      })
-      .eq('id', nfcTransaction.id);
-
-    return new Response(
-      JSON.stringify({
+      displayInfo = {
         success: true,
         transactionId: nfcTransaction.id,
         payload: nfcPayload,
+        paymentType: 'local_account',
+        accountInfo: `Acct: ${localAccountNumber} / Vehicle: ${vehicleNumber || vehicle.registration_number}`,
+        amount,
+      };
+    } else {
+      // Handle Card Payment
+      const { data: paymentCard, error: cardError } = await supabase
+        .from('organization_payment_cards')
+        .select('*, encryption_keys(*)')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      if (cardError || !paymentCard) {
+        return new Response(
+          JSON.stringify({ error: 'No active payment card found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Decrypt card data
+      const dataKey = await decryptKey(masterEncryptionKey, paymentCard.encryption_keys.key_encrypted);
+      const cardNumber = await decryptField(dataKey, paymentCard.card_number_encrypted, paymentCard.iv_card_number);
+      const cardHolderName = await decryptField(dataKey, paymentCard.card_holder_name_encrypted, paymentCard.iv_holder_name);
+      const expiryMonth = await decryptField(dataKey, paymentCard.expiry_month_encrypted, paymentCard.iv_expiry_month);
+      const expiryYear = await decryptField(dataKey, paymentCard.expiry_year_encrypted, paymentCard.iv_expiry_year);
+      const cvv = await decryptField(dataKey, paymentCard.cvv_encrypted, paymentCard.iv_cvv);
+
+      // Create NFC payment transaction record
+      const { data: nfcTransaction, error: nfcError } = await supabase
+        .from('nfc_payment_transactions')
+        .insert({
+          driver_id: driverId,
+          organization_card_id: paymentCard.id,
+          amount,
+          payment_status: 'pin_verified',
+          pin_entered_at: new Date().toISOString(),
+          pin_verified_at: new Date().toISOString(),
+          device_info: deviceInfo || null,
+          location_lat: location?.lat || null,
+          location_lng: location?.lng || null,
+        })
+        .select()
+        .single();
+
+      if (nfcError || !nfcTransaction) {
+        throw new Error('Failed to create NFC payment transaction');
+      }
+
+      // Link to fuel transaction if provided
+      if (fuelTransactionId) {
+        await supabase.rpc('link_nfc_payment_to_fuel_transaction', {
+          p_nfc_payment_id: nfcTransaction.id,
+          p_fuel_transaction_id: fuelTransactionId,
+        });
+      }
+
+      // Prepare encrypted NFC payload (re-encrypt for transmission)
+      nfcPayload = await encryptNFCPayload({
+        paymentType: 'card',
+        cardNumber,
+        cardHolderName,
+        expiryMonth,
+        expiryYear,
+        cvv,
+        amount,
+        transactionId: nfcTransaction.id,
+      });
+
+      // Update NFC transaction status
+      await supabase
+        .from('nfc_payment_transactions')
+        .update({
+          payment_status: 'nfc_ready',
+          nfc_activated_at: new Date().toISOString(),
+        })
+        .eq('id', nfcTransaction.id);
+
+      displayInfo = {
+        success: true,
+        transactionId: nfcTransaction.id,
+        payload: nfcPayload,
+        paymentType: 'card',
         cardBrand: paymentCard.card_brand,
         lastFourDigits: paymentCard.last_four_digits,
         amount,
-      }),
+      };
+    }
+
+    return new Response(
+      JSON.stringify(displayInfo),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

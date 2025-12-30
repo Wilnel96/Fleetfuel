@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 interface NFCPaymentProps {
   driverId: string;
   organizationId: string;
+  vehicleId?: string;
   amount: number;
   pin: string;
   fuelTransactionId?: string;
@@ -18,6 +19,7 @@ type PaymentStatus = 'preparing' | 'nfc_ready' | 'waiting_tap' | 'transmitting' 
 export function NFCPayment({
   driverId,
   organizationId,
+  vehicleId,
   amount,
   pin,
   fuelTransactionId,
@@ -28,8 +30,10 @@ export function NFCPayment({
   const [status, setStatus] = useState<PaymentStatus>('preparing');
   const [error, setError] = useState('');
   const [transactionId, setTransactionId] = useState('');
+  const [paymentType, setPaymentType] = useState<'card' | 'local_account'>('card');
   const [cardBrand, setCardBrand] = useState('');
   const [lastFourDigits, setLastFourDigits] = useState('');
+  const [accountInfo, setAccountInfo] = useState('');
   const [countdown, setCountdown] = useState(60);
   const [retryCount, setRetryCount] = useState(0);
 
@@ -91,6 +95,7 @@ export function NFCPayment({
             pin,
             amount,
             organizationId,
+            vehicleId,
             fuelTransactionId,
             deviceInfo,
             location,
@@ -114,8 +119,13 @@ export function NFCPayment({
       }
 
       setTransactionId(result.transactionId);
-      setCardBrand(result.cardBrand);
-      setLastFourDigits(result.lastFourDigits);
+      setPaymentType(result.paymentType || 'card');
+      if (result.paymentType === 'local_account') {
+        setAccountInfo(result.accountInfo || '');
+      } else {
+        setCardBrand(result.cardBrand || '');
+        setLastFourDigits(result.lastFourDigits || '');
+      }
       setStatus('nfc_ready');
 
       setTimeout(() => {
@@ -340,7 +350,7 @@ export function NFCPayment({
                 <div className="flex items-center justify-center space-x-3 mb-3">
                   <CreditCard className="w-5 h-5 text-gray-600" />
                   <p className="text-sm text-gray-600">
-                    {cardBrand} •••• {lastFourDigits}
+                    {paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}
                   </p>
                 </div>
                 <p className="text-3xl font-bold text-gray-900">
@@ -388,11 +398,11 @@ export function NFCPayment({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Payment Method</span>
-                <span className="font-medium">NFC Card Payment</span>
+                <span className="font-medium">{paymentType === 'local_account' ? 'NFC Local Account' : 'NFC Card Payment'}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Card</span>
-                <span className="font-medium">{cardBrand} •••• {lastFourDigits}</span>
+                <span className="text-gray-600">{paymentType === 'local_account' ? 'Account' : 'Card'}</span>
+                <span className="font-medium">{paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}</span>
               </div>
             </div>
           )}

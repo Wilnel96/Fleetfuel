@@ -15,6 +15,7 @@ interface Vehicle {
   tank_capacity?: number;
   vin_number?: string;
   vehicle_type?: string;
+  vehicle_number?: string;
   license_code_required?: string;
   last_service_date?: string;
   service_interval_km?: number;
@@ -57,6 +58,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
     license_disk_expiry: '',
     vin_number: '',
     vehicle_type: 'ULP',
+    vehicle_number: '',
     fuel_type: 'ULP-95',
     license_code_required: 'Code B',
     status: 'active',
@@ -280,6 +282,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       license_disk_expiry: vehicle.license_disk_expiry,
       vin_number: vehicle.vin_number || '',
       vehicle_type: vehicle.vehicle_type || 'ULP',
+      vehicle_number: vehicle.vehicle_number || '',
       fuel_type: (vehicle as any).fuel_type || 'ULP-95',
       license_code_required: vehicle.license_code_required || 'Code B',
       status: vehicle.status,
@@ -333,6 +336,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       license_disk_expiry: '',
       vin_number: '',
       vehicle_type: 'ULP',
+      vehicle_number: '',
       fuel_type: 'ULP-95',
       license_code_required: 'Code B',
       status: 'active',
@@ -446,8 +450,20 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       required
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Vehicle Number (for Local Account)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.vehicle_number || ''}
+                      onChange={(e) => setFormData({ ...formData, vehicle_number: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                      placeholder="Vehicle account number"
+                    />
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500">VIN required for fuel purchase authentication (11-17 characters)</p>
+                <p className="text-xs text-gray-500">VIN required for fuel purchase authentication (11-17 characters). Vehicle Number used for Local Account NFC payments.</p>
               </div>
 
               <div className="space-y-2">

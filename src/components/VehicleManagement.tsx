@@ -17,6 +17,8 @@ interface Vehicle {
   vehicle_type?: string;
   vehicle_number?: string;
   license_code_required?: string;
+  prdp_required?: boolean;
+  prdp_categories?: string[];
   last_service_date?: string;
   service_interval_km?: number;
   last_service_km_reading?: number;
@@ -61,6 +63,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
     vehicle_number: '',
     fuel_type: 'ULP-95',
     license_code_required: 'Code B',
+    prdp_required: false,
+    prdp_categories: [] as string[],
     status: 'active',
     initial_odometer_reading: 0,
     average_fuel_consumption_per_100km: 10,
@@ -236,6 +240,11 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
         throw new Error('VIN Number is required for vehicle verification');
       }
 
+      // Validate PrDP requirements
+      if (formData.prdp_required && (!formData.prdp_categories || formData.prdp_categories.length === 0)) {
+        throw new Error('At least one PrDP category must be selected when PrDP is required');
+      }
+
       // Prepare vehicle data
       const vehicleData = {
         ...formData,
@@ -285,6 +294,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       vehicle_number: vehicle.vehicle_number || '',
       fuel_type: (vehicle as any).fuel_type || 'ULP-95',
       license_code_required: vehicle.license_code_required || 'Code B',
+      prdp_required: vehicle.prdp_required || false,
+      prdp_categories: vehicle.prdp_categories || [],
       status: vehicle.status,
       initial_odometer_reading: vehicle.initial_odometer_reading,
       average_fuel_consumption_per_100km: vehicle.average_fuel_consumption_per_100km,
@@ -339,6 +350,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       vehicle_number: '',
       fuel_type: 'ULP-95',
       license_code_required: 'Code B',
+      prdp_required: false,
+      prdp_categories: [],
       status: 'active',
       initial_odometer_reading: 0,
       average_fuel_consumption_per_100km: 10,
@@ -622,6 +635,66 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       License Code Detail Explanation
                     </button>
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide border-b pb-1">PrDP Requirements</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="prdp_required"
+                      checked={formData.prdp_required}
+                      onChange={(e) => {
+                        const isRequired = e.target.checked;
+                        setFormData({
+                          ...formData,
+                          prdp_required: isRequired,
+                          prdp_categories: isRequired ? formData.prdp_categories : []
+                        });
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="prdp_required" className="text-sm font-medium text-gray-700">
+                      Professional Driving Permit (PrDP) Required
+                    </label>
+                  </div>
+
+                  {formData.prdp_required && (
+                    <div className="ml-6 space-y-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                        PrDP Category <span className="text-red-500">*</span> (Select one or more)
+                      </label>
+                      <div className="space-y-2">
+                        {['PrDP - Passengers', 'PrDP - Goods', 'PrDP - Dangerous Goods'].map((category) => (
+                          <div key={category} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={category}
+                              checked={formData.prdp_categories.includes(category)}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                setFormData({
+                                  ...formData,
+                                  prdp_categories: isChecked
+                                    ? [...formData.prdp_categories, category]
+                                    : formData.prdp_categories.filter(c => c !== category)
+                                });
+                              }}
+                              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            />
+                            <label htmlFor={category} className="text-sm text-gray-700">
+                              {category}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                      {formData.prdp_required && formData.prdp_categories.length === 0 && (
+                        <p className="text-xs text-red-600 mt-1">At least one PrDP category must be selected</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 

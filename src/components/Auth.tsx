@@ -36,8 +36,26 @@ export default function Auth({ onBack }: AuthProps = {}) {
       console.log('[Auth] User ID:', data.user?.id);
       console.log('[Auth] Access token:', data.session?.access_token ? 'Present' : 'Missing');
 
-      // Auth state change listener in App.tsx will handle navigation
-      // Keep loading state active until that happens
+      // Set a safety timeout - if auth state doesn't update in 5 seconds, stop loading
+      const safetyTimeout = setTimeout(() => {
+        console.warn('[Auth] Safety timeout - auth state change may not have fired');
+        setLoading(false);
+        setError('Login successful but page did not refresh. Please try refreshing the page.');
+      }, 5000);
+
+      // Check if session is established every 500ms
+      const checkInterval = setInterval(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          console.log('[Auth] Session confirmed, should redirect soon');
+          clearTimeout(safetyTimeout);
+          clearInterval(checkInterval);
+        }
+      }, 500);
+
+      // Clean up interval after 5 seconds
+      setTimeout(() => clearInterval(checkInterval), 5000);
+
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);
       setError(err.message || 'Authentication failed');

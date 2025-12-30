@@ -341,9 +341,9 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       >
                         <option value="">-- Select --</option>
-                        <option value="EFT Payment">EFT Payment</option>
-                        <option value="Card Payment">Card Payment</option>
+                        <option value="Card Payment">Credit/Debit Card Payment</option>
                         <option value="Local Account">Local Account</option>
+                        <option value="EFT Payment">EFT Payment</option>
                       </select>
                     </div>
 
@@ -434,7 +434,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                           org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {org.payment_option}
+                          {org.payment_option === 'Card Payment' ? 'Credit/Debit Card' : org.payment_option}
                         </span>
                       )}
                     </div>
@@ -530,7 +530,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                               org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {org.payment_option}
+                              {org.payment_option === 'Card Payment' ? 'Credit/Debit Card Payment' : org.payment_option}
                             </span>
                           ) : (
                             <p className="text-red-600 text-sm font-medium">Not configured</p>

@@ -727,7 +727,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   }, [formData.liters, formData.pricePerLiter]);
 
   useEffect(() => {
-    if (selectedGarageId && drawnVehicle?.fuel_type && currentStep === 'authorized') {
+    if (selectedGarageId && drawnVehicle?.fuel_type && (currentStep === 'authorized' || currentStep === 'fuel_details')) {
       const selectedGarage = garages.find(g => g.id === selectedGarageId);
       if (selectedGarage?.fuel_prices) {
         const price = selectedGarage.fuel_prices[drawnVehicle.fuel_type];

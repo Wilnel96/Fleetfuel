@@ -1615,6 +1615,17 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   </p>
                 </div>
 
+                {purchasingOil && (!formData.oilType || !formData.oilQuantity || !formData.oilUnitPrice) && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm font-medium text-amber-900 mb-2">Complete oil purchase details:</p>
+                    <ul className="text-xs text-amber-700 space-y-1">
+                      {!formData.oilType && <li>• Select oil type</li>}
+                      {!formData.oilQuantity && <li>• Enter number of units</li>}
+                      {!formData.oilUnitPrice && <li>• Enter price per unit</li>}
+                    </ul>
+                  </div>
+                )}
+
                 <button
                   onClick={handleFuelDetailsSubmit}
                   disabled={

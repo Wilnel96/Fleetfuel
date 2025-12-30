@@ -11,6 +11,8 @@ interface Vehicle {
   license_disk_expiry: string;
   vin_number?: string;
   license_code_required?: string;
+  prdp_required?: boolean;
+  prdp_categories?: string[];
   initial_odometer_reading?: number;
 }
 
@@ -21,7 +23,7 @@ interface DrawVehicleProps {
 }
 
 export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVehicleProps) {
-  const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch' | 'confirm-license-warning'>('scan');
+  const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch' | 'confirm-license-warning' | 'confirm-prdp-warning'>('scan');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -34,7 +36,10 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [odometerMismatch, setOdometerMismatch] = useState(false);
   const [licenseWarning, setLicenseWarning] = useState(false);
+  const [prdpWarning, setPrdpWarning] = useState(false);
   const [driverLicenseCode, setDriverLicenseCode] = useState<string>('');
+  const [driverPrdpCategories, setDriverPrdpCategories] = useState<string[]>([]);
+  const [missingPrdpCategories, setMissingPrdpCategories] = useState<string[]>([]);
 
   useEffect(() => {
     loadVehicles();
@@ -45,12 +50,18 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const loadDriverLicenseCode = async () => {
     const { data: driver } = await supabase
       .from('drivers')
-      .select('license_type')
+      .select('license_type, has_prdp, prdp_type')
       .eq('id', driverId)
       .maybeSingle();
 
     if (driver) {
       setDriverLicenseCode(driver.license_type || 'Code B');
+
+      if (driver.has_prdp && driver.prdp_type) {
+        setDriverPrdpCategories([driver.prdp_type]);
+      } else {
+        setDriverPrdpCategories([]);
+      }
     }
   };
 
@@ -110,11 +121,22 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     if (!isQualified) {
       setLicenseWarning(true);
       setStep('confirm-license-warning');
-    } else {
-      setLicenseWarning(false);
-      await loadExpectedOdometer(vehicle.id);
-      setStep('enter-odometer');
+      return;
     }
+
+    setLicenseWarning(false);
+
+    // Check if driver's PrDP qualifies for this vehicle
+    const hasPrdp = checkDriverPrdpQualifies(vehicle);
+    if (!hasPrdp) {
+      setPrdpWarning(true);
+      setStep('confirm-prdp-warning');
+      return;
+    }
+
+    setPrdpWarning(false);
+    await loadExpectedOdometer(vehicle.id);
+    setStep('enter-odometer');
   };
 
   const loadExpectedOdometer = async (vehicleId: string) => {
@@ -216,6 +238,32 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     return isQualified;
   };
 
+  const checkDriverPrdpQualifies = (vehicle: Vehicle): boolean => {
+    if (!vehicle.prdp_required) {
+      return true;
+    }
+
+    const requiredCategories = vehicle.prdp_categories || [];
+
+    if (requiredCategories.length === 0) {
+      return true;
+    }
+
+    const missing: string[] = [];
+    for (const requiredCategory of requiredCategories) {
+      if (!driverPrdpCategories.includes(requiredCategory)) {
+        missing.push(requiredCategory);
+      }
+    }
+
+    if (missing.length > 0) {
+      setMissingPrdpCategories(missing);
+      return false;
+    }
+
+    return true;
+  };
+
   const findVehicleByLicenseDisk = async (barcodeData: string): Promise<{ vehicle: Vehicle } | null> => {
     const barcodeFields = barcodeData.split('%');
 
@@ -253,19 +301,23 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       setOdometerMismatch(true);
       setStep('confirm-mismatch');
     } else {
-      handleSubmit(false, licenseWarning);
+      handleSubmit(false, licenseWarning, prdpWarning);
     }
   };
 
-  const handleSubmit = async (logOdometerException: boolean, logLicenseException: boolean = false) => {
+  const handleSubmit = async (logOdometerException: boolean, logLicenseException: boolean = false, logPrdpException: boolean = false) => {
     if (!odometerReading || !selectedVehicle) return;
 
     console.log('handleSubmit called with:', {
       logOdometerException,
       logLicenseException,
+      logPrdpException,
       licenseWarningState: licenseWarning,
+      prdpWarningState: prdpWarning,
       driverLicenseCode,
-      vehicleLicenseRequired: selectedVehicle.license_code_required
+      vehicleLicenseRequired: selectedVehicle.license_code_required,
+      vehiclePrdpRequired: selectedVehicle.prdp_required,
+      vehiclePrdpCategories: selectedVehicle.prdp_categories
     });
 
     setError('');
@@ -352,6 +404,41 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
         }
       }
 
+      if (logPrdpException && selectedVehicle.prdp_required) {
+        const requiredCategories = selectedVehicle.prdp_categories || [];
+        const driverCategories = driverPrdpCategories.join(', ') || 'None';
+        console.log('Attempting to log PrDP exception:', {
+          driver_id: driverId,
+          vehicle_id: selectedVehicle.id,
+          organization_id: organizationId,
+          driver_prdp: driverCategories,
+          required_prdp: requiredCategories,
+          missing_prdp: missingPrdpCategories
+        });
+
+        const { error: exceptionError } = await supabase
+          .from('vehicle_exceptions')
+          .insert({
+            vehicle_id: selectedVehicle.id,
+            driver_id: driverId,
+            organization_id: organizationId,
+            exception_type: 'unauthorized_prdp',
+            description: `Driver does not have the required Professional Driving Permit (PrDP) to drive this vehicle. Driver has ${driverCategories}, but vehicle requires ${requiredCategories.join(', ')}. Missing: ${missingPrdpCategories.join(', ')}.`,
+            expected_value: requiredCategories.join(', '),
+            actual_value: driverCategories,
+            transaction_id: transaction.id,
+            transaction_type: 'vehicle_draw',
+            resolved: false,
+          });
+
+        if (exceptionError) {
+          console.error('FAILED to log PrDP exception:', exceptionError);
+          setError(`Warning: Vehicle drawn but PrDP exception logging failed: ${exceptionError.message}`);
+        } else {
+          console.log('PrDP exception logged successfully');
+        }
+      }
+
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to draw vehicle');
@@ -368,6 +455,8 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setIsFirstDraw(false);
     setOdometerMismatch(false);
     setLicenseWarning(false);
+    setPrdpWarning(false);
+    setMissingPrdpCategories([]);
     setSuccess(false);
     setError('');
     onBack();
@@ -477,10 +566,21 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                     if (!isQualified) {
                       setLicenseWarning(true);
                       setStep('confirm-license-warning');
-                    } else {
-                      setLicenseWarning(false);
-                      setStep('enter-odometer');
+                      return;
                     }
+
+                    setLicenseWarning(false);
+
+                    const hasPrdp = checkDriverPrdpQualifies(selectedVehicle);
+                    if (!hasPrdp) {
+                      setPrdpWarning(true);
+                      setStep('confirm-prdp-warning');
+                      return;
+                    }
+
+                    setPrdpWarning(false);
+                    await loadExpectedOdometer(selectedVehicle.id);
+                    setStep('enter-odometer');
                   }}
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
                 >
@@ -615,7 +715,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
             <div className="space-y-3">
               <button
-                onClick={() => handleSubmit(true, licenseWarning)}
+                onClick={() => handleSubmit(true, licenseWarning, prdpWarning)}
                 disabled={loading}
                 className="w-full bg-red-600 text-white py-4 rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
@@ -696,6 +796,13 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
             <div className="space-y-3">
               <button
                 onClick={async () => {
+                  const hasPrdp = checkDriverPrdpQualifies(selectedVehicle!);
+                  if (!hasPrdp) {
+                    setPrdpWarning(true);
+                    setStep('confirm-prdp-warning');
+                    return;
+                  }
+                  setPrdpWarning(false);
                   await loadExpectedOdometer(selectedVehicle!.id);
                   setStep('enter-odometer');
                 }}
@@ -712,6 +819,89 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                   setExpectedOdometer(null);
                   setIsFirstDraw(false);
                   setLicenseWarning(false);
+                }}
+                className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Select Different Vehicle
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'confirm-prdp-warning' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-red-900 mb-4">PrDP Warning</h2>
+
+            <div className="bg-red-50 rounded-lg p-4 mb-6">
+              <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-3" />
+              <p className="text-sm font-medium text-red-900 text-center mb-4">
+                You do not have the required Professional Driving Permit (PrDP) to drive this vehicle.
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-red-700">Your PrDP:</span>
+                  <span className="text-base font-bold text-red-900 text-right">
+                    {driverPrdpCategories.length > 0 ? driverPrdpCategories.join(', ') : 'None'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-red-700">Required PrDP:</span>
+                  <span className="text-base font-bold text-red-900 text-right">
+                    {selectedVehicle?.prdp_categories?.join(', ') || 'None'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-start pt-2 border-t border-red-200">
+                  <span className="text-sm font-medium text-red-700">Missing:</span>
+                  <span className="text-base font-bold text-red-900 text-right">
+                    {missingPrdpCategories.join(', ')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-red-200">
+                <p className="text-sm text-red-900 font-medium">Vehicle Details:</p>
+                <p className="text-base font-bold text-red-900">{selectedVehicle?.registration_number}</p>
+                <p className="text-sm text-red-700">{selectedVehicle?.make} {selectedVehicle?.model}</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium text-red-900 mb-2">Danger:</p>
+              <ul className="text-xs text-red-800 space-y-1 list-disc list-inside">
+                <li>Driving without the required PrDP is illegal and may result in criminal prosecution</li>
+                <li>You may face severe fines, license suspension, or imprisonment</li>
+                <li>The organization may be held liable for any accidents or violations</li>
+                <li>Insurance coverage may be voided</li>
+                <li>This exception will be logged and reported to management immediately</li>
+              </ul>
+            </div>
+
+            <p className="text-sm text-gray-700 mb-6">
+              If you choose to proceed, an exception report will be logged for immediate investigation by your organization.
+              It is <strong>strongly recommended</strong> that you select a different vehicle or contact your supervisor immediately.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  await loadExpectedOdometer(selectedVehicle!.id);
+                  setStep('enter-odometer');
+                }}
+                className="w-full bg-red-600 text-white py-4 rounded-lg font-semibold hover:bg-red-700 transition-colors"
+              >
+                I Accept Full Responsibility, Continue Anyway
+              </button>
+
+              <button
+                onClick={() => {
+                  setStep('scan');
+                  setSelectedVehicle(null);
+                  setOdometerReading('');
+                  setExpectedOdometer(null);
+                  setIsFirstDraw(false);
+                  setPrdpWarning(false);
+                  setMissingPrdpCategories([]);
                 }}
                 className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
               >

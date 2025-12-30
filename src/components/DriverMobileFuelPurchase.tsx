@@ -190,13 +190,47 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   };
 
   const loadGarages = async () => {
-    const { data } = await supabase
-      .from('garages')
-      .select('*')
-      .eq('status', 'active')
-      .order('name');
+    try {
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('payment_option')
+        .eq('id', driver.organizationId)
+        .maybeSingle();
 
-    if (data) setGarages(data);
+      if (org?.payment_option === 'Local Account') {
+        const { data: garageAccounts } = await supabase
+          .from('organization_garage_accounts')
+          .select('garage_id')
+          .eq('organization_id', driver.organizationId)
+          .eq('is_active', true);
+
+        if (garageAccounts && garageAccounts.length > 0) {
+          const garageIds = garageAccounts.map(acc => acc.garage_id);
+          const { data } = await supabase
+            .from('garages')
+            .select('*')
+            .in('id', garageIds)
+            .eq('status', 'active')
+            .order('name');
+
+          if (data) setGarages(data);
+        } else {
+          setGarages([]);
+          setError('No authorized garages found. Please contact your administrator to set up garage accounts.');
+        }
+      } else {
+        const { data } = await supabase
+          .from('garages')
+          .select('*')
+          .eq('status', 'active')
+          .order('name');
+
+        if (data) setGarages(data);
+      }
+    } catch (err: any) {
+      console.error('Error loading garages:', err);
+      setError('Failed to load garages');
+    }
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {

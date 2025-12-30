@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { DollarSign, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
 import { OrganizationPaymentCard } from './OrganizationPaymentCard';
+import ClientGarageAccounts from './ClientGarageAccounts';
 
 interface Organization {
   id: string;
@@ -605,8 +606,8 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                       </div>
                     )}
 
-                    {editForm.payment_option === 'Local Account' && (
-                      <div className="bg-amber-50 border border-amber-200 rounded p-2 space-y-2">
+                    {editForm.payment_option === 'Local Account' && editingId && (
+                      <div className="bg-amber-50 border border-amber-200 rounded p-2 space-y-3">
                         <p className="text-xs text-amber-900 font-medium">
                           Client has local accounts with garages. MyFuelApp manages fuel transactions and billing. Client pays MyFuelApp for management fees only. Fuel costs are settled through existing local account arrangements.
                         </p>
@@ -622,6 +623,9 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                           <p className="text-xs text-gray-500 mt-1">
                             This account number will be used with vehicle numbers for NFC payments at garages. Driver PIN verification required.
                           </p>
+                        </div>
+                        <div className="border-t border-amber-300 pt-2">
+                          <ClientGarageAccounts organizationId={editingId} organizationName={editForm.name || ''} />
                         </div>
                       </div>
                     )}

@@ -147,6 +147,46 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Check if organization has Local Account and validate garage relationship
+    const { data: organization } = await supabase
+      .from("organizations")
+      .select("payment_option")
+      .eq("id", driver.organization_id)
+      .maybeSingle();
+
+    if (organization?.payment_option === "Local Account") {
+      const { data: garageAccount } = await supabase
+        .from("organization_garage_accounts")
+        .select("id, is_active")
+        .eq("organization_id", driver.organization_id)
+        .eq("garage_id", transactionData.garageId)
+        .maybeSingle();
+
+      if (!garageAccount) {
+        return new Response(
+          JSON.stringify({
+            error: "Your organization does not have an account with this garage. Please contact your administrator to set up garage accounts."
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      if (!garageAccount.is_active) {
+        return new Response(
+          JSON.stringify({
+            error: "Your organization's account with this garage is currently inactive. Please contact your administrator."
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
     const { data: hasDrawn, error: drawCheckError } = await supabase
       .rpc("check_vehicle_drawn_by_driver", {
         p_vehicle_id: transactionData.vehicleId,

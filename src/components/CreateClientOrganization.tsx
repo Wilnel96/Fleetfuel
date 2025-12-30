@@ -373,7 +373,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             {formData.payment_option === 'Card Payment' && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-900 font-medium">
-                  MyFuelApp System Management will fund garage payments upfront. Client will repay MyFuelApp for fuel costs plus management fees.
+                  Client's credit/debit card is securely encrypted and stored. Drivers use their PIN + NFC to transfer card details to garage card machines for payment. Client pays garages directly via their card and only pays MyFuelApp for management fees.
+                </p>
+                <p className="text-xs text-blue-800 mt-2">
+                  Note: Card will be configured after organization creation in Financial Info section.
                 </p>
               </div>
             )}
@@ -381,7 +384,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             {formData.payment_option === 'Local Account' && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-xs text-amber-900 font-medium">
-                  MyFuelApp System Management will fund garage payments using client's local account arrangements. Client will repay MyFuelApp for fuel costs plus management fees.
+                  Client has existing local accounts with garages. MyFuelApp manages fuel transactions and billing. Client pays MyFuelApp for management fees only. Fuel costs are settled through existing local account arrangements.
                 </p>
               </div>
             )}
@@ -389,7 +392,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             {formData.payment_option === 'EFT Payment' && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-3">
                 <p className="text-xs text-green-900 font-medium">
-                  EFT Payment: Client pays garages directly via collated EFT runs. MyFuelApp commission is deducted from the total.
+                  Client pays garages directly via collated EFT runs. MyFuelApp manages transactions and billing.
                 </p>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-0.5">
@@ -438,13 +441,13 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <h4 className="text-xs font-semibold text-gray-900 mb-2">Payment Option Guide:</h4>
               <div className="space-y-1.5 text-xs text-gray-700">
                 <div>
-                  <span className="font-medium text-blue-700">Credit/Debit Card Payment:</span> MyFuelApp handles all garage payments. Client repays MyFuelApp. Best for smaller businesses or those wanting simplified cash flow.
+                  <span className="font-medium text-blue-700">Credit/Debit Card Payment:</span> Client's card stored securely. Drivers use PIN + NFC for payments at garages. Client pays garages directly and MyFuelApp for management fees only.
                 </div>
                 <div>
-                  <span className="font-medium text-amber-700">Local Account:</span> MyFuelApp uses client's existing local account with garages. Client repays MyFuelApp. Best for clients with existing garage relationships.
+                  <span className="font-medium text-amber-700">Local Account:</span> Client has existing accounts with garages. MyFuelApp tracks transactions. Client pays MyFuelApp for management fees only. Best for established garage relationships.
                 </div>
                 <div>
-                  <span className="font-medium text-green-700">EFT Payment:</span> Client organization handles direct payments to garages. Best for established businesses with dedicated finance teams.
+                  <span className="font-medium text-green-700">EFT Payment:</span> Client handles direct payments to garages via EFT. MyFuelApp manages transactions and billing. Best for businesses with dedicated finance teams.
                 </div>
               </div>
             </div>

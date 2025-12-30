@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { DollarSign, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft } from 'lucide-react';
+import { DollarSign, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
+import { OrganizationPaymentCard } from './OrganizationPaymentCard';
 
 interface Organization {
   id: string;
@@ -594,18 +595,16 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                       </select>
                     </div>
 
-                    {editForm.payment_option === 'Card Payment' && (
-                      <div className="bg-blue-50 border border-blue-200 rounded p-2">
-                        <p className="text-xs text-blue-900 font-medium">
-                          MyFuelApp funds garage payments upfront. Client repays MyFuelApp for fuel costs plus management fees.
-                        </p>
+                    {editForm.payment_option === 'Card Payment' && editingId && (
+                      <div className="bg-white border border-blue-200 rounded p-2">
+                        <OrganizationPaymentCard organizationId={editingId} organizationName={editForm.name || ''} />
                       </div>
                     )}
 
                     {editForm.payment_option === 'Local Account' && (
                       <div className="bg-amber-50 border border-amber-200 rounded p-2">
                         <p className="text-xs text-amber-900 font-medium">
-                          MyFuelApp funds garage payments using client's local account arrangements. Client repays MyFuelApp for fuel costs plus management fees.
+                          Client has local accounts with garages. MyFuelApp manages fuel transactions and billing. Client pays MyFuelApp for management fees only. Fuel costs are settled through existing local account arrangements.
                         </p>
                       </div>
                     )}
@@ -613,7 +612,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                     {editForm.payment_option === 'EFT Payment' && (
                       <div className="bg-green-50 border border-green-200 rounded p-2 space-y-2">
                         <p className="text-xs text-green-900 font-medium">
-                          Client pays garages directly via collated EFT runs
+                          Client pays garages directly via collated EFT runs. MyFuelApp manages transactions and billing.
                         </p>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Terms</label>

@@ -34,6 +34,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
   const [success, setSuccess] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [editForm, setEditForm] = useState<Partial<ClientOrganization>>({});
+  const [cardConfigured, setCardConfigured] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadOrganizations();
@@ -65,6 +66,25 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
       if (orgsError) throw orgsError;
       setOrganizations(orgs || []);
       setFilteredOrganizations(orgs || []);
+
+      // Check card configuration for organizations with Card Payment option
+      if (orgs) {
+        const cardPaymentOrgs = orgs.filter((org: ClientOrganization) => org.payment_option === 'Card Payment');
+        const cardStatuses: Record<string, boolean> = {};
+
+        for (const org of cardPaymentOrgs) {
+          const { data: cards } = await supabase
+            .from('organization_payment_cards')
+            .select('id')
+            .eq('organization_id', org.id)
+            .eq('is_active', true)
+            .limit(1);
+
+          cardStatuses[org.id] = (cards && cards.length > 0) || false;
+        }
+
+        setCardConfigured(cardStatuses);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -523,18 +543,31 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">Fuel Payment Option</label>
-                          {org.payment_option ? (
-                            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                              org.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
-                              org.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
-                              org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {org.payment_option === 'Card Payment' ? 'Credit/Debit Card Payment' : org.payment_option}
-                            </span>
-                          ) : (
-                            <p className="text-red-600 text-sm font-medium">Not configured</p>
-                          )}
+                          <div className="space-y-1">
+                            {org.payment_option ? (
+                              <>
+                                <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                                  org.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
+                                  org.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
+                                  org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {org.payment_option === 'Card Payment' ? 'Credit/Debit Card Payment' : org.payment_option}
+                                </span>
+                                {org.payment_option === 'Card Payment' && (
+                                  <div className="mt-1">
+                                    {cardConfigured[org.id] ? (
+                                      <span className="text-xs text-green-600 font-medium">✓ Card Configured</span>
+                                    ) : (
+                                      <span className="text-xs text-red-600 font-medium">⚠ Card Not Configured</span>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-red-600 text-sm font-medium">Not configured</p>
+                            )}
+                          </div>
                         </div>
                         {org.payment_option === 'EFT Payment' && (
                           <>

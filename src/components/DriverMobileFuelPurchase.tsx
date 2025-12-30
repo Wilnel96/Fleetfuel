@@ -1139,24 +1139,37 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       <div className="min-h-screen bg-blue-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
           <Camera className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Scan to Till and Wait for Acknowledgement</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Scan to Till and Wait for Acknowledgement</h2>
 
           {selectedGarage?.accountNumber && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm font-medium text-blue-900 mb-1">Local Account Number</p>
-              <p className="text-2xl font-bold text-blue-600">{selectedGarage.accountNumber}</p>
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-4">
+              <p className="text-sm font-medium text-amber-900 mb-3">
+                <strong>Account Details for Garage Till:</strong>
+              </p>
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-amber-700 mb-1">Account Number</p>
+                  <p className="text-3xl font-bold text-amber-900">{selectedGarage.accountNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-amber-700 mb-1">Vehicle Number</p>
+                  <p className="text-2xl font-bold text-amber-900">{drawnVehicle?.vehicle_number || drawnVehicle?.registration_number}</p>
+                </div>
+              </div>
+              <p className="text-xs text-amber-700 mt-3 italic">
+                Provide these numbers to the garage attendant
+              </p>
             </div>
           )}
 
-          <p className="text-gray-600 mb-2">
-            Vehicle: <strong>{drawnVehicle?.registration_number}</strong>
-          </p>
-          <p className="text-gray-600 mb-2">
-            Amount: <strong>R {parseFloat(formData.totalAmount).toFixed(2)}</strong>
-          </p>
-          <p className="text-gray-600 mb-6">
-            Liters: <strong>{parseFloat(formData.liters).toFixed(2)} L</strong>
-          </p>
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <p className="text-gray-600 text-sm mb-1">
+              Amount: <strong>R {parseFloat(formData.totalAmount).toFixed(2)}</strong>
+            </p>
+            <p className="text-gray-600 text-sm">
+              Liters: <strong>{parseFloat(formData.liters).toFixed(2)} L</strong>
+            </p>
+          </div>
 
           <p className="text-sm text-gray-500 mb-6 italic">
             Please scan this transaction to the till system and wait for the garage attendant to authorize or decline the transaction.
@@ -1337,28 +1350,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   </select>
 
                   {selectedGarageId && garageAccountNumber && drawnVehicle && (
-                    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <p className="text-sm font-medium text-amber-900 mb-1">
-                        <strong>Account Details for Garage Till:</strong>
-                      </p>
-                      <div className="space-y-1 text-sm">
-                        <p className="text-amber-900">
-                          <span className="font-medium">Account Number:</span> <span className="font-bold text-lg">{garageAccountNumber}</span>
-                        </p>
-                        <p className="text-amber-900">
-                          <span className="font-medium">Vehicle Number:</span> <span className="font-bold text-lg">{drawnVehicle.vehicle_number || drawnVehicle.registration_number}</span>
-                        </p>
-                      </div>
-                      <p className="text-xs text-amber-700 mt-2 italic">
-                        Provide these numbers to the garage attendant for payment processing.
-                      </p>
-                    </div>
-                  )}
-
-                  {selectedGarageId && !garageAccountNumber && drawnVehicle && (
-                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs text-yellow-800">
-                        <strong>Note:</strong> Account number not configured for this garage. Contact your administrator.
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-900">
+                        <strong>Note:</strong> Account details will be displayed after PIN verification for security purposes.
                       </p>
                     </div>
                   )}

@@ -1058,23 +1058,63 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           )}
 
           <button
-            onClick={() => {
+            onClick={async () => {
               if (pinInput.length !== 4) {
                 setError('Please enter a 4-digit PIN');
                 return;
               }
-              if (pinInput !== driver.pin) {
-                setError('Incorrect PIN. Please try again.');
-                setPinInput('');
-                return;
-              }
+
+              setLoading(true);
               setError('');
-              setCurrentStep('scan_to_till');
+
+              try {
+                const response = await fetch(
+                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-driver-pin`,
+                  {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                      driverId: driver.id,
+                      pin: pinInput,
+                    }),
+                  }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                  if (result.requiresSetup) {
+                    setError('PIN not set up. Please contact your administrator.');
+                  } else if (result.locked) {
+                    setError('Account locked for 30 minutes due to too many failed attempts.');
+                  } else if (result.lockedUntil) {
+                    setError('Account is temporarily locked. Please try again later.');
+                  } else {
+                    setError(result.error || 'Incorrect PIN. Please try again.');
+                  }
+                  setPinInput('');
+                  setLoading(false);
+                  return;
+                }
+
+                if (result.verified) {
+                  setError('');
+                  setCurrentStep('scan_to_till');
+                }
+              } catch (err: any) {
+                setError(err.message || 'Failed to verify PIN');
+                setPinInput('');
+              } finally {
+                setLoading(false);
+              }
             }}
-            disabled={pinInput.length !== 4}
+            disabled={pinInput.length !== 4 || loading}
             className="w-full bg-amber-600 text-white py-3 rounded-lg font-semibold hover:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue
+            {loading ? 'Verifying...' : 'Continue'}
           </button>
 
           <button

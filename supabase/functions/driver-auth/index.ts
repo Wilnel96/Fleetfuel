@@ -75,6 +75,12 @@ Deno.serve(async (req: Request) => {
       .update({ last_login_at: new Date().toISOString() })
       .eq('id', driver.id);
 
+    const { data: paymentSettings } = await supabase
+      .from('driver_payment_settings')
+      .select('is_pin_active')
+      .eq('driver_id', driver.id)
+      .maybeSingle();
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -84,6 +90,7 @@ Deno.serve(async (req: Request) => {
           firstName: driver.first_name,
           lastName: driver.surname,
           organizationId: driver.organization_id,
+          hasPIN: paymentSettings?.is_pin_active || false,
         },
       }),
       {

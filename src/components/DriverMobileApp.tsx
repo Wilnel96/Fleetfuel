@@ -1,20 +1,36 @@
-import { useState } from 'react';
-import { Fuel, Car, LogOut, MapPin, ArrowLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Fuel, Car, LogOut, MapPin, ArrowLeft, Lock } from 'lucide-react';
 import { DriverData } from './DriverAuth';
 import DriverMobileFuelPurchase from './DriverMobileFuelPurchase';
 import DrawVehicle from './DrawVehicle';
 import ReturnVehicle from './ReturnVehicle';
 import MobileGarageDirectory from './MobileGarageDirectory';
+import { DriverPINSetup } from './DriverPINSetup';
+import { supabase } from '../lib/supabase';
 
 interface DriverMobileAppProps {
   driver: DriverData;
   onLogout: () => void | Promise<void>;
 }
 
-type MenuOption = 'menu' | 'draw' | 'return' | 'refuel' | 'directory';
+type MenuOption = 'menu' | 'draw' | 'return' | 'refuel' | 'directory' | 'pin_setup';
 
 export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppProps) {
-  const [currentView, setCurrentView] = useState<MenuOption>('menu');
+  const [currentView, setCurrentView] = useState<MenuOption>(driver.hasPIN ? 'menu' : 'pin_setup');
+  const [needsPINSetup, setNeedsPINSetup] = useState(!driver.hasPIN);
+
+  if (currentView === 'pin_setup') {
+    return (
+      <DriverPINSetup
+        driverId={driver.id}
+        onComplete={() => {
+          setNeedsPINSetup(false);
+          setCurrentView('menu');
+        }}
+        onCancel={needsPINSetup ? undefined : () => setCurrentView('menu')}
+      />
+    );
+  }
 
   if (currentView === 'draw') {
     return (
@@ -167,6 +183,23 @@ export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppPro
               </div>
             </div>
           </button>
+
+          {!needsPINSetup && (
+            <button
+              onClick={() => setCurrentView('pin_setup')}
+              className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all transform hover:-translate-y-1 text-left group"
+            >
+              <div className="flex items-start gap-4">
+                <div className="bg-amber-100 p-3 rounded-lg group-hover:bg-amber-200 transition-colors">
+                  <Lock className="w-8 h-8 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">Change PIN</h3>
+                  <p className="text-sm text-gray-600">Update your payment PIN</p>
+                </div>
+              </div>
+            </button>
+          )}
         </div>
       </div>
     </div>

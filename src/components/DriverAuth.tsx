@@ -12,6 +12,7 @@ export interface DriverData {
   lastName: string;
   organizationId: string;
   token: string;
+  hasPIN?: boolean;
 }
 
 export default function DriverAuth({ onLogin, onBack }: DriverAuthProps) {

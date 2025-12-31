@@ -70,13 +70,21 @@ Deno.serve(async (req: Request) => {
 
     if (new Date(session.expires_at) < new Date()) {
       return new Response(
-        JSON.stringify({ error: "Session expired" }),
+        JSON.stringify({ error: "Session expired", code: "SESSION_EXPIRED" }),
         {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
+
+    // Extend session by 8 hours on each transaction
+    const newExpiresAt = new Date();
+    newExpiresAt.setHours(newExpiresAt.getHours() + 8);
+    await supabase
+      .from("driver_sessions")
+      .update({ expires_at: newExpiresAt.toISOString() })
+      .eq("token", driverToken);
 
     const { data: driver, error: driverError } = await supabase
       .from("drivers")

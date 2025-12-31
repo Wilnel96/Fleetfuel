@@ -99,10 +99,23 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [showAccountDetails, setShowAccountDetails] = useState(false);
 
   useEffect(() => {
+    validateSession();
     loadDrawnVehicle();
     loadGarages();
     getCurrentLocation();
   }, []);
+
+  const validateSession = () => {
+    const driverToken = localStorage.getItem('driverToken');
+    if (!driverToken) {
+      setError('Session not found. Redirecting to login...');
+      setTimeout(() => {
+        if (onLogout) {
+          onLogout();
+        }
+      }, 2000);
+    }
+  };
 
   const getCurrentLocation = () => {
     if ('geolocation' in navigator) {
@@ -625,6 +638,17 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       const result = await response.json();
 
       if (!response.ok) {
+        if (result.code === 'SESSION_EXPIRED' || result.error?.includes('expired') || result.error?.includes('session')) {
+          localStorage.removeItem('driverToken');
+          localStorage.removeItem('driverData');
+          setError('Your session has expired. Redirecting to login...');
+          setTimeout(() => {
+            if (onLogout) {
+              onLogout();
+            }
+          }, 2000);
+          return;
+        }
         throw new Error(result.error || 'Failed to create transaction');
       }
 

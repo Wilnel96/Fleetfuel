@@ -1546,6 +1546,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               {drawnVehicle.vin_number && (
                 <p className="text-xs text-blue-600">VIN: {drawnVehicle.vin_number}</p>
               )}
+              {drawnVehicle.tank_capacity && (
+                <div className="bg-amber-100 border-2 border-amber-400 rounded-lg px-3 py-2 mt-3">
+                  <p className="text-sm text-amber-900 font-bold">⛽ Tank Capacity: {drawnVehicle.tank_capacity}L</p>
+                  <p className="text-xs text-amber-800 mt-1">Maximum refuel allowed: {drawnVehicle.tank_capacity + 2}L (includes 2L buffer)</p>
+                </div>
+              )}
             </div>
 
             {location && (
@@ -1634,10 +1640,23 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       step="0.01"
                       value={formData.liters}
                       onChange={(e) => setFormData({ ...formData, liters: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3"
+                      className={`w-full border rounded-lg px-4 py-3 ${
+                        drawnVehicle?.tank_capacity && parseFloat(e.target.value || '0') > (drawnVehicle.tank_capacity + 2)
+                          ? 'border-red-400 bg-red-50'
+                          : 'border-gray-300'
+                      }`}
                       placeholder="50.00"
                       required
                     />
+                    {drawnVehicle?.tank_capacity && parseFloat(formData.liters || '0') > (drawnVehicle.tank_capacity + 2) && (
+                      <div className="mt-2 bg-red-50 border-2 border-red-400 rounded-lg p-3">
+                        <p className="text-sm font-bold text-red-900">⚠️ EXCEEDS TANK CAPACITY!</p>
+                        <p className="text-xs text-red-800 mt-1">
+                          You entered {formData.liters}L but tank capacity is {drawnVehicle.tank_capacity}L.
+                          Maximum allowed: {drawnVehicle.tank_capacity + 2}L
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1887,7 +1906,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                     !formData.pricePerLiter ||
                     !formData.odometerReading ||
                     (purchasingOil && (!formData.oilQuantity || !formData.oilUnitPrice || !formData.oilType)) ||
-                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount)
+                    (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount) ||
+                    (drawnVehicle?.tank_capacity && parseFloat(formData.liters || '0') > (drawnVehicle.tank_capacity + 2))
                   }
                   className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                 >

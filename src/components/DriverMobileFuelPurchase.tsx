@@ -216,7 +216,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         .eq('id', driver.organizationId)
         .maybeSingle();
 
+      console.log('[FuelPurchase] Organization payment option:', org?.payment_option);
+
       if (org?.payment_option === 'Local Account') {
+        console.log('[FuelPurchase] Local account payment enabled');
         setIsLocalAccount(true);
         const { data: garageAccounts } = await supabase
           .from('organization_garage_accounts')
@@ -564,10 +567,16 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   };
 
   const handleFuelDetailsSubmit = () => {
+    console.log('[FuelPurchase] 🔵 handleFuelDetailsSubmit called');
+    console.log('[FuelPurchase] Form data:', formData);
+
     if (!formData.liters || !formData.pricePerLiter || !formData.odometerReading) {
+      console.error('[FuelPurchase] ❌ Missing required fields');
       setError('Please fill in all fuel details.');
       return;
     }
+
+    console.log('[FuelPurchase] ✅ All required fields present, proceeding...');
     setCurrentStep('fuel_details');
     completeFuelTransaction();
   };
@@ -576,7 +585,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     setError('');
     setLoading(true);
 
+    console.log('[FuelPurchase] ==========================================');
     console.log('[FuelPurchase] Starting transaction submission...');
+    console.log('[FuelPurchase] Current step:', currentStep);
+    console.log('[FuelPurchase] isLocalAccount:', isLocalAccount);
+    console.log('[FuelPurchase] ==========================================');
 
     const selectedGarage = garages.find(g => g.id === selectedGarageId);
     if (!selectedGarage) {
@@ -640,13 +653,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         }),
       });
 
-      const result = await response.json();
-
       console.log('[FuelPurchase] Response status:', response.status);
+      console.log('[FuelPurchase] Response ok?', response.ok);
+
+      const result = await response.json();
       console.log('[FuelPurchase] Response data:', result);
 
       if (!response.ok) {
-        console.error('[FuelPurchase] Transaction failed:', result);
+        console.error('[FuelPurchase] ❌ Transaction failed with status:', response.status);
+        console.error('[FuelPurchase] ❌ Error details:', result);
 
         // Only treat as session expiration if we get the specific error code
         if (result.code === 'SESSION_EXPIRED' ||
@@ -700,17 +715,25 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       setFuelEfficiency(efficiency);
 
       // For local accounts, move to PIN entry step. For EFT, show success
+      console.log('[FuelPurchase] ✅ Transaction created successfully!');
+      console.log('[FuelPurchase] Checking payment type. isLocalAccount:', isLocalAccount);
       if (isLocalAccount) {
-        console.log('[FuelPurchase] Moving to PIN entry step');
+        console.log('[FuelPurchase] 🔐 Moving to PIN entry step');
         setCurrentStep('pin_entry');
+        console.log('[FuelPurchase] Current step after setting:', 'pin_entry');
       } else {
-        console.log('[FuelPurchase] Transaction complete, showing success');
+        console.log('[FuelPurchase] ✅ Transaction complete (EFT payment), showing success');
         setSuccess(true);
       }
+      console.log('[FuelPurchase] About to exit completeFuelTransaction (before finally block)');
     } catch (err: any) {
+      console.error('[FuelPurchase] ❌❌❌ CRITICAL ERROR ❌❌❌');
       console.error('[FuelPurchase] Error in completeFuelTransaction:', err);
+      console.error('[FuelPurchase] Error message:', err.message);
+      console.error('[FuelPurchase] Error stack:', err.stack);
       setError(err.message || 'Failed to submit transaction');
     } finally {
+      console.log('[FuelPurchase] completeFuelTransaction finished. Setting loading to false.');
       setLoading(false);
     }
   };
@@ -853,6 +876,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       }
     }
   }, [selectedGarageId, drawnVehicle, garages, currentStep]);
+
+  // Debug: Log current render state
+  console.log('[FuelPurchase] 🎨 Rendering component. Current step:', currentStep, 'Loading:', loading, 'Success:', success);
 
   if (currentStep === 'location_confirmation') {
     const selectedGarage = garages.find(g => g.id === selectedGarageId);
@@ -1141,6 +1167,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
   // PIN Entry Step for Local Accounts
   if (currentStep === 'pin_entry') {
+    console.log('[FuelPurchase] 🔐 Rendering PIN Entry Screen');
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
@@ -1495,9 +1522,19 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             </h2>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-red-800 text-sm">{error}</p>
+              <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 mb-4 flex items-start gap-3 animate-pulse">
+                <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-900 font-semibold text-base mb-1">Error</p>
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {loading && (
+              <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-4 mb-4 flex items-center gap-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <p className="text-blue-800 font-medium">Processing transaction...</p>
               </div>
             )}
 

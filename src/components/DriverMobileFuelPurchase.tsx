@@ -576,6 +576,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     setError('');
     setLoading(true);
 
+    console.log('[FuelPurchase] Starting transaction submission...');
+
     const selectedGarage = garages.find(g => g.id === selectedGarageId);
     if (!selectedGarage) {
       setError('Please select a garage.');
@@ -601,8 +603,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       // Get driver token from local storage
       const driverToken = localStorage.getItem('driverToken');
       if (!driverToken) {
+        console.error('[FuelPurchase] No driver token found in localStorage');
         throw new Error('Driver session expired. Please login again.');
       }
+
+      console.log('[FuelPurchase] Calling edge function to create transaction...');
 
       // Call edge function to create transaction
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-fuel-transaction`;
@@ -637,8 +642,20 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
       const result = await response.json();
 
+      console.log('[FuelPurchase] Response status:', response.status);
+      console.log('[FuelPurchase] Response data:', result);
+
       if (!response.ok) {
-        if (result.code === 'SESSION_EXPIRED' || result.error?.includes('expired') || result.error?.includes('session')) {
+        console.error('[FuelPurchase] Transaction failed:', result);
+
+        // Only treat as session expiration if we get the specific error code
+        if (result.code === 'SESSION_EXPIRED' ||
+            (response.status === 401 && (
+              result.error === 'Invalid or expired session' ||
+              result.error === 'Session expired' ||
+              result.error === 'Driver token required'
+            ))) {
+          console.warn('[FuelPurchase] Session expired, logging out driver');
           localStorage.removeItem('driverToken');
           localStorage.removeItem('driverData');
           setError('Your session has expired. Redirecting to login...');
@@ -651,6 +668,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         }
         throw new Error(result.error || 'Failed to create transaction');
       }
+
+      console.log('[FuelPurchase] Transaction created successfully:', result.transaction?.id);
 
       if (locationMismatch && distanceFromGarage !== null) {
         const { error: exceptionError } = await supabase
@@ -682,11 +701,14 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
       // For local accounts, move to PIN entry step. For EFT, show success
       if (isLocalAccount) {
+        console.log('[FuelPurchase] Moving to PIN entry step');
         setCurrentStep('pin_entry');
       } else {
+        console.log('[FuelPurchase] Transaction complete, showing success');
         setSuccess(true);
       }
     } catch (err: any) {
+      console.error('[FuelPurchase] Error in completeFuelTransaction:', err);
       setError(err.message || 'Failed to submit transaction');
     } finally {
       setLoading(false);

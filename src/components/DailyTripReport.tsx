@@ -89,7 +89,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
           ),
           drivers (
             first_name,
-            last_name
+            surname
           )
         `)
         .eq('organization_id', organizationId)
@@ -125,7 +125,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
           vehicle_make: draw.vehicles?.make || '',
           vehicle_model: draw.vehicles?.model || '',
           driver_id: draw.driver_id,
-          driver_name: `${draw.drivers?.first_name || ''} ${draw.drivers?.last_name || ''}`.trim(),
+          driver_name: `${draw.drivers?.first_name || ''} ${draw.drivers?.surname || ''}`.trim(),
           draw_time: draw.created_at,
           draw_odometer: draw.odometer_reading,
           return_time: returnData?.created_at || null,

@@ -823,13 +823,33 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   }, [formData.liters, formData.pricePerLiter]);
 
   useEffect(() => {
-    if (selectedGarageId && drawnVehicle?.fuel_type && (currentStep === 'authorized' || currentStep === 'fuel_details')) {
+    if (selectedGarageId && (currentStep === 'authorized' || currentStep === 'fuel_details')) {
       const selectedGarage = garages.find(g => g.id === selectedGarageId);
-      if (selectedGarage?.fuel_prices) {
-        const price = selectedGarage.fuel_prices[drawnVehicle.fuel_type];
-        if (price) {
-          setFormData(prev => ({ ...prev, pricePerLiter: price.toFixed(2) }));
-        }
+      console.log('[FuelPurchase] Setting price - Garage:', selectedGarage?.name);
+      console.log('[FuelPurchase] Vehicle fuel type:', drawnVehicle?.fuel_type);
+      console.log('[FuelPurchase] Garage fuel prices:', selectedGarage?.fuel_prices);
+
+      if (!drawnVehicle?.fuel_type) {
+        console.error('[FuelPurchase] Vehicle has no fuel_type set');
+        setError('This vehicle does not have a fuel type set. Please contact your administrator to set the fuel type for this vehicle.');
+        return;
+      }
+
+      if (!selectedGarage?.fuel_prices) {
+        console.warn('[FuelPurchase] Garage has no fuel_prices defined');
+        setError('This garage has not set up fuel prices. Please select a different garage or contact the garage.');
+        return;
+      }
+
+      const price = selectedGarage.fuel_prices[drawnVehicle.fuel_type];
+      console.log('[FuelPurchase] Price for', drawnVehicle.fuel_type, '=', price);
+
+      if (price) {
+        setFormData(prev => ({ ...prev, pricePerLiter: price.toFixed(2) }));
+        setError(''); // Clear any previous errors
+      } else {
+        console.warn('[FuelPurchase] No price found for fuel type:', drawnVehicle.fuel_type);
+        setError(`No price set for ${drawnVehicle.fuel_type} at this garage. Please contact the garage to set up fuel prices.`);
       }
     }
   }, [selectedGarageId, drawnVehicle, garages, currentStep]);
@@ -1798,8 +1818,32 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   </div>
                 )}
 
+                {/* Debug: Show what's missing */}
+                {(!formData.liters || !formData.pricePerLiter || !formData.odometerReading) && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <p className="text-sm font-medium text-red-900 mb-2">Required fields missing:</p>
+                    <ul className="text-xs text-red-700 space-y-1">
+                      {!formData.liters && <li>• Enter liters</li>}
+                      {!formData.pricePerLiter && <li>• Price per liter not set (check garage fuel prices)</li>}
+                      {!formData.odometerReading && <li>• Enter odometer reading</li>}
+                    </ul>
+                  </div>
+                )}
+
                 <button
-                  onClick={handleFuelDetailsSubmit}
+                  onClick={() => {
+                    console.log('[FuelPurchase] Complete button clicked');
+                    console.log('[FuelPurchase] Form data:', formData);
+                    console.log('[FuelPurchase] Button disabled?',
+                      loading ||
+                      !formData.liters ||
+                      !formData.pricePerLiter ||
+                      !formData.odometerReading ||
+                      (purchasingOil && (!formData.oilQuantity || !formData.oilUnitPrice || !formData.oilType)) ||
+                      (spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount)
+                    );
+                    handleFuelDetailsSubmit();
+                  }}
                   disabled={
                     loading ||
                     !formData.liters ||

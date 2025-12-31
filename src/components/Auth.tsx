@@ -36,12 +36,30 @@ export default function Auth({ onBack }: AuthProps = {}) {
       console.log('[Auth] User ID:', data.user?.id);
       console.log('[Auth] Access token:', data.session?.access_token ? 'Present' : 'Missing');
 
-      // Set a safety timeout - if auth state doesn't update in 5 seconds, stop loading
+      // Check profile immediately to catch issues
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('[Auth] Profile check error:', profileError);
+        throw new Error(`Profile check failed: ${profileError.message}`);
+      }
+
+      if (!profile) {
+        console.error('[Auth] No profile found for user');
+        throw new Error('No profile found. Please contact your administrator.');
+      }
+
+      console.log('[Auth] Profile verified:', profile.role);
+
+      // Set a safety timeout - if auth state doesn't update in 3 seconds, force reload
       const safetyTimeout = setTimeout(() => {
-        console.warn('[Auth] Safety timeout - auth state change may not have fired');
-        setLoading(false);
-        setError('Login successful but page did not refresh. Please try refreshing the page.');
-      }, 5000);
+        console.warn('[Auth] Safety timeout - forcing page reload');
+        window.location.reload();
+      }, 3000);
 
       // Check if session is established every 500ms
       const checkInterval = setInterval(async () => {
@@ -53,8 +71,8 @@ export default function Auth({ onBack }: AuthProps = {}) {
         }
       }, 500);
 
-      // Clean up interval after 5 seconds
-      setTimeout(() => clearInterval(checkInterval), 5000);
+      // Clean up interval after 3 seconds
+      setTimeout(() => clearInterval(checkInterval), 3000);
 
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);

@@ -28,6 +28,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [odometerReading, setOdometerReading] = useState('');
+  const [tripDescription, setTripDescription] = useState('');
   const [expectedOdometer, setExpectedOdometer] = useState<number | null>(null);
   const [isFirstDraw, setIsFirstDraw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -333,6 +334,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
           transaction_type: 'draw',
           odometer_reading: parseInt(odometerReading),
           location: location ? `${location.lat},${location.lng}` : 'Unknown',
+          trip_description: tripDescription.trim() || null,
         })
         .select()
         .single();
@@ -658,6 +660,24 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                 placeholder="125000"
                 required
               />
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trip Description <span className="text-gray-500 text-xs">(Optional)</span>
+              </label>
+              <textarea
+                value={tripDescription}
+                onChange={(e) => setTripDescription(e.target.value)}
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                style={{ fontSize: '16px', minHeight: '80px' }}
+                placeholder="e.g., Delivery of parcels to Swellendam"
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Describe the purpose of this trip (optional)
+              </p>
             </div>
 
             <button

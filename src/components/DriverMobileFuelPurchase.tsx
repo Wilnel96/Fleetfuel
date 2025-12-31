@@ -97,6 +97,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [pinInput, setPinInput] = useState('');
   const [nfcStatus, setNfcStatus] = useState<'idle' | 'writing' | 'success' | 'failed' | 'not_supported'>('idle');
   const [showAccountDetails, setShowAccountDetails] = useState(false);
+  const [transactionWarning, setTransactionWarning] = useState<string | null>(null);
 
   useEffect(() => {
     validateSession();
@@ -686,6 +687,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
       console.log('[FuelPurchase] Transaction created successfully:', result.transaction?.id);
 
+      // Check for warnings in the response
+      if (result.warning && result.warningType === 'tank_capacity') {
+        setTransactionWarning(result.warning);
+        console.log('[FuelPurchase] ⚠️ Tank capacity warning received:', result.warning);
+      }
+
       if (locationMismatch && distanceFromGarage !== null) {
         const { error: exceptionError } = await supabase
           .from('vehicle_exceptions')
@@ -785,6 +792,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     setError('');
     setLocationMismatch(false);
     setDistanceFromGarage(null);
+    setTransactionWarning(null);
     setCurrentStep('garage_selection');
     setShowBarcodeScanner(false);
     setNfcStatus('idle');
@@ -1439,6 +1447,18 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               : 'Fuel purchase authorized. Payment will be processed via daily EFT run.'
             }
           </p>
+
+          {transactionWarning && (
+            <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-bold text-amber-900 mb-1">Tank Capacity Warning</p>
+                  <p className="text-xs text-amber-800">{transactionWarning}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {fuelEfficiency !== null && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

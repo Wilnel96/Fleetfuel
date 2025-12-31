@@ -140,8 +140,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    let tankCapacityWarning = false;
     if (vehicle.tank_capacity) {
-      const maxAllowedLiters = Number(vehicle.tank_capacity) + 2;
+      const tankCapacity = Number(vehicle.tank_capacity);
+      const maxAllowedLiters = tankCapacity + 2;
+
       if (transactionData.liters > maxAllowedLiters) {
         return new Response(
           JSON.stringify({
@@ -152,6 +155,11 @@ Deno.serve(async (req: Request) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
+      }
+
+      // Log exception if refueling at or near maximum capacity
+      if (transactionData.liters >= tankCapacity) {
+        tankCapacityWarning = true;
       }
     }
 
@@ -269,6 +277,26 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Log exception if refueling at or near tank capacity
+    if (tankCapacityWarning && vehicle.tank_capacity) {
+      const tankCapacity = Number(vehicle.tank_capacity);
+      const percentageFilled = ((transactionData.liters / tankCapacity) * 100).toFixed(1);
+
+      await supabase
+        .from("vehicle_exceptions")
+        .insert({
+          organization_id: driver.organization_id,
+          vehicle_id: transactionData.vehicleId,
+          driver_id: driver.id,
+          transaction_id: transaction.id,
+          exception_type: "tank_capacity_warning",
+          description: `Refuel amount (${transactionData.liters}L) is at or near tank capacity (${tankCapacity}L). This represents ${percentageFilled}% of tank capacity. May indicate incorrect tank capacity data or fuel diversion.`,
+          expected_value: `Maximum recommended: ${tankCapacity * 0.95}L (95% of capacity)`,
+          actual_value: `${transactionData.liters}L`,
+          resolved: false,
+        });
+    }
+
     if (transactionData.location && transactionData.location !== "Unknown" && garage?.latitude && garage?.longitude) {
       const [vehicleLat, vehicleLon] = transactionData.location.split(',').map(Number);
       const garageLat = Number(garage.latitude);
@@ -298,7 +326,6 @@ Deno.serve(async (req: Request) => {
             vehicle_id: transactionData.vehicleId,
             driver_id: driver.id,
             transaction_id: transaction.id,
-            transaction_type: "fuel",
             exception_type: "garage_location_mismatch",
             description: `Vehicle location is ${distanceKm} km away from the garage in ${garage.city}. Possible location spoofing.`,
             expected_value: `${garageLat},${garageLon}`,
@@ -325,13 +352,23 @@ Deno.serve(async (req: Request) => {
 
       if (invoiceResult.success) {
         console.log("Invoice generated successfully:", invoiceResult.invoice.invoice_number);
+
+        const responseData: any = {
+          success: true,
+          transaction,
+          invoice: invoiceResult.invoice,
+          message: "Fuel transaction recorded and invoice generated"
+        };
+
+        // Add warning if tank capacity near maximum
+        if (tankCapacityWarning && vehicle.tank_capacity) {
+          const tankCapacity = Number(vehicle.tank_capacity);
+          responseData.warning = `WARNING: Refuel amount (${transactionData.liters}L) is at or near tank capacity (${tankCapacity}L). An exception has been logged for review.`;
+          responseData.warningType = "tank_capacity";
+        }
+
         return new Response(
-          JSON.stringify({
-            success: true,
-            transaction,
-            invoice: invoiceResult.invoice,
-            message: "Fuel transaction recorded and invoice generated"
-          }),
+          JSON.stringify(responseData),
           {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },

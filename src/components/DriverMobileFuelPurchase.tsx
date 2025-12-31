@@ -1661,7 +1661,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       value={formData.liters}
                       onChange={(e) => setFormData({ ...formData, liters: e.target.value })}
                       className={`w-full border rounded-lg px-4 py-3 ${
-                        drawnVehicle?.tank_capacity && parseFloat(e.target.value || '0') > (drawnVehicle.tank_capacity + 2)
+                        drawnVehicle?.tank_capacity && parseFloat(formData.liters || '0') > (drawnVehicle.tank_capacity + 2)
                           ? 'border-red-400 bg-red-50'
                           : 'border-gray-300'
                       }`}

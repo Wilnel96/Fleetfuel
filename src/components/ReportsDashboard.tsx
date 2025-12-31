@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName } from '../lib/fuelTypes';
-import { BarChart3, Download, Calendar, TrendingUp, AlertTriangle, FileText, ArrowLeft, Wrench, AlertCircle, MapPin, CheckCircle } from 'lucide-react';
+import { BarChart3, Download, Calendar, TrendingUp, AlertTriangle, FileText, ArrowLeft, Wrench, AlertCircle, MapPin, CheckCircle, TruckIcon } from 'lucide-react';
+import DailyTripReport from './DailyTripReport';
 
 interface ReportType {
   id: string;
@@ -15,7 +16,7 @@ interface ReportsDashboardProps {
 }
 
 export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) {
-  const [selectedReport, setSelectedReport] = useState<string>('overview');
+  const [selectedReport, setSelectedReport] = useState<string>('daily-trip-report');
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setDate(date.getDate() - 30);
@@ -38,6 +39,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
   };
 
   const reportTypes: ReportType[] = [
+    { id: 'daily-trip-report', name: 'Daily Trip Report', description: 'View daily vehicle usage, KM travelled, and trip descriptions', icon: TruckIcon },
     { id: 'overview', name: 'Fuel Transactions', description: 'General fuel purchase statistics', icon: BarChart3 },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
     { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
@@ -1064,7 +1066,9 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
           })}
         </div>
 
-        {error ? (
+        {selectedReport === 'daily-trip-report' ? (
+          <DailyTripReport />
+        ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800 font-medium">Error loading reports</p>
             <p className="text-red-600 text-sm mt-1">{error}</p>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Building2, Users, DollarSign, CreditCard, TrendingUp, Fuel, FileText, TruckIcon } from 'lucide-react';
+import { Building2, Users, DollarSign, CreditCard, TrendingUp, Fuel, FileText } from 'lucide-react';
 import OrganizationManagement from './OrganizationManagement';
 import UserManagement from './UserManagement';
 import ManagementFinancialInfo from './ManagementFinancialInfo';
@@ -8,14 +8,13 @@ import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
 import { OrganizationPaymentCard } from './OrganizationPaymentCard';
-import DailyTripReport from './DailyTripReport';
 
 interface BackOfficeProps {
   userRole?: string;
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'payment-card' | 'daily-trip-report';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'payment-card';
 
 export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
@@ -203,20 +202,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
     );
   }
 
-  if (currentView === 'daily-trip-report') {
-    return (
-      <div className="space-y-4">
-        <button
-          onClick={() => setCurrentView('menu')}
-          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-        >
-          ← Back to Back Office
-        </button>
-        <DailyTripReport />
-      </div>
-    );
-  }
-
   const menuItems = [
     {
       id: 'management-org-menu',
@@ -231,13 +216,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       description: 'Register debit/credit card for driver NFC payments',
       icon: CreditCard,
       color: 'green',
-    },
-    {
-      id: 'daily-trip-report',
-      title: 'Daily Trip Report',
-      description: 'View daily vehicle usage, KM travelled, and trip descriptions',
-      icon: TruckIcon,
-      color: 'purple',
     },
     ...(userRole === 'super_admin' ? [{
       id: 'invoice-management',
@@ -271,11 +249,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
         bg: 'bg-green-50',
         hover: 'hover:bg-green-100 hover:border-green-300',
         icon: 'text-green-600',
-      },
-      purple: {
-        bg: 'bg-purple-50',
-        hover: 'hover:bg-purple-100 hover:border-purple-300',
-        icon: 'text-purple-600',
       },
       teal: {
         bg: 'bg-teal-50',

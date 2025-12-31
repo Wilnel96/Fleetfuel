@@ -1412,6 +1412,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             <button
               onClick={() => {
                 console.log('[FuelPurchase] Garage authorized local account transaction');
+                setCurrentStep('garage_selection'); // Reset step so success screen can show
                 setSuccess(true);
               }}
               disabled={loading}

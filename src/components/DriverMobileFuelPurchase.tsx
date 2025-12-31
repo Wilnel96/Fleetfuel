@@ -721,17 +721,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       );
       setFuelEfficiency(efficiency);
 
-      // For local accounts, move to PIN entry step. For EFT, show success
+      // Show success screen
       console.log('[FuelPurchase] ✅ Transaction created successfully!');
-      console.log('[FuelPurchase] Checking payment type. isLocalAccount:', isLocalAccount);
-      if (isLocalAccount) {
-        console.log('[FuelPurchase] 🔐 Moving to PIN entry step');
-        setCurrentStep('pin_entry');
-        console.log('[FuelPurchase] Current step after setting:', 'pin_entry');
-      } else {
-        console.log('[FuelPurchase] ✅ Transaction complete (EFT payment), showing success');
-        setSuccess(true);
-      }
+      console.log('[FuelPurchase] isLocalAccount:', isLocalAccount);
+      console.log('[FuelPurchase] ✅ Transaction complete, showing success');
+      setSuccess(true);
       console.log('[FuelPurchase] About to exit completeFuelTransaction (before finally block)');
     } catch (err: any) {
       console.error('[FuelPurchase] ❌❌❌ CRITICAL ERROR ❌❌❌');

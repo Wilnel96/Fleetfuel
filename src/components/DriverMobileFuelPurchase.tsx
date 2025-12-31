@@ -721,11 +721,17 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       );
       setFuelEfficiency(efficiency);
 
-      // Show success screen
+      // For local accounts, move to PIN entry step. For EFT, show success
       console.log('[FuelPurchase] ✅ Transaction created successfully!');
-      console.log('[FuelPurchase] isLocalAccount:', isLocalAccount);
-      console.log('[FuelPurchase] ✅ Transaction complete, showing success');
-      setSuccess(true);
+      console.log('[FuelPurchase] Checking payment type. isLocalAccount:', isLocalAccount);
+      if (isLocalAccount) {
+        console.log('[FuelPurchase] 🔐 Moving to PIN entry step');
+        setCurrentStep('pin_entry');
+        console.log('[FuelPurchase] Current step after setting:', 'pin_entry');
+      } else {
+        console.log('[FuelPurchase] ✅ Transaction complete (EFT payment), showing success');
+        setSuccess(true);
+      }
       console.log('[FuelPurchase] About to exit completeFuelTransaction (before finally block)');
     } catch (err: any) {
       console.error('[FuelPurchase] ❌❌❌ CRITICAL ERROR ❌❌❌');
@@ -1404,21 +1410,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
           <div className="space-y-3">
             <button
-              onClick={completeFuelTransaction}
+              onClick={() => {
+                console.log('[FuelPurchase] Garage authorized local account transaction');
+                setSuccess(true);
+              }}
               disabled={loading}
               className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-lg"
             >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="w-6 h-6" />
-                  Authorized
-                </>
-              )}
+              <CheckCircle className="w-6 h-6" />
+              Authorized
             </button>
 
             <button

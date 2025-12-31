@@ -1410,13 +1410,21 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
           <div className="space-y-3">
             <button
-              onClick={() => {
-                setSuccess(true);
-              }}
-              className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 text-lg"
+              onClick={completeFuelTransaction}
+              disabled={loading}
+              className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-lg"
             >
-              <CheckCircle className="w-6 h-6" />
-              Authorized
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-6 h-6" />
+                  Authorized
+                </>
+              )}
             </button>
 
             <button

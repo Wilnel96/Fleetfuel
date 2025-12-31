@@ -26,6 +26,9 @@ interface FuelTransactionRequest {
   oilTotalAmount?: number;
   oilType?: string;
   oilBrand?: string;
+  isMockLocation?: boolean;
+  locationAccuracy?: number;
+  locationProvider?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -78,7 +81,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Extend session by 8 hours on each transaction
     const newExpiresAt = new Date();
     newExpiresAt.setHours(newExpiresAt.getHours() + 8);
     await supabase
@@ -157,13 +159,11 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Log exception if refueling at or near maximum capacity
       if (transactionData.liters >= tankCapacity) {
         tankCapacityWarning = true;
       }
     }
 
-    // Check if organization has Local Account and validate garage relationship
     const { data: organization } = await supabase
       .from("organizations")
       .select("payment_option")
@@ -262,6 +262,9 @@ Deno.serve(async (req: Request) => {
         oil_total_amount: transactionData.oilTotalAmount || 0,
         oil_type: transactionData.oilType || null,
         oil_brand: transactionData.oilBrand || null,
+        is_mock_location: transactionData.isMockLocation || false,
+        location_accuracy: transactionData.locationAccuracy || null,
+        location_provider: transactionData.locationProvider || null,
       })
       .select()
       .single();
@@ -277,7 +280,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Log exception if refueling at or near tank capacity
     if (tankCapacityWarning && vehicle.tank_capacity) {
       const tankCapacity = Number(vehicle.tank_capacity);
       const percentageFilled = ((transactionData.liters / tankCapacity) * 100).toFixed(1);
@@ -293,6 +295,29 @@ Deno.serve(async (req: Request) => {
           description: `Refuel amount (${transactionData.liters}L) is at or near tank capacity (${tankCapacity}L). This represents ${percentageFilled}% of tank capacity. May indicate incorrect tank capacity data or fuel diversion.`,
           expected_value: `Maximum recommended: ${tankCapacity * 0.95}L (95% of capacity)`,
           actual_value: `${transactionData.liters}L`,
+          resolved: false,
+        });
+    }
+
+    if (transactionData.isMockLocation) {
+      const accuracyInfo = transactionData.locationAccuracy
+        ? ` GPS accuracy: ${transactionData.locationAccuracy.toFixed(1)}m.`
+        : '';
+      const providerInfo = transactionData.locationProvider
+        ? ` Provider: ${transactionData.locationProvider}.`
+        : '';
+
+      await supabase
+        .from("vehicle_exceptions")
+        .insert({
+          organization_id: driver.organization_id,
+          vehicle_id: transactionData.vehicleId,
+          driver_id: driver.id,
+          transaction_id: transaction.id,
+          exception_type: "mock_location_detected",
+          description: `CRITICAL: Mock/fake GPS location detected during fuel transaction. This indicates the driver may be using GPS spoofing software.${accuracyInfo}${providerInfo} Location: ${transactionData.location || 'Unknown'}`,
+          expected_value: "Real GPS location",
+          actual_value: `Mock location: ${transactionData.location || 'Unknown'}`,
           resolved: false,
         });
     }
@@ -360,7 +385,6 @@ Deno.serve(async (req: Request) => {
           message: "Fuel transaction recorded and invoice generated"
         };
 
-        // Add warning if tank capacity near maximum
         if (tankCapacityWarning && vehicle.tank_capacity) {
           const tankCapacity = Number(vehicle.tank_capacity);
           responseData.warning = `WARNING: Refuel amount (${transactionData.liters}L) is at or near tank capacity (${tankCapacity}L). An exception has been logged for review.`;

@@ -64,6 +64,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationMismatch, setLocationMismatch] = useState(false);
   const [distanceFromGarage, setDistanceFromGarage] = useState<number | null>(null);
+  const [locationMetadata, setLocationMetadata] = useState<{
+    accuracy: number;
+    isMock: boolean;
+    provider: string;
+  } | null>(null);
 
   const [currentStep, setCurrentStep] = useState<'garage_selection' | 'location_confirmation' | 'license_scan' | 'spending_check' | 'authorized' | 'fuel_details' | 'pin_entry' | 'scan_to_till' | 'authorization_pending'>('garage_selection');
   const [selectedGarageId, setSelectedGarageId] = useState('');
@@ -126,9 +131,75 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           });
+
+          // Detect potential mock/fake location
+          const accuracy = position.coords.accuracy;
+          const altitude = position.coords.altitude;
+          const altitudeAccuracy = position.coords.altitudeAccuracy;
+          const timestamp = position.timestamp;
+          const timeDiff = Date.now() - timestamp;
+
+          // Heuristics to detect suspicious GPS behavior
+          let isSuspicious = false;
+          let suspicionReasons: string[] = [];
+
+          // Check 1: Unusually perfect accuracy (< 5m) without GPS typically indicates spoofing
+          if (accuracy < 5) {
+            isSuspicious = true;
+            suspicionReasons.push('Unusually high accuracy for mobile GPS');
+          }
+
+          // Check 2: Very poor accuracy (> 500m) indicates unreliable or network-based positioning
+          if (accuracy > 500) {
+            isSuspicious = true;
+            suspicionReasons.push('Very poor GPS accuracy');
+          }
+
+          // Check 3: Missing altitude data can indicate mock location
+          if (altitude === null && altitudeAccuracy === null) {
+            isSuspicious = true;
+            suspicionReasons.push('Missing altitude data');
+          }
+
+          // Check 4: Timestamp mismatch (> 5 seconds) indicates cached or manipulated data
+          if (timeDiff > 5000) {
+            isSuspicious = true;
+            suspicionReasons.push('Location timestamp is stale');
+          }
+
+          // Determine provider type based on accuracy
+          let provider = 'unknown';
+          if (accuracy < 50) {
+            provider = 'gps';
+          } else if (accuracy < 200) {
+            provider = 'network';
+          } else {
+            provider = 'cell';
+          }
+
+          if (isSuspicious) {
+            console.warn('[GPS] Suspicious location detected:', suspicionReasons.join(', '));
+            console.warn('[GPS] Accuracy:', accuracy, 'Altitude:', altitude, 'Time diff:', timeDiff);
+          }
+
+          setLocationMetadata({
+            accuracy: accuracy,
+            isMock: isSuspicious,
+            provider: provider,
+          });
         },
         (error) => {
           console.error('Location error:', error);
+          setLocationMetadata({
+            accuracy: 0,
+            isMock: false,
+            provider: 'error',
+          });
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
         }
       );
     }
@@ -651,6 +722,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           oilTotalAmount: purchasingOil && formData.oilTotalAmount ? parseFloat(formData.oilTotalAmount) : 0,
           oilType: purchasingOil ? formData.oilType : null,
           oilBrand: purchasingOil ? formData.oilBrand : null,
+          isMockLocation: locationMetadata?.isMock || false,
+          locationAccuracy: locationMetadata?.accuracy || null,
+          locationProvider: locationMetadata?.provider || null,
         }),
       });
 
@@ -955,6 +1029,25 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               <p className="text-xs text-red-700">
                 Please ensure you are at the correct garage before proceeding.
               </p>
+            </div>
+          )}
+
+          {locationMetadata?.isMock && (
+            <div className="bg-red-100 border-2 border-red-400 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-red-900 mb-2">GPS WARNING</p>
+                  <p className="text-xs text-red-800 mb-2">
+                    Suspicious GPS behavior detected. This transaction will be flagged for review.
+                  </p>
+                  {locationMetadata.accuracy && (
+                    <p className="text-xs text-red-700">
+                      GPS Accuracy: {locationMetadata.accuracy.toFixed(1)}m | Provider: {locationMetadata.provider}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

@@ -55,24 +55,22 @@ export default function Auth({ onBack }: AuthProps = {}) {
 
       console.log('[Auth] Profile verified:', profile.role);
 
-      // Set a safety timeout - if auth state doesn't update in 3 seconds, force reload
-      const safetyTimeout = setTimeout(() => {
-        console.warn('[Auth] Safety timeout - forcing page reload');
-        window.location.reload();
-      }, 3000);
-
       // Check if session is established every 500ms
       const checkInterval = setInterval(async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          console.log('[Auth] Session confirmed, should redirect soon');
-          clearTimeout(safetyTimeout);
+          console.log('[Auth] Session confirmed, forcing reload');
           clearInterval(checkInterval);
+          window.location.reload();
         }
       }, 500);
 
-      // Clean up interval after 3 seconds
-      setTimeout(() => clearInterval(checkInterval), 3000);
+      // Safety timeout - if session not confirmed in 3 seconds, force reload anyway
+      setTimeout(() => {
+        clearInterval(checkInterval);
+        console.warn('[Auth] Safety timeout - forcing page reload');
+        window.location.reload();
+      }, 3000);
 
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);

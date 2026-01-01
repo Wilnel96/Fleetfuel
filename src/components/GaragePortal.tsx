@@ -23,6 +23,7 @@ interface OtherOfferings {
 
 interface ContactPerson {
   name: string;
+  surname: string;
   email: string;
   phone: string;
   mobile_phone: string;

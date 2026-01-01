@@ -113,9 +113,10 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
 
         const drawnOnSelectedDate = drawDate >= startOfDay && drawDate <= endOfDay;
         const isInProgress = !returnData;
+        const returnedOnSelectedDate = returnData && new Date(returnData.created_at) >= startOfDay && new Date(returnData.created_at) <= endOfDay;
         const returnedAfterSelectedDate = returnData && new Date(returnData.created_at) > endOfDay;
 
-        if (drawnOnSelectedDate || isInProgress || returnedAfterSelectedDate) {
+        if (drawnOnSelectedDate || isInProgress || returnedOnSelectedDate || returnedAfterSelectedDate) {
           const kmTravelled = returnData
             ? returnData.odometer_reading - draw.odometer_reading
             : null;
@@ -312,21 +313,44 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div>
-                          {trip.status === 'in_progress' ? (
-                            <>
-                              <p className="text-sm text-gray-900">{formatDateTime(trip.draw_time).date}</p>
-                              <p className="text-xs text-gray-600">{formatDateTime(trip.draw_time).time}</p>
-                            </>
-                          ) : (
-                            <p className="text-sm text-gray-900">{formatTime(trip.draw_time)}</p>
-                          )}
+                          {(() => {
+                            const drawDateTime = new Date(trip.draw_time);
+                            const selectedDateTime = new Date(selectedDate);
+                            const isSameDay = drawDateTime.toDateString() === selectedDateTime.toDateString();
+
+                            if (!isSameDay) {
+                              return (
+                                <>
+                                  <p className="text-sm text-gray-900">{formatDateTime(trip.draw_time).date}</p>
+                                  <p className="text-xs text-gray-600">{formatDateTime(trip.draw_time).time}</p>
+                                </>
+                              );
+                            } else {
+                              return <p className="text-sm text-gray-900">{formatTime(trip.draw_time)}</p>;
+                            }
+                          })()}
                           <p className="text-xs text-gray-500">{trip.draw_odometer.toLocaleString()} km</p>
                         </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         {trip.return_time ? (
                           <div>
-                            <p className="text-sm text-gray-900">{formatTime(trip.return_time)}</p>
+                            {(() => {
+                              const returnDateTime = new Date(trip.return_time);
+                              const selectedDateTime = new Date(selectedDate);
+                              const isSameDay = returnDateTime.toDateString() === selectedDateTime.toDateString();
+
+                              if (!isSameDay) {
+                                return (
+                                  <>
+                                    <p className="text-sm text-gray-900">{formatDateTime(trip.return_time).date}</p>
+                                    <p className="text-xs text-gray-600">{formatDateTime(trip.return_time).time}</p>
+                                  </>
+                                );
+                              } else {
+                                return <p className="text-sm text-gray-900">{formatTime(trip.return_time)}</p>;
+                              }
+                            })()}
                             <p className="text-xs text-gray-500">{trip.return_odometer?.toLocaleString()} km</p>
                           </div>
                         ) : (

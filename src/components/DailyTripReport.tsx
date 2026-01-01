@@ -157,7 +157,8 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
       'Make': trip.vehicle_make,
       'Model': trip.vehicle_model,
       'Driver': trip.driver_name,
-      'Draw Time': new Date(trip.draw_time).toLocaleString('en-GB'),
+      'Draw Date': new Date(trip.draw_time).toLocaleDateString('en-GB'),
+      'Draw Time': new Date(trip.draw_time).toLocaleTimeString('en-GB'),
       'Draw Odometer (km)': trip.draw_odometer,
       'Return Time': trip.return_time ? new Date(trip.return_time).toLocaleString('en-GB') : 'Not returned',
       'Return Odometer (km)': trip.return_odometer || '-',
@@ -179,6 +180,17 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      date: date.toLocaleDateString('en-GB'),
+      time: date.toLocaleTimeString('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
   };
 
   return (
@@ -300,7 +312,14 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div>
-                          <p className="text-sm text-gray-900">{formatTime(trip.draw_time)}</p>
+                          {trip.status === 'in_progress' ? (
+                            <>
+                              <p className="text-sm text-gray-900">{formatDateTime(trip.draw_time).date}</p>
+                              <p className="text-xs text-gray-600">{formatDateTime(trip.draw_time).time}</p>
+                            </>
+                          ) : (
+                            <p className="text-sm text-gray-900">{formatTime(trip.draw_time)}</p>
+                          )}
                           <p className="text-xs text-gray-500">{trip.draw_odometer.toLocaleString()} km</p>
                         </div>
                       </td>

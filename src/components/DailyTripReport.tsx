@@ -94,7 +94,6 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
         `)
         .eq('organization_id', organizationId)
         .eq('transaction_type', 'draw')
-        .gte('created_at', startOfDay.toISOString())
         .lte('created_at', endOfDay.toISOString())
         .order('created_at', { ascending: true });
 
@@ -104,6 +103,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
       let totalKmTravelled = 0;
 
       for (const draw of draws || []) {
+        const drawDate = new Date(draw.created_at);
         const { data: returnData } = await supabase
           .from('vehicle_transactions')
           .select('odometer_reading, created_at')
@@ -111,29 +111,35 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
           .eq('transaction_type', 'return')
           .maybeSingle();
 
-        const kmTravelled = returnData
-          ? returnData.odometer_reading - draw.odometer_reading
-          : null;
+        const drawnOnSelectedDate = drawDate >= startOfDay && drawDate <= endOfDay;
+        const isInProgress = !returnData;
+        const returnedAfterSelectedDate = returnData && new Date(returnData.created_at) > endOfDay;
 
-        if (kmTravelled !== null) {
-          totalKmTravelled += kmTravelled;
+        if (drawnOnSelectedDate || isInProgress || returnedAfterSelectedDate) {
+          const kmTravelled = returnData
+            ? returnData.odometer_reading - draw.odometer_reading
+            : null;
+
+          if (kmTravelled !== null) {
+            totalKmTravelled += kmTravelled;
+          }
+
+          tripRecords.push({
+            vehicle_id: draw.vehicle_id,
+            vehicle_registration: draw.vehicles?.registration_number || 'Unknown',
+            vehicle_make: draw.vehicles?.make || '',
+            vehicle_model: draw.vehicles?.model || '',
+            driver_id: draw.driver_id,
+            driver_name: `${draw.drivers?.first_name || ''} ${draw.drivers?.surname || ''}`.trim(),
+            draw_time: draw.created_at,
+            draw_odometer: draw.odometer_reading,
+            return_time: returnData?.created_at || null,
+            return_odometer: returnData?.odometer_reading || null,
+            km_travelled: kmTravelled,
+            trip_description: draw.trip_description,
+            status: returnData ? 'completed' : 'in_progress',
+          });
         }
-
-        tripRecords.push({
-          vehicle_id: draw.vehicle_id,
-          vehicle_registration: draw.vehicles?.registration_number || 'Unknown',
-          vehicle_make: draw.vehicles?.make || '',
-          vehicle_model: draw.vehicles?.model || '',
-          driver_id: draw.driver_id,
-          driver_name: `${draw.drivers?.first_name || ''} ${draw.drivers?.surname || ''}`.trim(),
-          draw_time: draw.created_at,
-          draw_odometer: draw.odometer_reading,
-          return_time: returnData?.created_at || null,
-          return_odometer: returnData?.odometer_reading || null,
-          km_travelled: kmTravelled,
-          trip_description: draw.trip_description,
-          status: returnData ? 'completed' : 'in_progress',
-        });
       }
 
       setTrips(tripRecords);

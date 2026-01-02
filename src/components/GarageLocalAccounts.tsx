@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle, Search, Plus } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -15,6 +15,7 @@ interface LocalAccount {
   is_active: boolean;
   notes: string | null;
   account_number: string | null;
+  account_limit: number | null;
 }
 
 interface GarageLocalAccountsProps {
@@ -30,6 +31,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
   const [error, setError] = useState('');
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountNumberInput, setAccountNumberInput] = useState('');
+  const [accountLimitInput, setAccountLimitInput] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,7 +53,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
           .order('name'),
         supabase
           .from('organization_garage_accounts')
-          .select('id, organization_id, is_active, notes, account_number')
+          .select('id, organization_id, is_active, notes, account_number, account_limit')
           .eq('garage_id', garageId),
       ]);
 
@@ -67,36 +69,32 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
     }
   };
 
-  const toggleAccount = async (organizationId: string) => {
-    const existingAccount = localAccounts.find(a => a.organization_id === organizationId);
+  const toggleAccountStatus = async (account: LocalAccount, newStatus: boolean) => {
+    try {
+      setSaving(account.id);
+      setError('');
 
-    if (existingAccount) {
-      try {
-        setSaving(organizationId);
-        setError('');
+      const { error: updateError } = await supabase
+        .from('organization_garage_accounts')
+        .update({ is_active: newStatus })
+        .eq('id', account.id);
 
-        const { error: updateError } = await supabase
-          .from('organization_garage_accounts')
-          .update({ is_active: !existingAccount.is_active })
-          .eq('id', existingAccount.id);
+      if (updateError) throw updateError;
 
-        if (updateError) throw updateError;
-
-        await loadData();
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setSaving(null);
-      }
-    } else {
-      const org = organizations.find(o => o.id === organizationId);
-      if (org) {
-        setSelectedOrganization(org);
-        setAccountNumberInput('');
-        setNotesInput('');
-        setShowAddModal(true);
-      }
+      await loadData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(null);
     }
+  };
+
+  const openAddModal = (org: Organization) => {
+    setSelectedOrganization(org);
+    setAccountNumberInput('');
+    setAccountLimitInput('');
+    setNotesInput('');
+    setShowAddModal(true);
   };
 
   const handleAddAccount = async () => {
@@ -109,6 +107,8 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setSaving(selectedOrganization.id);
       setError('');
 
+      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+
       const { error: insertError } = await supabase
         .from('organization_garage_accounts')
         .insert({
@@ -116,6 +116,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
           garage_id: garageId,
           is_active: true,
           account_number: accountNumberInput.trim(),
+          account_limit: accountLimit,
           notes: notesInput.trim() || null,
         });
 
@@ -125,6 +126,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setShowAddModal(false);
       setSelectedOrganization(null);
       setAccountNumberInput('');
+      setAccountLimitInput('');
       setNotesInput('');
     } catch (err: any) {
       setError(err.message);
@@ -137,6 +139,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
     setShowAddModal(false);
     setSelectedOrganization(null);
     setAccountNumberInput('');
+    setAccountLimitInput('');
     setNotesInput('');
     setError('');
   };
@@ -150,19 +153,25 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
     return localAccounts.find(a => a.organization_id === organizationId);
   };
 
-  const handleEditAccountNumber = (account: LocalAccount) => {
+  const handleEditAccount = (account: LocalAccount) => {
     setEditingAccountId(account.id);
     setAccountNumberInput(account.account_number || '');
+    setAccountLimitInput(account.account_limit ? account.account_limit.toString() : '');
   };
 
-  const handleSaveAccountNumber = async (accountId: string) => {
+  const handleSaveAccount = async (accountId: string) => {
     try {
       setSaving(accountId);
       setError('');
 
+      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+
       const { error: updateError } = await supabase
         .from('organization_garage_accounts')
-        .update({ account_number: accountNumberInput || null })
+        .update({
+          account_number: accountNumberInput || null,
+          account_limit: accountLimit
+        })
         .eq('id', accountId);
 
       if (updateError) throw updateError;
@@ -170,6 +179,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       await loadData();
       setEditingAccountId(null);
       setAccountNumberInput('');
+      setAccountLimitInput('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -180,6 +190,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
   const handleCancelEdit = () => {
     setEditingAccountId(null);
     setAccountNumberInput('');
+    setAccountLimitInput('');
   };
 
   const getOrganizationName = (orgId: string): string => {
@@ -238,6 +249,27 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   The account number this client has in your system
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Limit (Optional)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={accountLimitInput}
+                    onChange={(e) => setAccountLimitInput(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum amount the client can owe (leave empty for no limit)
                 </p>
               </div>
 
@@ -339,10 +371,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                       key={account.id}
                       className="p-3 border border-green-200 bg-green-50 rounded-lg"
                     >
-                      <div
-                        className="flex items-center justify-between cursor-pointer p-1 rounded hover:bg-green-100"
-                        onClick={() => !isSaving && !isEditingAccount && toggleAccount(org.id)}
-                      >
+                      <div className="flex items-center justify-between p-1 rounded">
                         <div className="flex items-center space-x-3 flex-1">
                           <Building2 className="w-5 h-5 text-green-600" />
                           <div className="flex-1">
@@ -353,7 +382,20 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
+                          {!isEditingAccount && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleAccountStatus(account, false);
+                              }}
+                              disabled={isSaving}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg disabled:opacity-50 transition-colors"
+                            >
+                              <Ban className="w-3.5 h-3.5" />
+                              Deactivate
+                            </button>
+                          )}
                           {isSaving ? (
                             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                           ) : (
@@ -364,66 +406,99 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
 
                       <div className="mt-3 ml-8 pl-3 border-l-2 border-green-300">
                         {isEditingAccount ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              value={accountNumberInput}
-                              onChange={(e) => setAccountNumberInput(e.target.value)}
-                              placeholder="Enter account number"
-                              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSaveAccountNumber(account.id);
-                              }}
-                              disabled={isSaving}
-                              className="p-1.5 text-green-600 hover:bg-green-100 rounded disabled:opacity-50"
-                            >
-                              <Save className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCancelEdit();
-                              }}
-                              disabled={isSaving}
-                              className="p-1.5 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-50"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs font-medium text-gray-700 w-28">Account Number:</label>
+                              <input
+                                type="text"
+                                value={accountNumberInput}
+                                onChange={(e) => setAccountNumberInput(e.target.value)}
+                                placeholder="Enter account number"
+                                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs font-medium text-gray-700 w-28">Account Limit:</label>
+                              <div className="flex-1 relative">
+                                <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">R</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={accountLimitInput}
+                                  onChange={(e) => setAccountLimitInput(e.target.value)}
+                                  placeholder="No limit"
+                                  className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 justify-end">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSaveAccount(account.id);
+                                }}
+                                disabled={isSaving}
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded disabled:opacity-50"
+                              >
+                                <Save className="w-3.5 h-3.5" />
+                                Save
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCancelEdit();
+                                }}
+                                disabled={isSaving}
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded disabled:opacity-50"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                Cancel
+                              </button>
+                            </div>
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <p className="text-xs text-gray-700">
-                                <span className="font-medium">Account Number: </span>
-                                {account.account_number ? (
-                                  <span className="text-gray-900 font-bold">{account.account_number}</span>
-                                ) : (
-                                  <span className="text-red-600 font-semibold flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    REQUIRED - Click to add
-                                  </span>
-                                )}
-                              </p>
-                              {account.notes && (
-                                <p className="text-xs text-gray-600 mt-1">
-                                  <span className="font-medium">Notes: </span>
-                                  {account.notes}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 space-y-1">
+                                <p className="text-xs text-gray-700">
+                                  <span className="font-medium">Account Number: </span>
+                                  {account.account_number ? (
+                                    <span className="text-gray-900 font-bold">{account.account_number}</span>
+                                  ) : (
+                                    <span className="text-red-600 font-semibold">
+                                      <AlertCircle className="w-3 h-3 inline" /> REQUIRED
+                                    </span>
+                                  )}
                                 </p>
-                              )}
+                                <p className="text-xs text-gray-700">
+                                  <span className="font-medium">Account Limit: </span>
+                                  {account.account_limit ? (
+                                    <span className="text-gray-900 font-bold">R {account.account_limit.toFixed(2)}</span>
+                                  ) : (
+                                    <span className="text-gray-500 italic">No limit set</span>
+                                  )}
+                                </p>
+                                {account.notes && (
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-medium">Notes: </span>
+                                    {account.notes}
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditAccount(account);
+                                }}
+                                className={`flex items-center gap-1 px-2 py-1.5 text-xs font-medium rounded ${account.account_number ? 'text-blue-700 bg-blue-100 hover:bg-blue-200' : 'text-red-700 bg-red-100 hover:bg-red-200 animate-pulse'}`}
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                                Edit
+                              </button>
                             </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditAccountNumber(account);
-                              }}
-                              className={`p-1.5 rounded ${account.account_number ? 'text-blue-600 hover:bg-blue-100' : 'text-red-600 hover:bg-red-50 animate-pulse'}`}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
                           </div>
                         )}
                       </div>
@@ -442,13 +517,12 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                   const org = organizations.find(o => o.id === account.organization_id);
                   if (!org) return null;
 
-                  const isSaving = saving === org.id;
+                  const isSaving = saving === account.id;
 
                   return (
                     <div
                       key={account.id}
-                      className="p-3 border border-gray-200 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
-                      onClick={() => !isSaving && toggleAccount(org.id)}
+                      className="p-3 border border-gray-200 bg-gray-50 rounded-lg"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3 flex-1">
@@ -458,10 +532,19 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                             <p className="text-xs text-gray-500">
                               {org.city || 'City not specified'}
                               {account.account_number && ` • Account: ${account.account_number}`}
+                              {account.account_limit && ` • Limit: R${account.account_limit.toFixed(2)}`}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleAccountStatus(account, true)}
+                            disabled={isSaving}
+                            className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded-lg disabled:opacity-50 transition-colors"
+                          >
+                            <Power className="w-3.5 h-3.5" />
+                            Activate
+                          </button>
                           {isSaving ? (
                             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
                           ) : (
@@ -493,7 +576,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                         <div
                           key={org.id}
                           className="p-3 hover:bg-gray-50 cursor-pointer"
-                          onClick={() => !isSaving && toggleAccount(org.id)}
+                          onClick={() => !isSaving && openAddModal(org)}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3 flex-1">

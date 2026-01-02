@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle, Ban, Power } from 'lucide-react';
 
 interface Garage {
   id: string;
@@ -15,6 +15,7 @@ interface GarageAccount {
   is_active: boolean;
   notes: string | null;
   account_number: string | null;
+  account_limit: number | null;
 }
 
 interface ClientGarageAccountsProps {
@@ -30,6 +31,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   const [error, setError] = useState('');
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountNumberInput, setAccountNumberInput] = useState('');
+  const [accountLimitInput, setAccountLimitInput] = useState('');
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [selectedGarageForAccount, setSelectedGarageForAccount] = useState<Garage | null>(null);
 
@@ -49,7 +51,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           .order('name'),
         supabase
           .from('organization_garage_accounts')
-          .select('id, garage_id, is_active, notes, account_number')
+          .select('id, garage_id, is_active, notes, account_number, account_limit')
           .eq('organization_id', organizationId),
       ]);
 
@@ -65,37 +67,31 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
     }
   };
 
-  const toggleGarage = async (garageId: string) => {
-    const existingAccount = garageAccounts.find(a => a.garage_id === garageId);
+  const toggleAccountStatus = async (account: GarageAccount, newStatus: boolean) => {
+    try {
+      setSaving(account.id);
+      setError('');
 
-    if (existingAccount) {
-      // Existing account - toggle active status
-      try {
-        setSaving(garageId);
-        setError('');
+      const { error: updateError } = await supabase
+        .from('organization_garage_accounts')
+        .update({ is_active: newStatus })
+        .eq('id', account.id);
 
-        const { error: updateError } = await supabase
-          .from('organization_garage_accounts')
-          .update({ is_active: !existingAccount.is_active })
-          .eq('id', existingAccount.id);
+      if (updateError) throw updateError;
 
-        if (updateError) throw updateError;
-
-        await loadData();
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setSaving(null);
-      }
-    } else {
-      // New garage - show modal to enter account number
-      const garage = garages.find(g => g.id === garageId);
-      if (garage) {
-        setSelectedGarageForAccount(garage);
-        setAccountNumberInput('');
-        setShowAccountModal(true);
-      }
+      await loadData();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(null);
     }
+  };
+
+  const openAddModal = (garage: Garage) => {
+    setSelectedGarageForAccount(garage);
+    setAccountNumberInput('');
+    setAccountLimitInput('');
+    setShowAccountModal(true);
   };
 
   const handleSaveNewGarageAccount = async () => {
@@ -108,6 +104,8 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
       setSaving(selectedGarageForAccount.id);
       setError('');
 
+      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+
       const { error: insertError } = await supabase
         .from('organization_garage_accounts')
         .insert({
@@ -115,6 +113,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           garage_id: selectedGarageForAccount.id,
           is_active: true,
           account_number: accountNumberInput.trim(),
+          account_limit: accountLimit,
         });
 
       if (insertError) throw insertError;
@@ -123,6 +122,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
       setShowAccountModal(false);
       setSelectedGarageForAccount(null);
       setAccountNumberInput('');
+      setAccountLimitInput('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -134,6 +134,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
     setShowAccountModal(false);
     setSelectedGarageForAccount(null);
     setAccountNumberInput('');
+    setAccountLimitInput('');
     setError('');
   };
 
@@ -146,19 +147,25 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
     return garageAccounts.find(a => a.garage_id === garageId);
   };
 
-  const handleEditAccountNumber = (account: GarageAccount) => {
+  const handleEditAccount = (account: GarageAccount) => {
     setEditingAccountId(account.id);
     setAccountNumberInput(account.account_number || '');
+    setAccountLimitInput(account.account_limit ? account.account_limit.toString() : '');
   };
 
-  const handleSaveAccountNumber = async (accountId: string) => {
+  const handleSaveAccount = async (accountId: string) => {
     try {
       setSaving(accountId);
       setError('');
 
+      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+
       const { error: updateError } = await supabase
         .from('organization_garage_accounts')
-        .update({ account_number: accountNumberInput || null })
+        .update({
+          account_number: accountNumberInput || null,
+          account_limit: accountLimit
+        })
         .eq('id', accountId);
 
       if (updateError) throw updateError;
@@ -166,6 +173,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
       await loadData();
       setEditingAccountId(null);
       setAccountNumberInput('');
+      setAccountLimitInput('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -176,6 +184,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   const handleCancelEdit = () => {
     setEditingAccountId(null);
     setAccountNumberInput('');
+    setAccountLimitInput('');
   };
 
   if (loading) {
@@ -207,28 +216,49 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
               </div>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Local Account Number <span className="text-red-600">*</span>
-              </label>
-              <input
-                type="text"
-                value={accountNumberInput}
-                onChange={(e) => setAccountNumberInput(e.target.value)}
-                placeholder="Enter the account number for this garage"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
-                autoFocus
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSaveNewGarageAccount();
-                  }
-                }}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                This is the account number {organizationName} has with {selectedGarageForAccount.name}'s accounting system.
-              </p>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Local Account Number <span className="text-red-600">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={accountNumberInput}
+                  onChange={(e) => setAccountNumberInput(e.target.value)}
+                  placeholder="Enter the account number for this garage"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                  autoFocus
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This is the account number {organizationName} has with {selectedGarageForAccount.name}'s accounting system.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account Limit (Optional)
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={accountLimitInput}
+                    onChange={(e) => setAccountLimitInput(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Maximum amount {organizationName} can owe (leave empty for no limit)
+                </p>
+              </div>
+
               {error && (
-                <p className="text-xs text-red-600 mt-2">{error}</p>
+                <div className="bg-red-50 border border-red-200 rounded p-2">
+                  <p className="text-xs text-red-800">{error}</p>
+                </div>
               )}
             </div>
 
@@ -275,111 +305,249 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           </div>
         )}
 
-      <div className="max-h-60 overflow-y-auto border border-gray-300 rounded">
+      <div className="space-y-4">
         {garages.length === 0 ? (
-          <div className="p-4 text-center text-xs text-gray-500">
+          <div className="p-4 text-center text-xs text-gray-500 border border-gray-300 rounded">
             No garages available. Please add garages to the system first.
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {garages.map((garage) => {
-              const isActive = isGarageActive(garage.id);
-              const account = getGarageAccount(garage.id);
-              const isSaving = saving === garage.id || (account && saving === account.id);
-              const isEditingAccount = account && editingAccountId === account.id;
+          <>
+            {garageAccounts.filter(a => a.is_active).length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-900 mb-2">Active Garages</h4>
+                <div className="space-y-2 border border-amber-200 rounded-lg divide-y divide-amber-200">
+                  {garageAccounts.filter(a => a.is_active).map((account) => {
+                    const garage = garages.find(g => g.id === account.garage_id);
+                    if (!garage) return null;
 
-              return (
-                <div
-                  key={garage.id}
-                  className={`p-2 ${isActive ? 'bg-amber-50' : ''}`}
-                >
-                  <div
-                    className="flex items-center justify-between hover:bg-gray-50 cursor-pointer p-1 rounded"
-                    onClick={() => !isSaving && !isEditingAccount && toggleGarage(garage.id)}
-                  >
-                    <div className="flex items-center space-x-2 flex-1">
-                      <Building2 className={`w-4 h-4 ${isActive ? 'text-amber-600' : 'text-gray-400'}`} />
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-gray-900">{garage.name}</p>
-                        <p className="text-xs text-gray-500">{garage.city}, {garage.province}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      {isSaving ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                      ) : isActive ? (
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                      ) : (
-                        <XCircle className="w-4 h-4 text-gray-300" />
-                      )}
-                    </div>
-                  </div>
+                    const isSaving = saving === account.id;
+                    const isEditingAccount = editingAccountId === account.id;
 
-                  {isActive && account && (
-                    <div className={`mt-2 ml-6 pl-2 border-l-2 ${account.account_number ? 'border-amber-300' : 'border-red-300'}`}>
-                      {isEditingAccount ? (
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={accountNumberInput}
-                            onChange={(e) => setAccountNumberInput(e.target.value)}
-                            placeholder="Enter account number for this garage"
-                            className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSaveAccountNumber(account.id);
-                            }}
-                            disabled={isSaving}
-                            className="p-1 text-green-600 hover:bg-green-50 rounded disabled:opacity-50"
-                          >
-                            <Save className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCancelEdit();
-                            }}
-                            disabled={isSaving}
-                            className="p-1 text-gray-600 hover:bg-gray-50 rounded disabled:opacity-50"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="text-xs text-gray-600">
-                              <span className="font-medium">Account Number: </span>
-                              {account.account_number ? (
-                                <span className="text-gray-900 font-semibold">{account.account_number}</span>
-                              ) : (
-                                <span className="text-red-600 font-semibold flex items-center gap-1">
-                                  <AlertCircle className="w-3 h-3" />
-                                  REQUIRED - Click to add
-                                </span>
-                              )}
-                            </p>
+                    return (
+                      <div
+                        key={account.id}
+                        className="p-2 bg-amber-50"
+                      >
+                        <div className="flex items-center justify-between p-1">
+                          <div className="flex items-center space-x-2 flex-1">
+                            <Building2 className="w-4 h-4 text-amber-600" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-gray-900">{garage.name}</p>
+                              <p className="text-xs text-gray-500">{garage.city}, {garage.province}</p>
+                            </div>
                           </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditAccountNumber(account);
-                            }}
-                            className={`p-1 rounded ${account.account_number ? 'text-amber-600 hover:bg-amber-100' : 'text-red-600 hover:bg-red-50 animate-pulse'}`}
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {!isEditingAccount && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleAccountStatus(account, false);
+                                }}
+                                disabled={isSaving}
+                                className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded disabled:opacity-50"
+                              >
+                                <Ban className="w-3 h-3" />
+                                Deactivate
+                              </button>
+                            )}
+                            {isSaving ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        <div className="mt-2 ml-6 pl-2 border-l-2 border-amber-300">
+                          {isEditingAccount ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <label className="text-xs font-medium text-gray-700 w-24">Account Number:</label>
+                                <input
+                                  type="text"
+                                  value={accountNumberInput}
+                                  onChange={(e) => setAccountNumberInput(e.target.value)}
+                                  placeholder="Enter account number"
+                                  className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <label className="text-xs font-medium text-gray-700 w-24">Account Limit:</label>
+                                <div className="flex-1 relative">
+                                  <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">R</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={accountLimitInput}
+                                    onChange={(e) => setAccountLimitInput(e.target.value)}
+                                    placeholder="No limit"
+                                    className="w-full pl-6 pr-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-amber-500 focus:border-amber-500"
+                                    onClick={(e) => e.stopPropagation()}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 justify-end">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSaveAccount(account.id);
+                                  }}
+                                  disabled={isSaving}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded disabled:opacity-50"
+                                >
+                                  <Save className="w-3 h-3" />
+                                  Save
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCancelEdit();
+                                  }}
+                                  disabled={isSaving}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded disabled:opacity-50"
+                                >
+                                  <X className="w-3 h-3" />
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1 space-y-0.5">
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-medium">Account Number: </span>
+                                    {account.account_number ? (
+                                      <span className="text-gray-900 font-semibold">{account.account_number}</span>
+                                    ) : (
+                                      <span className="text-red-600 font-semibold">
+                                        <AlertCircle className="w-3 h-3 inline" /> REQUIRED
+                                      </span>
+                                    )}
+                                  </p>
+                                  <p className="text-xs text-gray-600">
+                                    <span className="font-medium">Account Limit: </span>
+                                    {account.account_limit ? (
+                                      <span className="text-gray-900 font-semibold">R {account.account_limit.toFixed(2)}</span>
+                                    ) : (
+                                      <span className="text-gray-500 italic">No limit set</span>
+                                    )}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditAccount(account);
+                                  }}
+                                  className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${account.account_number ? 'text-amber-700 bg-amber-100 hover:bg-amber-200' : 'text-red-700 bg-red-100 hover:bg-red-200 animate-pulse'}`}
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  Edit
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            )}
+
+            {garageAccounts.filter(a => !a.is_active).length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-900 mb-2">Inactive Garages</h4>
+                <div className="space-y-2 border border-gray-200 rounded-lg divide-y divide-gray-200">
+                  {garageAccounts.filter(a => !a.is_active).map((account) => {
+                    const garage = garages.find(g => g.id === account.garage_id);
+                    if (!garage) return null;
+
+                    const isSaving = saving === account.id;
+
+                    return (
+                      <div
+                        key={account.id}
+                        className="p-2 bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2 flex-1">
+                            <Building2 className="w-4 h-4 text-gray-400" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-gray-900">{garage.name}</p>
+                              <p className="text-xs text-gray-500">
+                                {garage.city}, {garage.province}
+                                {account.account_number && ` • Account: ${account.account_number}`}
+                                {account.account_limit && ` • Limit: R${account.account_limit.toFixed(2)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => toggleAccountStatus(account, true)}
+                              disabled={isSaving}
+                              className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded disabled:opacity-50"
+                            >
+                              <Power className="w-3 h-3" />
+                              Activate
+                            </button>
+                            {isSaving ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-gray-300" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h4 className="text-xs font-semibold text-gray-900 mb-2">Add New Garage</h4>
+              <div className="max-h-48 overflow-y-auto border border-gray-300 rounded-lg">
+                {garages.filter(g => !garageAccounts.find(a => a.garage_id === g.id)).length === 0 ? (
+                  <div className="p-4 text-center text-xs text-gray-500">
+                    All garages have been added
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-200">
+                    {garages.filter(g => !garageAccounts.find(a => a.garage_id === g.id)).map((garage) => {
+                      const isSaving = saving === garage.id;
+                      return (
+                        <div
+                          key={garage.id}
+                          className="p-2 hover:bg-gray-50 cursor-pointer"
+                          onClick={() => !isSaving && openAddModal(garage)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2 flex-1">
+                              <Building2 className="w-4 h-4 text-gray-400" />
+                              <div className="flex-1">
+                                <p className="text-xs font-medium text-gray-900">{garage.name}</p>
+                                <p className="text-xs text-gray-500">{garage.city}, {garage.province}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center">
+                              {isSaving ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                              ) : (
+                                <AlertCircle className="w-4 h-4 text-amber-400" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
         )}
       </div>
 

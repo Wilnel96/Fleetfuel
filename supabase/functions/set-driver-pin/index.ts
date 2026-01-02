@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Validate PIN format
-    if (!/^\d{4}$/.test(pin)) {
+    if (!/^\\d{4}$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: 'PIN must be exactly 4 digits' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Check for weak PINs
-    if (/^(\d)\1{3}$/.test(pin)) {
+    if (/^(\\d)\\1{3}$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: 'PIN cannot be all same digits' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,10 +58,24 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (/^(\d{2})\1$/.test(pin)) {
+    if (/^(\\d{2})\\1$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: 'PIN cannot be repeating pattern' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get driver's organization_id
+    const { data: driver, error: driverError } = await supabase
+      .from('drivers')
+      .select('organization_id')
+      .eq('id', driverId)
+      .maybeSingle();
+
+    if (driverError || !driver) {
+      return new Response(
+        JSON.stringify({ error: 'Driver not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -93,6 +107,7 @@ Deno.serve(async (req: Request) => {
       .from('driver_payment_settings')
       .upsert({
         driver_id: driverId,
+        organization_id: driver.organization_id,
         pin_hash: hashedPin,
         is_pin_active: true,
         pin_last_changed: new Date().toISOString(),

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { DollarSign, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
-import { OrganizationPaymentCard } from './OrganizationPaymentCard';
+import { OrganizationPaymentCardReadOnly } from './OrganizationPaymentCardReadOnly';
 import ClientGarageAccounts from './ClientGarageAccounts';
 
 interface Organization {
@@ -600,7 +600,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
 
                     {editForm.payment_option === 'Card Payment' && editingId && (
                       <div className="bg-white border border-blue-200 rounded p-2">
-                        <OrganizationPaymentCard organizationId={editingId} organizationName={editForm.name || ''} />
+                        <OrganizationPaymentCardReadOnly organizationId={editingId} organizationName={editForm.name || ''} />
                       </div>
                     )}
 

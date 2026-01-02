@@ -17,11 +17,18 @@ interface DriverMobileAppProps {
 type MenuOption = 'menu' | 'draw' | 'return' | 'refuel' | 'directory' | 'pin_setup';
 
 export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: DriverMobileAppProps) {
-  const [needsPINSetup, setNeedsPINSetup] = useState(!driver.hasPIN);
-  const [currentView, setCurrentView] = useState<MenuOption>(driver.hasPIN ? 'menu' : 'pin_setup');
   const [localDriver, setLocalDriver] = useState(driver);
+  const [needsPINSetup, setNeedsPINSetup] = useState(!localDriver.hasPIN);
+  const [currentView, setCurrentView] = useState<MenuOption>(localDriver.hasPIN ? 'menu' : 'pin_setup');
 
-  console.log('[DriverMobileApp] Rendering. currentView:', currentView, 'needsPINSetup:', needsPINSetup, 'driver.hasPIN:', driver.hasPIN);
+  console.log('[DriverMobileApp] Rendering. currentView:', currentView, 'needsPINSetup:', needsPINSetup, 'localDriver.hasPIN:', localDriver.hasPIN);
+
+  // Update local driver when prop changes
+  useEffect(() => {
+    console.log('[DriverMobileApp] Driver prop updated, syncing localDriver');
+    setLocalDriver(driver);
+    setNeedsPINSetup(!driver.hasPIN);
+  }, [driver]);
 
   // Prevent going back to PIN setup if driver already has a PIN
   useEffect(() => {

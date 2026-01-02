@@ -253,6 +253,16 @@ function App() {
     setShowModeSelection(false);
   };
 
+  const handleDriverUpdate = (updatedDriver: DriverData) => {
+    console.log('[App] Updating driver data:', updatedDriver);
+    setDriverData(updatedDriver);
+    // Update localStorage as well
+    const storedDriverData = localStorage.getItem('driverData');
+    if (storedDriverData) {
+      localStorage.setItem('driverData', JSON.stringify(updatedDriver));
+    }
+  };
+
   const handleDriverLogout = async () => {
     console.log('Driver logout initiated');
     localStorage.removeItem('driverToken');
@@ -414,7 +424,7 @@ function App() {
   }
 
   if (userMode === 'driver' && driverData) {
-    return <DriverMobileApp driver={driverData} onLogout={handleDriverLogout} />;
+    return <DriverMobileApp driver={driverData} onLogout={handleDriverLogout} onDriverUpdate={handleDriverUpdate} />;
   }
 
   if (userMode === 'garage' && !garageId) {

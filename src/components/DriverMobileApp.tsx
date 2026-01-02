@@ -11,15 +11,25 @@ import { supabase } from '../lib/supabase';
 interface DriverMobileAppProps {
   driver: DriverData;
   onLogout: () => void | Promise<void>;
+  onDriverUpdate?: (updatedDriver: DriverData) => void;
 }
 
 type MenuOption = 'menu' | 'draw' | 'return' | 'refuel' | 'directory' | 'pin_setup';
 
-export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppProps) {
-  const [currentView, setCurrentView] = useState<MenuOption>(driver.hasPIN ? 'menu' : 'pin_setup');
+export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: DriverMobileAppProps) {
   const [needsPINSetup, setNeedsPINSetup] = useState(!driver.hasPIN);
+  const [currentView, setCurrentView] = useState<MenuOption>(driver.hasPIN ? 'menu' : 'pin_setup');
+  const [localDriver, setLocalDriver] = useState(driver);
 
   console.log('[DriverMobileApp] Rendering. currentView:', currentView, 'needsPINSetup:', needsPINSetup, 'driver.hasPIN:', driver.hasPIN);
+
+  // Prevent going back to PIN setup if driver already has a PIN
+  useEffect(() => {
+    if (currentView === 'pin_setup' && !needsPINSetup && localDriver.hasPIN) {
+      console.log('[DriverMobileApp] Preventing return to PIN setup - driver already has PIN');
+      setCurrentView('menu');
+    }
+  }, [currentView, needsPINSetup, localDriver.hasPIN]);
 
   if (currentView === 'pin_setup') {
     console.log('[DriverMobileApp] Rendering PIN setup screen');
@@ -29,8 +39,26 @@ export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppPro
         onComplete={() => {
           console.log('[DriverMobileApp] PIN setup onComplete called, updating state...');
           setNeedsPINSetup(false);
+
+          // Update driver data to reflect PIN is now set
+          const updatedDriver = { ...localDriver, hasPIN: true };
+          setLocalDriver(updatedDriver);
+
+          // Update localStorage
+          const storedDriverData = localStorage.getItem('driverData');
+          if (storedDriverData) {
+            const driverDataObj = JSON.parse(storedDriverData);
+            driverDataObj.hasPIN = true;
+            localStorage.setItem('driverData', JSON.stringify(driverDataObj));
+          }
+
+          // Notify parent component if callback provided
+          if (onDriverUpdate) {
+            onDriverUpdate(updatedDriver);
+          }
+
           setCurrentView('menu');
-          console.log('[DriverMobileApp] State updated: needsPINSetup=false, currentView=menu');
+          console.log('[DriverMobileApp] State updated: needsPINSetup=false, currentView=menu, hasPIN=true');
         }}
         onCancel={needsPINSetup ? undefined : () => setCurrentView('menu')}
       />

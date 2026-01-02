@@ -162,7 +162,9 @@ export function DriverPINSetup({ driverId, onComplete, onCancel }: DriverPINSetu
         throw new Error(result.error || 'Failed to set PIN');
       }
 
+      console.log('[DriverPINSetup] ✅ PIN set successfully, calling onComplete()');
       onComplete();
+      console.log('[DriverPINSetup] onComplete() called');
     } catch (err: any) {
       setError(err.message || 'Failed to set PIN');
       setPin('');

@@ -19,13 +19,18 @@ export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppPro
   const [currentView, setCurrentView] = useState<MenuOption>(driver.hasPIN ? 'menu' : 'pin_setup');
   const [needsPINSetup, setNeedsPINSetup] = useState(!driver.hasPIN);
 
+  console.log('[DriverMobileApp] Rendering. currentView:', currentView, 'needsPINSetup:', needsPINSetup, 'driver.hasPIN:', driver.hasPIN);
+
   if (currentView === 'pin_setup') {
+    console.log('[DriverMobileApp] Rendering PIN setup screen');
     return (
       <DriverPINSetup
         driverId={driver.id}
         onComplete={() => {
+          console.log('[DriverMobileApp] PIN setup onComplete called, updating state...');
           setNeedsPINSetup(false);
           setCurrentView('menu');
+          console.log('[DriverMobileApp] State updated: needsPINSetup=false, currentView=menu');
         }}
         onCancel={needsPINSetup ? undefined : () => setCurrentView('menu')}
       />
@@ -95,6 +100,8 @@ export default function DriverMobileApp({ driver, onLogout }: DriverMobileAppPro
       />
     );
   }
+
+  console.log('[DriverMobileApp] Rendering main menu');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">

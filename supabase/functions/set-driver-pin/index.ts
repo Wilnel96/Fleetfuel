@@ -86,22 +86,29 @@ Deno.serve(async (req: Request) => {
     // Hash the new PIN
     const hashedPin = await bcrypt.hash(pin, 12);
 
-    // Update driver payment settings
-    const { error: updateError } = await supabase
+    console.log('[SetDriverPIN] Hashing PIN complete, upserting to driver_payment_settings for driver:', driverId);
+
+    // Upsert driver payment settings (create if doesn't exist, update if does)
+    const { error: upsertError } = await supabase
       .from('driver_payment_settings')
-      .update({
+      .upsert({
+        driver_id: driverId,
         pin_hash: hashedPin,
         is_pin_active: true,
         pin_last_changed: new Date().toISOString(),
         require_pin_change: false,
         failed_pin_attempts: 0,
         locked_until: null,
-      })
-      .eq('driver_id', driverId);
+      }, {
+        onConflict: 'driver_id'
+      });
 
-    if (updateError) {
-      throw updateError;
+    if (upsertError) {
+      console.error('[SetDriverPIN] Error upserting payment settings:', upsertError);
+      throw upsertError;
     }
+
+    console.log('[SetDriverPIN] ✅ PIN set successfully for driver:', driverId);
 
     return new Response(
       JSON.stringify({

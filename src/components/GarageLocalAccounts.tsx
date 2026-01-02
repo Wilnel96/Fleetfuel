@@ -284,20 +284,18 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
     phone_office: viewingOrg.billing_contact_phone_office,
   } : null;
 
-  // Debug logging
-  if (viewingOrgId) {
-    console.log('Viewing Org ID:', viewingOrgId);
-    console.log('Organization Users:', organizationUsers);
-    console.log('Viewing Org Users:', viewingOrgUsers);
-    console.log('Main User:', mainUser);
-    console.log('Billing Contact:', billingContact);
-  }
-
   return (
     <>
       {viewingOrg && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 my-8">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setViewingOrgId(null);
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
@@ -504,8 +502,15 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       )}
 
       {showAddModal && selectedOrganization && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && saving === null) {
+              handleCancelAddModal();
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-start gap-3 mb-4">
               <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <Plus className="w-5 h-5 text-blue-600" />

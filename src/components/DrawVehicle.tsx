@@ -25,6 +25,8 @@ interface DrawVehicleProps {
 export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVehicleProps) {
   const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch' | 'confirm-license-warning' | 'confirm-prdp-warning' | 'confirm-unreturned-vehicle'>('scan');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
+  const [vehicleSearch, setVehicleSearch] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [odometerReading, setOdometerReading] = useState('');
@@ -49,6 +51,19 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     getCurrentLocation();
     loadDriverLicenseCode();
   }, []);
+
+  useEffect(() => {
+    if (vehicleSearch.trim() === '') {
+      setFilteredVehicles(vehicles);
+    } else {
+      const searchLower = vehicleSearch.toLowerCase();
+      const filtered = vehicles.filter(v =>
+        v.registration_number.toLowerCase().includes(searchLower) ||
+        `${v.make} ${v.model}`.toLowerCase().includes(searchLower)
+      );
+      setFilteredVehicles(filtered);
+    }
+  }, [vehicleSearch, vehicles]);
 
   const loadDriverLicenseCode = async () => {
     const { data: driver } = await supabase
@@ -92,7 +107,10 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       .eq('status', 'active')
       .order('registration_number');
 
-    if (data) setVehicles(data);
+    if (data) {
+      setVehicles(data);
+      setFilteredVehicles(data);
+    }
   };
 
   const handleScanStart = () => {
@@ -627,7 +645,25 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Manual Selection</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search Vehicles</label>
+                <input
+                  type="text"
+                  value={vehicleSearch}
+                  onChange={(e) => setVehicleSearch(e.target.value)}
+                  placeholder="Search by registration or make/model..."
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Manual Selection
+                  {filteredVehicles.length !== vehicles.length && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      ({filteredVehicles.length} of {vehicles.length})
+                    </span>
+                  )}
+                </label>
                 <select
                   value={selectedVehicle?.id || ''}
                   onChange={async (e) => {
@@ -647,7 +683,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                   style={{ fontSize: '16px', minHeight: '50px' }}
                 >
                   <option value="">Select Vehicle by Registration</option>
-                  {vehicles.map((vehicle) => (
+                  {filteredVehicles.map((vehicle) => (
                     <option key={vehicle.id} value={vehicle.id}>
                       {vehicle.registration_number} - {vehicle.make} {vehicle.model}
                     </option>

@@ -51,6 +51,10 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   const [showOrgSelector, setShowOrgSelector] = useState(false);
   const [loadingOrganizations, setLoadingOrganizations] = useState(true);
   const [showLicenseExplanation, setShowLicenseExplanation] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(50);
+  const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
 
   const [formData, setFormData] = useState({
     registration_number: '',
@@ -81,28 +85,33 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
 
   useEffect(() => {
     if (selectedOrgId !== 'none') {
-      loadVehicles();
+      setCurrentPage(1);
+      loadVehicles(1, searchTerm);
     } else {
       setVehicles([]);
       setFilteredVehicles([]);
+      setTotalCount(0);
     }
   }, [selectedOrgId]);
 
   useEffect(() => {
-    let filtered = vehicles;
-
-    if (searchTerm.trim() !== '') {
-      filtered = filtered.filter(
-        (vehicle) =>
-          vehicle.registration_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (vehicle.organizations?.name || '').toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    if (searchDebounce) {
+      clearTimeout(searchDebounce);
     }
 
-    setFilteredVehicles(filtered);
-  }, [searchTerm, vehicles]);
+    const timeout = setTimeout(() => {
+      if (selectedOrgId !== 'none') {
+        setCurrentPage(1);
+        loadVehicles(1, searchTerm);
+      }
+    }, 300);
+
+    setSearchDebounce(timeout);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [searchTerm]);
 
   const loadOrganizations = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -162,7 +171,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
     setLoadingOrganizations(false);
   };
 
-  const loadVehicles = async () => {
+  const loadVehicles = async (page: number = currentPage, search: string = searchTerm) => {
     if (selectedOrgId === 'none') return;
 
     setLoading(true);
@@ -179,13 +188,27 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       .single();
 
     if (profile) {
-      if (selectedOrgId === 'all' && profile.role === 'super_admin') {
-        const { data } = await supabase
-          .from('vehicles')
-          .select('*, organizations(name)')
-          .order('registration_number');
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
 
-        if (data) setVehicles(data);
+      if (selectedOrgId === 'all' && profile.role === 'super_admin') {
+        let query = supabase
+          .from('vehicles')
+          .select('*, organizations(name)', { count: 'exact' })
+          .order('registration_number')
+          .range(from, to);
+
+        if (search.trim()) {
+          query = query.or(`registration_number.ilike.%${search}%,make.ilike.%${search}%,model.ilike.%${search}%`);
+        }
+
+        const { data, count } = await query;
+
+        if (data) {
+          setVehicles(data);
+          setFilteredVehicles(data);
+        }
+        if (count !== null) setTotalCount(count);
       } else if (selectedOrgId === 'all') {
         const { data: childOrgs } = await supabase
           .from('organizations')
@@ -197,21 +220,43 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
           orgIds.push(...childOrgs.map(org => org.id));
         }
 
-        const { data } = await supabase
+        let query = supabase
           .from('vehicles')
-          .select('*, organizations(name)')
+          .select('*, organizations(name)', { count: 'exact' })
           .in('organization_id', orgIds)
-          .order('registration_number');
+          .order('registration_number')
+          .range(from, to);
 
-        if (data) setVehicles(data);
+        if (search.trim()) {
+          query = query.or(`registration_number.ilike.%${search}%,make.ilike.%${search}%,model.ilike.%${search}%`);
+        }
+
+        const { data, count } = await query;
+
+        if (data) {
+          setVehicles(data);
+          setFilteredVehicles(data);
+        }
+        if (count !== null) setTotalCount(count);
       } else {
-        const { data } = await supabase
+        let query = supabase
           .from('vehicles')
-          .select('*, organizations(name)')
+          .select('*, organizations(name)', { count: 'exact' })
           .eq('organization_id', selectedOrgId)
-          .order('registration_number');
+          .order('registration_number')
+          .range(from, to);
 
-        if (data) setVehicles(data);
+        if (search.trim()) {
+          query = query.or(`registration_number.ilike.%${search}%,make.ilike.%${search}%,model.ilike.%${search}%`);
+        }
+
+        const { data, count } = await query;
+
+        if (data) {
+          setVehicles(data);
+          setFilteredVehicles(data);
+        }
+        if (count !== null) setTotalCount(count);
       }
     }
     setLoading(false);
@@ -955,6 +1000,43 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
           </tbody>
         </table>
         </div>
+
+        {totalCount > pageSize && (
+          <div className="px-6 py-4 flex items-center justify-between border-t">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> of{' '}
+              <span className="font-medium">{totalCount}</span> vehicles
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const newPage = Math.max(1, currentPage - 1);
+                  setCurrentPage(newPage);
+                  loadVehicles(newPage, searchTerm);
+                }}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-sm text-gray-700">
+                Page {currentPage} of {Math.ceil(totalCount / pageSize)}
+              </span>
+              <button
+                onClick={() => {
+                  const newPage = Math.min(Math.ceil(totalCount / pageSize), currentPage + 1);
+                  setCurrentPage(newPage);
+                  loadVehicles(newPage, searchTerm);
+                }}
+                disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showLicenseExplanation && (

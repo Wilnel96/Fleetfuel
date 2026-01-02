@@ -1,0 +1,137 @@
+import { supabase } from './supabase';
+import { cache } from './cache';
+
+interface CachedQueryOptions {
+  ttl?: number;
+  forceRefresh?: boolean;
+}
+
+export async function getCachedOrganizations(userId: string, options: CachedQueryOptions = {}) {
+  const cacheKey = `organizations:${userId}`;
+
+  if (!options.forceRefresh && cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('organization_id, role')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (!profile) return null;
+
+  let organizations = [];
+
+  if (profile.role === 'super_admin') {
+    const { data } = await supabase
+      .from('organizations')
+      .select('id, name, is_management_org')
+      .neq('is_management_org', true)
+      .order('name');
+
+    organizations = data || [];
+  } else {
+    const { data: childOrgs } = await supabase
+      .from('organizations')
+      .select('id, name, is_management_org')
+      .eq('parent_org_id', profile.organization_id)
+      .neq('is_management_org', true);
+
+    const { data: ownOrg } = await supabase
+      .from('organizations')
+      .select('id, name, is_management_org')
+      .eq('id', profile.organization_id)
+      .maybeSingle();
+
+    const allOrgs = [];
+    if (ownOrg) allOrgs.push(ownOrg);
+    if (childOrgs) allOrgs.push(...childOrgs);
+
+    organizations = allOrgs;
+  }
+
+  cache.set(cacheKey, organizations, options.ttl || 10 * 60 * 1000);
+  return organizations;
+}
+
+export async function getCachedGarages(options: CachedQueryOptions = {}) {
+  const cacheKey = 'garages:active';
+
+  if (!options.forceRefresh && cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const { data } = await supabase
+    .from('garages')
+    .select('*')
+    .order('name');
+
+  cache.set(cacheKey, data || [], options.ttl || 15 * 60 * 1000);
+  return data || [];
+}
+
+export async function getCachedVehicle(vehicleId: string, options: CachedQueryOptions = {}) {
+  const cacheKey = `vehicle:${vehicleId}`;
+
+  if (!options.forceRefresh && cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const { data } = await supabase
+    .from('vehicles')
+    .select('*')
+    .eq('id', vehicleId)
+    .maybeSingle();
+
+  if (data) {
+    cache.set(cacheKey, data, options.ttl || 5 * 60 * 1000);
+  }
+
+  return data;
+}
+
+export async function getCachedDriver(driverId: string, options: CachedQueryOptions = {}) {
+  const cacheKey = `driver:${driverId}`;
+
+  if (!options.forceRefresh && cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const { data } = await supabase
+    .from('drivers')
+    .select('*')
+    .eq('id', driverId)
+    .maybeSingle();
+
+  if (data) {
+    cache.set(cacheKey, data, options.ttl || 5 * 60 * 1000);
+  }
+
+  return data;
+}
+
+export function invalidateVehicleCache(vehicleId?: string) {
+  if (vehicleId) {
+    cache.invalidate(`vehicle:${vehicleId}`);
+  }
+  cache.invalidatePattern('^vehicles:');
+}
+
+export function invalidateDriverCache(driverId?: string) {
+  if (driverId) {
+    cache.invalidate(`driver:${driverId}`);
+  }
+  cache.invalidatePattern('^drivers:');
+}
+
+export function invalidateOrganizationCache(userId?: string) {
+  if (userId) {
+    cache.invalidate(`organizations:${userId}`);
+  }
+  cache.invalidatePattern('^organizations:');
+}
+
+export function invalidateGarageCache() {
+  cache.invalidatePattern('^garages:');
+}

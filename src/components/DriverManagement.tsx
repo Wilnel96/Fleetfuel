@@ -91,6 +91,10 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const [userRole, setUserRole] = useState<string>('');
   const [idDobMismatch, setIdDobMismatch] = useState<string>('');
   const [selectedDriverForPayment, setSelectedDriverForPayment] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(50);
+  const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
 
   const [formData, setFormData] = useState<DriverFormData>({
     first_name: '',
@@ -121,33 +125,31 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   });
 
   useEffect(() => {
-    loadDrivers();
+    loadDrivers(1, searchTerm, selectedOrgId);
     loadOrganizations();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+    loadDrivers(1, searchTerm, selectedOrgId);
+  }, [selectedOrgId]);
 
   useEffect(() => {
-    let filtered = drivers;
-
-    if (selectedOrgId !== 'all') {
-      filtered = filtered.filter(driver => driver.organization_id === selectedOrgId);
+    if (searchDebounce) {
+      clearTimeout(searchDebounce);
     }
 
-    if (searchTerm.trim() !== '') {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (d) =>
-          (d.first_name || '').toLowerCase().includes(term) ||
-          (d.surname || '').toLowerCase().includes(term) ||
-          (d.id_number || '').toLowerCase().includes(term) ||
-          (d.license_number || '').toLowerCase().includes(term) ||
-          (d.phone_number || '').toLowerCase().includes(term) ||
-          (d.email || '').toLowerCase().includes(term)
-      );
-    }
+    const timeout = setTimeout(() => {
+      setCurrentPage(1);
+      loadDrivers(1, searchTerm, selectedOrgId);
+    }, 300);
 
-    setFilteredDrivers(filtered);
-  }, [searchTerm, selectedOrgId, drivers]);
+    setSearchDebounce(timeout);
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [searchTerm]);
 
   const loadOrganizations = async () => {
     try {
@@ -204,7 +206,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     }
   };
 
-  const loadDrivers = async () => {
+  const loadDrivers = async (page: number = currentPage, search: string = searchTerm, orgFilter: string = selectedOrgId) => {
     setLoadingDrivers(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -220,33 +222,63 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
         .single();
 
       if (profile) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+
+        let orgIds = [profile.organization_id];
+
         if (profile.role === 'super_admin') {
-          const { data, error } = await supabase
+          let query = supabase
             .from('drivers')
-            .select('*, organizations(name)')
-            .order('surname');
+            .select('*, organizations(name)', { count: 'exact' })
+            .order('surname')
+            .range(from, to);
+
+          if (orgFilter !== 'all') {
+            query = query.eq('organization_id', orgFilter);
+          }
+
+          if (search.trim()) {
+            query = query.or(`first_name.ilike.%${search}%,surname.ilike.%${search}%,id_number.ilike.%${search}%,license_number.ilike.%${search}%`);
+          }
+
+          const { data, error, count } = await query;
 
           if (error) throw error;
           setDrivers(data || []);
+          setFilteredDrivers(data || []);
+          if (count !== null) setTotalCount(count);
         } else {
           const { data: childOrgs } = await supabase
             .from('organizations')
             .select('id')
             .eq('parent_org_id', profile.organization_id);
 
-          const orgIds = [profile.organization_id];
           if (childOrgs) {
             orgIds.push(...childOrgs.map(org => org.id));
           }
 
-          const { data, error} = await supabase
+          let query = supabase
             .from('drivers')
-            .select('*, organizations(name)')
+            .select('*, organizations(name)', { count: 'exact' })
             .in('organization_id', orgIds)
-            .order('surname');
+            .order('surname')
+            .range(from, to);
+
+          if (orgFilter !== 'all') {
+            query = query.eq('organization_id', orgFilter);
+          }
+
+          if (search.trim()) {
+            query = query.or(`first_name.ilike.%${search}%,surname.ilike.%${search}%,id_number.ilike.%${search}%,license_number.ilike.%${search}%`);
+          }
+
+          const { data, error, count } = await query;
 
           if (error) throw error;
           setDrivers(data || []);
+          setFilteredDrivers(data || []);
+          if (count !== null) setTotalCount(count);
         }
       }
     } catch (err: any) {
@@ -751,6 +783,43 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             </tbody>
           </table>
         </div>
+
+        {totalCount > pageSize && (
+          <div className="px-6 py-4 flex items-center justify-between border-t">
+            <div className="text-sm text-gray-700">
+              Showing <span className="font-medium">{((currentPage - 1) * pageSize) + 1}</span> to{' '}
+              <span className="font-medium">{Math.min(currentPage * pageSize, totalCount)}</span> of{' '}
+              <span className="font-medium">{totalCount}</span> drivers
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const newPage = Math.max(1, currentPage - 1);
+                  setCurrentPage(newPage);
+                  loadDrivers(newPage, searchTerm, selectedOrgId);
+                }}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Previous
+              </button>
+              <span className="px-4 py-2 text-sm text-gray-700">
+                Page {currentPage} of {Math.ceil(totalCount / pageSize)}
+              </span>
+              <button
+                onClick={() => {
+                  const newPage = Math.min(Math.ceil(totalCount / pageSize), currentPage + 1);
+                  setCurrentPage(newPage);
+                  loadDrivers(newPage, searchTerm, selectedOrgId);
+                }}
+                disabled={currentPage >= Math.ceil(totalCount / pageSize)}
+                className="px-4 py-2 border rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {showModal && (

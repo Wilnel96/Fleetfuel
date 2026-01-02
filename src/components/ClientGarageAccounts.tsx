@@ -15,7 +15,7 @@ interface GarageAccount {
   is_active: boolean;
   notes: string | null;
   account_number: string | null;
-  account_limit: number | null;
+  monthly_spend_limit: number | null;
 }
 
 interface ClientGarageAccountsProps {
@@ -51,7 +51,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           .order('name'),
         supabase
           .from('organization_garage_accounts')
-          .select('id, garage_id, is_active, notes, account_number, account_limit')
+          .select('id, garage_id, is_active, notes, account_number, monthly_spend_limit')
           .eq('organization_id', organizationId),
       ]);
 
@@ -104,7 +104,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
       setSaving(selectedGarageForAccount.id);
       setError('');
 
-      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+      const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
       const { error: insertError } = await supabase
         .from('organization_garage_accounts')
@@ -113,7 +113,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
           garage_id: selectedGarageForAccount.id,
           is_active: true,
           account_number: accountNumberInput.trim(),
-          account_limit: accountLimit,
+          monthly_spend_limit: monthlySpendLimit,
         });
 
       if (insertError) throw insertError;
@@ -150,7 +150,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
   const handleEditAccount = (account: GarageAccount) => {
     setEditingAccountId(account.id);
     setAccountNumberInput(account.account_number || '');
-    setAccountLimitInput(account.account_limit ? account.account_limit.toString() : '');
+    setAccountLimitInput(account.monthly_spend_limit ? account.monthly_spend_limit.toString() : '');
   };
 
   const handleSaveAccount = async (accountId: string) => {
@@ -158,13 +158,13 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
       setSaving(accountId);
       setError('');
 
-      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+      const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
       const { error: updateError } = await supabase
         .from('organization_garage_accounts')
         .update({
           account_number: accountNumberInput || null,
-          account_limit: accountLimit
+          monthly_spend_limit: monthlySpendLimit
         })
         .eq('id', accountId);
 
@@ -236,7 +236,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Limit (Optional)
+                  Monthly Spend Limit (Optional)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R</span>
@@ -251,7 +251,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Maximum amount {organizationName} can owe (leave empty for no limit)
+                  Maximum monthly spending for {organizationName} at this garage (resets each month)
                 </p>
               </div>
 
@@ -373,7 +373,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                                 />
                               </div>
                               <div className="flex items-center gap-2">
-                                <label className="text-xs font-medium text-gray-700 w-24">Account Limit:</label>
+                                <label className="text-xs font-medium text-gray-700 w-24">Monthly Spend Limit:</label>
                                 <div className="flex-1 relative">
                                   <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">R</span>
                                   <input
@@ -428,9 +428,9 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                                     )}
                                   </p>
                                   <p className="text-xs text-gray-600">
-                                    <span className="font-medium">Account Limit: </span>
-                                    {account.account_limit ? (
-                                      <span className="text-gray-900 font-semibold">R {account.account_limit.toFixed(2)}</span>
+                                    <span className="font-medium">Monthly Spend Limit: </span>
+                                    {account.monthly_spend_limit ? (
+                                      <span className="text-gray-900 font-semibold">R {account.monthly_spend_limit.toFixed(2)}</span>
                                     ) : (
                                       <span className="text-gray-500 italic">No limit set</span>
                                     )}
@@ -480,7 +480,7 @@ export default function ClientGarageAccounts({ organizationId, organizationName 
                               <p className="text-xs text-gray-500">
                                 {garage.city}, {garage.province}
                                 {account.account_number && ` • Account: ${account.account_number}`}
-                                {account.account_limit && ` • Limit: R${account.account_limit.toFixed(2)}`}
+                                {account.monthly_spend_limit && ` • Limit: R${account.monthly_spend_limit.toFixed(2)}`}
                               </p>
                             </div>
                           </div>

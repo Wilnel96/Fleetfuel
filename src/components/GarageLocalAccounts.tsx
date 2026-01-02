@@ -1,12 +1,37 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard } from 'lucide-react';
 
 interface Organization {
   id: string;
   name: string;
   vat_number: string | null;
   city: string | null;
+  province: string | null;
+  address_line1: string | null;
+  address_line2: string | null;
+  postal_code: string | null;
+  country: string | null;
+  phone_number: string | null;
+  company_registration_number: string | null;
+  monthly_spending_limit: number | null;
+  daily_spending_limit: number | null;
+  billing_contact_name: string | null;
+  billing_contact_surname: string | null;
+  billing_contact_email: string | null;
+  billing_contact_phone_mobile: string | null;
+  billing_contact_phone_office: string | null;
+}
+
+interface OrgUser {
+  id: string;
+  first_name: string | null;
+  surname: string | null;
+  email: string;
+  phone_mobile: string | null;
+  phone_office: string | null;
+  title: string | null;
+  is_main_user: boolean;
 }
 
 interface LocalAccount {
@@ -15,7 +40,7 @@ interface LocalAccount {
   is_active: boolean;
   notes: string | null;
   account_number: string | null;
-  account_limit: number | null;
+  monthly_spend_limit: number | null;
 }
 
 interface GarageLocalAccountsProps {
@@ -26,6 +51,7 @@ interface GarageLocalAccountsProps {
 export default function GarageLocalAccounts({ garageId, garageName }: GarageLocalAccountsProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
+  const [organizationUsers, setOrganizationUsers] = useState<Record<string, OrgUser[]>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -36,6 +62,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [notesInput, setNotesInput] = useState('');
+  const [viewingOrgId, setViewingOrgId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -49,11 +76,19 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       const [orgsResult, accountsResult] = await Promise.all([
         supabase
           .from('organizations')
-          .select('id, name, vat_number, city')
+          .select(`
+            id, name, vat_number, city, province,
+            address_line1, address_line2, postal_code, country,
+            phone_number, company_registration_number,
+            monthly_spending_limit, daily_spending_limit,
+            billing_contact_name, billing_contact_surname,
+            billing_contact_email, billing_contact_phone_mobile,
+            billing_contact_phone_office
+          `)
           .order('name'),
         supabase
           .from('organization_garage_accounts')
-          .select('id, organization_id, is_active, notes, account_number, account_limit')
+          .select('id, organization_id, is_active, notes, account_number, monthly_spend_limit')
           .eq('garage_id', garageId),
       ]);
 
@@ -62,6 +97,29 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
 
       setOrganizations(orgsResult.data || []);
       setLocalAccounts(accountsResult.data || []);
+
+      const activeOrgIds = (accountsResult.data || [])
+        .filter(a => a.is_active)
+        .map(a => a.organization_id);
+
+      if (activeOrgIds.length > 0) {
+        const usersResult = await supabase
+          .from('organization_users')
+          .select('id, organization_id, first_name, surname, email, phone_mobile, phone_office, title, is_main_user')
+          .in('organization_id', activeOrgIds)
+          .eq('is_active', true);
+
+        if (usersResult.data) {
+          const usersByOrg: Record<string, OrgUser[]> = {};
+          usersResult.data.forEach(user => {
+            if (!usersByOrg[user.organization_id]) {
+              usersByOrg[user.organization_id] = [];
+            }
+            usersByOrg[user.organization_id].push(user);
+          });
+          setOrganizationUsers(usersByOrg);
+        }
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -107,7 +165,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setSaving(selectedOrganization.id);
       setError('');
 
-      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+      const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
       const { error: insertError } = await supabase
         .from('organization_garage_accounts')
@@ -116,7 +174,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
           garage_id: garageId,
           is_active: true,
           account_number: accountNumberInput.trim(),
-          account_limit: accountLimit,
+          monthly_spend_limit: monthlySpendLimit,
           notes: notesInput.trim() || null,
         });
 
@@ -156,7 +214,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
   const handleEditAccount = (account: LocalAccount) => {
     setEditingAccountId(account.id);
     setAccountNumberInput(account.account_number || '');
-    setAccountLimitInput(account.account_limit ? account.account_limit.toString() : '');
+    setAccountLimitInput(account.monthly_spend_limit ? account.monthly_spend_limit.toString() : '');
   };
 
   const handleSaveAccount = async (accountId: string) => {
@@ -164,13 +222,13 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setSaving(accountId);
       setError('');
 
-      const accountLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+      const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
       const { error: updateError } = await supabase
         .from('organization_garage_accounts')
         .update({
           account_number: accountNumberInput || null,
-          account_limit: accountLimit
+          monthly_spend_limit: monthlySpendLimit
         })
         .eq('id', accountId);
 
@@ -215,8 +273,205 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
     );
   }
 
+  const viewingOrg = viewingOrgId ? organizations.find(o => o.id === viewingOrgId) : null;
+  const viewingOrgUsers = viewingOrgId ? organizationUsers[viewingOrgId] || [] : [];
+  const mainUser = viewingOrgUsers.find(u => u.is_main_user);
+  const billingContact = viewingOrg ? {
+    name: viewingOrg.billing_contact_name,
+    surname: viewingOrg.billing_contact_surname,
+    email: viewingOrg.billing_contact_email,
+    phone_mobile: viewingOrg.billing_contact_phone_mobile,
+    phone_office: viewingOrg.billing_contact_phone_office,
+  } : null;
+
   return (
     <>
+      {viewingOrg && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 my-8">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building2 className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{viewingOrg.name}</h3>
+                  <p className="text-sm text-gray-500">Client Organization Details</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingOrgId(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Company Information */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Company Information
+                </h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  {viewingOrg.company_registration_number && (
+                    <div>
+                      <span className="text-gray-600">Registration:</span>
+                      <span className="ml-2 font-medium text-gray-900">{viewingOrg.company_registration_number}</span>
+                    </div>
+                  )}
+                  {viewingOrg.vat_number && (
+                    <div>
+                      <span className="text-gray-600">VAT Number:</span>
+                      <span className="ml-2 font-medium text-gray-900">{viewingOrg.vat_number}</span>
+                    </div>
+                  )}
+                  {viewingOrg.phone_number && (
+                    <div className="col-span-2">
+                      <span className="text-gray-600">Phone:</span>
+                      <span className="ml-2 font-medium text-gray-900">{viewingOrg.phone_number}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Physical Address
+                </h4>
+                <div className="text-sm text-gray-900">
+                  {viewingOrg.address_line1 && <div>{viewingOrg.address_line1}</div>}
+                  {viewingOrg.address_line2 && <div>{viewingOrg.address_line2}</div>}
+                  {(viewingOrg.city || viewingOrg.province || viewingOrg.postal_code) && (
+                    <div>
+                      {[viewingOrg.city, viewingOrg.province, viewingOrg.postal_code].filter(Boolean).join(', ')}
+                    </div>
+                  )}
+                  {viewingOrg.country && <div>{viewingOrg.country}</div>}
+                  {!viewingOrg.address_line1 && !viewingOrg.city && (
+                    <div className="text-gray-500 italic">No address on file</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Spending Limits */}
+              {(viewingOrg.daily_spending_limit || viewingOrg.monthly_spending_limit) && (
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Organization Spending Limits
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {viewingOrg.daily_spending_limit && (
+                      <div>
+                        <span className="text-gray-600">Daily Limit:</span>
+                        <span className="ml-2 font-medium text-gray-900">R {viewingOrg.daily_spending_limit.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {viewingOrg.monthly_spending_limit && (
+                      <div>
+                        <span className="text-gray-600">Monthly Limit:</span>
+                        <span className="ml-2 font-medium text-gray-900">R {viewingOrg.monthly_spending_limit.toFixed(2)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Main User */}
+              {mainUser && (
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Main User / Account Owner
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-gray-600">Name:</span>
+                      <span className="ml-2 font-medium text-gray-900">
+                        {[mainUser.first_name, mainUser.surname].filter(Boolean).join(' ') || 'Not specified'}
+                      </span>
+                    </div>
+                    {mainUser.title && (
+                      <div>
+                        <span className="text-gray-600">Title:</span>
+                        <span className="ml-2 font-medium text-gray-900">{mainUser.title}</span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-gray-600">Email:</span>
+                      <span className="ml-2 font-medium text-gray-900">{mainUser.email}</span>
+                    </div>
+                    {mainUser.phone_mobile && (
+                      <div>
+                        <span className="text-gray-600">Mobile:</span>
+                        <span className="ml-2 font-medium text-gray-900">{mainUser.phone_mobile}</span>
+                      </div>
+                    )}
+                    {mainUser.phone_office && (
+                      <div>
+                        <span className="text-gray-600">Office:</span>
+                        <span className="ml-2 font-medium text-gray-900">{mainUser.phone_office}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Billing Contact */}
+              {billingContact && (billingContact.name || billingContact.email) && (
+                <div className="bg-amber-50 rounded-lg p-4">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Billing Contact Person
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    {(billingContact.name || billingContact.surname) && (
+                      <div>
+                        <span className="text-gray-600">Name:</span>
+                        <span className="ml-2 font-medium text-gray-900">
+                          {[billingContact.name, billingContact.surname].filter(Boolean).join(' ')}
+                        </span>
+                      </div>
+                    )}
+                    {billingContact.email && (
+                      <div>
+                        <span className="text-gray-600">Email:</span>
+                        <span className="ml-2 font-medium text-gray-900">{billingContact.email}</span>
+                      </div>
+                    )}
+                    {billingContact.phone_mobile && (
+                      <div>
+                        <span className="text-gray-600">Mobile:</span>
+                        <span className="ml-2 font-medium text-gray-900">{billingContact.phone_mobile}</span>
+                      </div>
+                    )}
+                    {billingContact.phone_office && (
+                      <div>
+                        <span className="text-gray-600">Office:</span>
+                        <span className="ml-2 font-medium text-gray-900">{billingContact.phone_office}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setViewingOrgId(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddModal && selectedOrganization && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
@@ -254,7 +509,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Limit (Optional)
+                  Monthly Spend Limit (Optional)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R</span>
@@ -269,7 +524,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Maximum amount the client can owe (leave empty for no limit)
+                  Maximum monthly spending for this client (resets each month)
                 </p>
               </div>
 
@@ -384,17 +639,29 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                         </div>
                         <div className="flex items-center gap-2">
                           {!isEditingAccount && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleAccountStatus(account, false);
-                              }}
-                              disabled={isSaving}
-                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg disabled:opacity-50 transition-colors"
-                            >
-                              <Ban className="w-3.5 h-3.5" />
-                              Deactivate
-                            </button>
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingOrgId(org.id);
+                                }}
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
+                              >
+                                <User className="w-3.5 h-3.5" />
+                                View Details
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleAccountStatus(account, false);
+                                }}
+                                disabled={isSaving}
+                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-100 hover:bg-red-200 rounded-lg disabled:opacity-50 transition-colors"
+                              >
+                                <Ban className="w-3.5 h-3.5" />
+                                Deactivate
+                              </button>
+                            </>
                           )}
                           {isSaving ? (
                             <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
@@ -419,7 +686,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                               />
                             </div>
                             <div className="flex items-center gap-2">
-                              <label className="text-xs font-medium text-gray-700 w-28">Account Limit:</label>
+                              <label className="text-xs font-medium text-gray-700 w-28">Monthly Spend Limit:</label>
                               <div className="flex-1 relative">
                                 <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">R</span>
                                 <input
@@ -474,9 +741,9 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                                   )}
                                 </p>
                                 <p className="text-xs text-gray-700">
-                                  <span className="font-medium">Account Limit: </span>
-                                  {account.account_limit ? (
-                                    <span className="text-gray-900 font-bold">R {account.account_limit.toFixed(2)}</span>
+                                  <span className="font-medium">Monthly Spend Limit: </span>
+                                  {account.monthly_spend_limit ? (
+                                    <span className="text-gray-900 font-bold">R {account.monthly_spend_limit.toFixed(2)}</span>
                                   ) : (
                                     <span className="text-gray-500 italic">No limit set</span>
                                   )}
@@ -532,7 +799,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                             <p className="text-xs text-gray-500">
                               {org.city || 'City not specified'}
                               {account.account_number && ` • Account: ${account.account_number}`}
-                              {account.account_limit && ` • Limit: R${account.account_limit.toFixed(2)}`}
+                              {account.monthly_spend_limit && ` • Limit: R${account.monthly_spend_limit.toFixed(2)}`}
                             </p>
                           </div>
                         </div>

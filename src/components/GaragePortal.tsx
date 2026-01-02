@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName, sortFuelTypes } from '../lib/fuelTypes';
 import { Store, LogOut, Save, MapPin, AlertCircle, X } from 'lucide-react';
 import GarageContactManagement from './GarageContactManagement';
+import GarageLocalAccounts from './GarageLocalAccounts';
 
 interface GaragePortalProps {
   garageId: string;
@@ -284,6 +285,11 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
           <GarageContactManagement
             contacts={contactPersons}
             onUpdate={setContactPersons}
+          />
+
+          <GarageLocalAccounts
+            garageId={garageId}
+            garageName={garageName}
           />
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">

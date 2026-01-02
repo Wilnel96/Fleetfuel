@@ -47,6 +47,8 @@ interface Garage {
   fuel_brand?: string;
   other_offerings?: OtherOfferings;
   created_at: string;
+  local_account_number?: string;
+  local_monthly_spend_limit?: number;
 }
 
 interface ClientGaragesViewProps {
@@ -158,7 +160,7 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
 
       const { data: garageAccounts, error: accountsError } = await supabase
         .from('organization_garage_accounts')
-        .select('garage_id')
+        .select('garage_id, account_number, monthly_spend_limit')
         .eq('organization_id', profile.organization_id)
         .eq('is_active', true);
 
@@ -180,8 +182,18 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
         .order('name');
 
       if (fetchError) throw fetchError;
-      setGarages(data || []);
-      setFilteredGarages(data || []);
+
+      const garagesWithAccountInfo = (data || []).map(garage => {
+        const accountInfo = garageAccounts?.find(acc => acc.garage_id === garage.id);
+        return {
+          ...garage,
+          local_account_number: accountInfo?.account_number,
+          local_monthly_spend_limit: accountInfo?.monthly_spend_limit,
+        };
+      });
+
+      setGarages(garagesWithAccountInfo);
+      setFilteredGarages(garagesWithAccountInfo);
     } catch (err: any) {
       console.error('Error loading garages:', err);
       setError(err.message);
@@ -251,6 +263,26 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
               </button>
             </div>
           </div>
+
+          {(selectedGarage.local_account_number || selectedGarage.local_monthly_spend_limit) && (
+            <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Local Account Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedGarage.local_account_number && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Account Number</label>
+                    <p className="text-gray-900 font-semibold mt-1">{selectedGarage.local_account_number}</p>
+                  </div>
+                )}
+                {selectedGarage.local_monthly_spend_limit && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Monthly Spend Limit</label>
+                    <p className="text-gray-900 font-semibold mt-1">R {selectedGarage.local_monthly_spend_limit.toFixed(2)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {selectedGarage.fuel_types && selectedGarage.fuel_types.length > 0 && (
             <div className="mb-6">
@@ -475,6 +507,18 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
                     </div>
                     <div>Contact: {garage.contact_persons?.[0] ? `${garage.contact_persons[0].name} ${garage.contact_persons[0].surname}` : garage.contact_person}</div>
                   </div>
+                  {garage.local_account_number && (
+                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-amber-100 border border-amber-300 rounded-lg">
+                      <span className="text-xs font-medium text-amber-900">
+                        Your Account: {garage.local_account_number}
+                      </span>
+                      {garage.local_monthly_spend_limit && (
+                        <span className="text-xs text-amber-700">
+                          • Limit: R{garage.local_monthly_spend_limit.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {garage.fuel_types && garage.fuel_types.length > 0 && (
                   <div className="flex-shrink-0 space-y-1.5 w-[200px] self-start">

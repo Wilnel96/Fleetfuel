@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Validate PIN format
-    if (!/^\\d{4}$/.test(pin)) {
+    if (!/^\d{4}$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: 'PIN must be exactly 4 digits' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Check for weak PINs
-    if (/^(\\d)\\1{3}$/.test(pin)) {
+    if (/^(\d)\1{3}$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: 'PIN cannot be all same digits' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -58,7 +58,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (/^(\\d{2})\\1$/.test(pin)) {
+    if (/^(\d{2})\1$/.test(pin)) {
       return new Response(
         JSON.stringify({ error: 'PIN cannot be repeating pattern' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

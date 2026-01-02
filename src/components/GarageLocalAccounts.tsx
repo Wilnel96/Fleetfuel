@@ -284,6 +284,15 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
     phone_office: viewingOrg.billing_contact_phone_office,
   } : null;
 
+  // Debug logging
+  if (viewingOrgId) {
+    console.log('Viewing Org ID:', viewingOrgId);
+    console.log('Organization Users:', organizationUsers);
+    console.log('Viewing Org Users:', viewingOrgUsers);
+    console.log('Main User:', mainUser);
+    console.log('Billing Contact:', billingContact);
+  }
+
   return (
     <>
       {viewingOrg && (
@@ -314,25 +323,34 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                   <Building2 className="w-4 h-4" />
                   Company Information
                 </h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  {viewingOrg.company_registration_number && (
-                    <div>
-                      <span className="text-gray-600">Registration:</span>
-                      <span className="ml-2 font-medium text-gray-900">{viewingOrg.company_registration_number}</span>
-                    </div>
-                  )}
-                  {viewingOrg.vat_number && (
-                    <div>
-                      <span className="text-gray-600">VAT Number:</span>
-                      <span className="ml-2 font-medium text-gray-900">{viewingOrg.vat_number}</span>
-                    </div>
-                  )}
-                  {viewingOrg.phone_number && (
-                    <div className="col-span-2">
-                      <span className="text-gray-600">Phone:</span>
-                      <span className="ml-2 font-medium text-gray-900">{viewingOrg.phone_number}</span>
-                    </div>
-                  )}
+                <div className="space-y-3">
+                  {/* Organization Name */}
+                  <div className="pb-3 border-b border-gray-200">
+                    <span className="text-gray-600 text-sm">Organization Name:</span>
+                    <div className="mt-1 font-semibold text-gray-900 text-lg">{viewingOrg.name}</div>
+                  </div>
+
+                  {/* Registration and VAT */}
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {viewingOrg.company_registration_number && (
+                      <div>
+                        <span className="text-gray-600">Registration:</span>
+                        <span className="ml-2 font-medium text-gray-900">{viewingOrg.company_registration_number}</span>
+                      </div>
+                    )}
+                    {viewingOrg.vat_number && (
+                      <div>
+                        <span className="text-gray-600">VAT Number:</span>
+                        <span className="ml-2 font-medium text-gray-900">{viewingOrg.vat_number}</span>
+                      </div>
+                    )}
+                    {viewingOrg.phone_number && (
+                      <div className="col-span-2">
+                        <span className="text-gray-600">Phone:</span>
+                        <span className="ml-2 font-medium text-gray-900">{viewingOrg.phone_number}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -382,93 +400,95 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
               )}
 
               {/* Contact Persons */}
-              {(mainUser || (billingContact && (billingContact.name || billingContact.email))) && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Contact Persons
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Main User */}
-                    {mainUser && (
-                      <div className="bg-white rounded-lg p-3 border border-blue-200">
-                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-100">
-                          <User className="w-3.5 h-3.5 text-blue-600" />
-                          <h5 className="text-xs font-semibold text-blue-900">Main User / Account Owner</h5>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Contact Persons
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Main User */}
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-100">
+                      <User className="w-3.5 h-3.5 text-blue-600" />
+                      <h5 className="text-xs font-semibold text-blue-900">Main User / Account Owner</h5>
+                    </div>
+                    {mainUser ? (
+                      <div className="space-y-2 text-sm">
+                        <div>
+                          <span className="text-gray-600">Name:</span>
+                          <span className="ml-2 font-medium text-gray-900">
+                            {[mainUser.first_name, mainUser.surname].filter(Boolean).join(' ') || 'Not specified'}
+                          </span>
                         </div>
-                        <div className="space-y-2 text-sm">
+                        {mainUser.title && (
+                          <div>
+                            <span className="text-gray-600">Title:</span>
+                            <span className="ml-2 font-medium text-gray-900">{mainUser.title}</span>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-gray-600">Email:</span>
+                          <span className="ml-2 font-medium text-gray-900">{mainUser.email}</span>
+                        </div>
+                        {mainUser.phone_mobile && (
+                          <div>
+                            <span className="text-gray-600">Mobile:</span>
+                            <span className="ml-2 font-medium text-gray-900">{mainUser.phone_mobile}</span>
+                          </div>
+                        )}
+                        {mainUser.phone_office && (
+                          <div>
+                            <span className="text-gray-600">Office:</span>
+                            <span className="ml-2 font-medium text-gray-900">{mainUser.phone_office}</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">No main user information on file</div>
+                    )}
+                  </div>
+
+                  {/* Billing Contact */}
+                  <div className="bg-white rounded-lg p-3 border border-amber-200">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-amber-100">
+                      <Mail className="w-3.5 h-3.5 text-amber-600" />
+                      <h5 className="text-xs font-semibold text-amber-900">Billing Contact Person</h5>
+                    </div>
+                    {billingContact && (billingContact.name || billingContact.email) ? (
+                      <div className="space-y-2 text-sm">
+                        {(billingContact.name || billingContact.surname) && (
                           <div>
                             <span className="text-gray-600">Name:</span>
                             <span className="ml-2 font-medium text-gray-900">
-                              {[mainUser.first_name, mainUser.surname].filter(Boolean).join(' ') || 'Not specified'}
+                              {[billingContact.name, billingContact.surname].filter(Boolean).join(' ')}
                             </span>
                           </div>
-                          {mainUser.title && (
-                            <div>
-                              <span className="text-gray-600">Title:</span>
-                              <span className="ml-2 font-medium text-gray-900">{mainUser.title}</span>
-                            </div>
-                          )}
+                        )}
+                        {billingContact.email && (
                           <div>
                             <span className="text-gray-600">Email:</span>
-                            <span className="ml-2 font-medium text-gray-900">{mainUser.email}</span>
+                            <span className="ml-2 font-medium text-gray-900">{billingContact.email}</span>
                           </div>
-                          {mainUser.phone_mobile && (
-                            <div>
-                              <span className="text-gray-600">Mobile:</span>
-                              <span className="ml-2 font-medium text-gray-900">{mainUser.phone_mobile}</span>
-                            </div>
-                          )}
-                          {mainUser.phone_office && (
-                            <div>
-                              <span className="text-gray-600">Office:</span>
-                              <span className="ml-2 font-medium text-gray-900">{mainUser.phone_office}</span>
-                            </div>
-                          )}
-                        </div>
+                        )}
+                        {billingContact.phone_mobile && (
+                          <div>
+                            <span className="text-gray-600">Mobile:</span>
+                            <span className="ml-2 font-medium text-gray-900">{billingContact.phone_mobile}</span>
+                          </div>
+                        )}
+                        {billingContact.phone_office && (
+                          <div>
+                            <span className="text-gray-600">Office:</span>
+                            <span className="ml-2 font-medium text-gray-900">{billingContact.phone_office}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    {/* Billing Contact */}
-                    {billingContact && (billingContact.name || billingContact.email) && (
-                      <div className="bg-white rounded-lg p-3 border border-amber-200">
-                        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-amber-100">
-                          <Mail className="w-3.5 h-3.5 text-amber-600" />
-                          <h5 className="text-xs font-semibold text-amber-900">Billing Contact Person</h5>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          {(billingContact.name || billingContact.surname) && (
-                            <div>
-                              <span className="text-gray-600">Name:</span>
-                              <span className="ml-2 font-medium text-gray-900">
-                                {[billingContact.name, billingContact.surname].filter(Boolean).join(' ')}
-                              </span>
-                            </div>
-                          )}
-                          {billingContact.email && (
-                            <div>
-                              <span className="text-gray-600">Email:</span>
-                              <span className="ml-2 font-medium text-gray-900">{billingContact.email}</span>
-                            </div>
-                          )}
-                          {billingContact.phone_mobile && (
-                            <div>
-                              <span className="text-gray-600">Mobile:</span>
-                              <span className="ml-2 font-medium text-gray-900">{billingContact.phone_mobile}</span>
-                            </div>
-                          )}
-                          {billingContact.phone_office && (
-                            <div>
-                              <span className="text-gray-600">Office:</span>
-                              <span className="ml-2 font-medium text-gray-900">{billingContact.phone_office}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">No billing contact information on file</div>
                     )}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end">

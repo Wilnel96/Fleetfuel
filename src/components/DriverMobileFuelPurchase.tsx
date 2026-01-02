@@ -1603,7 +1603,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           <p className="text-gray-600 mb-6">
             {isLocalAccount
               ? 'Fuel purchase authorized. Payment will be processed via your local account.'
-              : 'Fuel purchase authorized. Payment will be processed via daily EFT run.'
+              : 'Card details transferred. When Card transaction is processed select OK.'
             }
           </p>
 

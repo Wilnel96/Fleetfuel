@@ -843,13 +843,21 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
       // For local accounts, move to PIN entry step. For EFT, show success
       console.log('[FuelPurchase] ✅ Transaction created successfully!');
-      console.log('[FuelPurchase] Checking payment type. isLocalAccount:', isLocalAccount);
-      if (isLocalAccount) {
-        console.log('[FuelPurchase] 🔐 Moving to PIN entry step');
+      console.log('[FuelPurchase] ==========================================');
+      console.log('[FuelPurchase] PAYMENT DECISION LOGIC:');
+      console.log('[FuelPurchase] Current paymentOption state:', paymentOption);
+      console.log('[FuelPurchase] isLocalAccount:', isLocalAccount);
+      console.log('[FuelPurchase] Checking: paymentOption === "Card Payment"?', paymentOption === 'Card Payment');
+      console.log('[FuelPurchase] Checking: paymentOption === "Local Account"?', paymentOption === 'Local Account');
+      console.log('[FuelPurchase] ==========================================');
+
+      if (paymentOption === 'Card Payment' || paymentOption === 'Local Account') {
+        console.log('[FuelPurchase] ✅ CONDITION MET - Moving to PIN entry step for', paymentOption);
         setCurrentStep('pin_entry');
-        console.log('[FuelPurchase] Current step after setting:', 'pin_entry');
+        console.log('[FuelPurchase] Current step set to: pin_entry');
       } else {
-        console.log('[FuelPurchase] ✅ Transaction complete (EFT payment), showing success');
+        console.log('[FuelPurchase] ❌ CONDITION NOT MET - Defaulting to EFT success screen');
+        console.log('[FuelPurchase] paymentOption value is:', paymentOption, '(type:', typeof paymentOption, ')');
         setSuccess(true);
       }
       console.log('[FuelPurchase] About to exit completeFuelTransaction (before finally block)');
@@ -1006,7 +1014,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   }, [selectedGarageId, drawnVehicle, garages, currentStep]);
 
   // Debug: Log current render state
-  console.log('[FuelPurchase] 🎨 Rendering component. Current step:', currentStep, 'Loading:', loading, 'Success:', success);
+  console.log('[FuelPurchase] 🎨 Rendering component. Current step:', currentStep, 'Loading:', loading, 'Success:', success, 'Payment Option:', paymentOption);
 
   if (currentStep === 'location_confirmation') {
     const selectedGarage = garages.find(g => g.id === selectedGarageId);

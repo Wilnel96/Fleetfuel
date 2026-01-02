@@ -99,6 +99,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [garages, setGarages] = useState<Garage[]>([]);
   const [garageAccountNumber, setGarageAccountNumber] = useState<string>('');
   const [isLocalAccount, setIsLocalAccount] = useState(false);
+  const [paymentOption, setPaymentOption] = useState<'Card Payment' | 'Local Account' | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [nfcStatus, setNfcStatus] = useState<'idle' | 'writing' | 'success' | 'failed' | 'not_supported'>('idle');
   const [showAccountDetails, setShowAccountDetails] = useState(false);
@@ -436,6 +437,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             spent: garageMonthlySpending,
             available: availableMonthly
           });
+
+          // Set payment option to Local Account
+          setPaymentOption('Local Account');
+          setIsLocalAccount(true);
         }
       } else {
         // No garage limit - fall back to organization limits (EFT payment scenario)
@@ -456,6 +461,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           dailyLimit: organization.daily_spending_limit,
           monthlyLimit: organization.monthly_spending_limit
         });
+
+        // Set payment option to Card Payment (EFT scenario)
+        setPaymentOption('Card Payment');
+        setIsLocalAccount(false);
 
         // Check daily limit if set
         if (organization.daily_spending_limit) {

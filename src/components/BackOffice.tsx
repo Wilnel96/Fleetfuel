@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Building2, Users, DollarSign, CreditCard, TrendingUp, Fuel, FileText } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Building2, Users, DollarSign, CreditCard, TrendingUp, Fuel, FileText, Store } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import OrganizationManagement from './OrganizationManagement';
 import UserManagement from './UserManagement';
 import ManagementFinancialInfo from './ManagementFinancialInfo';
@@ -8,16 +9,52 @@ import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
 import { OrganizationPaymentCard } from './OrganizationPaymentCard';
+import ClientGarageAccounts from './ClientGarageAccounts';
 
 interface BackOfficeProps {
   userRole?: string;
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'payment-card';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'payment-card' | 'local-accounts';
 
 export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
+  const [organizationId, setOrganizationId] = useState<string>('');
+  const [organizationName, setOrganizationName] = useState<string>('');
+
+  useEffect(() => {
+    loadOrganizationInfo();
+  }, []);
+
+  const loadOrganizationInfo = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.organization_id) {
+        setOrganizationId(profile.organization_id);
+
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('name')
+          .eq('id', profile.organization_id)
+          .maybeSingle();
+
+        if (org?.name) {
+          setOrganizationName(org.name);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading organization info:', err);
+    }
+  };
 
   if (currentView === 'management-org-menu') {
     const managementOrgMenuItems = [
@@ -202,6 +239,26 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
     );
   }
 
+  if (currentView === 'local-accounts') {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setCurrentView('menu')}
+          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+        >
+          ← Back to Back Office
+        </button>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-2">Local Garage Accounts</h2>
+          <p className="text-gray-600 text-sm mb-6">Manage your local accounts with garages where you can refuel</p>
+          {organizationId && organizationName && (
+            <ClientGarageAccounts organizationId={organizationId} organizationName={organizationName} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const menuItems = [
     {
       id: 'management-org-menu',
@@ -217,6 +274,13 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: CreditCard,
       color: 'green',
     },
+    ...(userRole !== 'super_admin' ? [{
+      id: 'local-accounts',
+      title: 'Local Garage Accounts',
+      description: 'Manage local accounts with garages where you can refuel',
+      icon: Store,
+      color: 'amber',
+    }] : []),
     ...(userRole === 'super_admin' ? [{
       id: 'invoice-management',
       title: 'Invoice Management',

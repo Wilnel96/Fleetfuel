@@ -16,11 +16,6 @@ interface Organization {
   company_registration_number: string | null;
   monthly_spending_limit: number | null;
   daily_spending_limit: number | null;
-  billing_contact_name: string | null;
-  billing_contact_surname: string | null;
-  billing_contact_email: string | null;
-  billing_contact_phone_mobile: string | null;
-  billing_contact_phone_office: string | null;
 }
 
 interface OrgUser {
@@ -80,10 +75,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
             id, name, vat_number, city, province,
             address_line1, address_line2, postal_code, country,
             phone_number, company_registration_number,
-            monthly_spending_limit, daily_spending_limit,
-            billing_contact_name, billing_contact_surname,
-            billing_contact_email, billing_contact_phone_mobile,
-            billing_contact_phone_office
+            monthly_spending_limit, daily_spending_limit
           `)
           .order('name'),
         supabase
@@ -98,15 +90,13 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setOrganizations(orgsResult.data || []);
       setLocalAccounts(accountsResult.data || []);
 
-      const activeOrgIds = (accountsResult.data || [])
-        .filter(a => a.is_active)
-        .map(a => a.organization_id);
+      const allOrgIds = (orgsResult.data || []).map(o => o.id);
 
-      if (activeOrgIds.length > 0) {
+      if (allOrgIds.length > 0) {
         const usersResult = await supabase
           .from('organization_users')
           .select('id, organization_id, first_name, surname, email, phone_mobile, phone_office, title, is_main_user')
-          .in('organization_id', activeOrgIds)
+          .in('organization_id', allOrgIds)
           .eq('is_active', true);
 
         if (usersResult.data) {
@@ -276,13 +266,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
   const viewingOrg = viewingOrgId ? organizations.find(o => o.id === viewingOrgId) : null;
   const viewingOrgUsers = viewingOrgId ? organizationUsers[viewingOrgId] || [] : [];
   const mainUser = viewingOrgUsers.find(u => u.is_main_user);
-  const billingContact = viewingOrg ? {
-    name: viewingOrg.billing_contact_name,
-    surname: viewingOrg.billing_contact_surname,
-    email: viewingOrg.billing_contact_email,
-    phone_mobile: viewingOrg.billing_contact_phone_mobile,
-    phone_office: viewingOrg.billing_contact_phone_office,
-  } : null;
+  const billingUser = viewingOrgUsers.find(u => u.title === 'Billing User' || u.title === 'Billing Contact');
 
   return (
     <>
@@ -452,32 +436,34 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
                       <Mail className="w-3.5 h-3.5 text-amber-600" />
                       <h5 className="text-xs font-semibold text-amber-900">Billing Contact Person</h5>
                     </div>
-                    {billingContact && (billingContact.name || billingContact.email) ? (
+                    {billingUser ? (
                       <div className="space-y-2 text-sm">
-                        {(billingContact.name || billingContact.surname) && (
+                        <div>
+                          <span className="text-gray-600">Name:</span>
+                          <span className="ml-2 font-medium text-gray-900">
+                            {[billingUser.first_name, billingUser.surname].filter(Boolean).join(' ') || 'Not specified'}
+                          </span>
+                        </div>
+                        {billingUser.title && (
                           <div>
-                            <span className="text-gray-600">Name:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {[billingContact.name, billingContact.surname].filter(Boolean).join(' ')}
-                            </span>
+                            <span className="text-gray-600">Title:</span>
+                            <span className="ml-2 font-medium text-gray-900">{billingUser.title}</span>
                           </div>
                         )}
-                        {billingContact.email && (
-                          <div>
-                            <span className="text-gray-600">Email:</span>
-                            <span className="ml-2 font-medium text-gray-900">{billingContact.email}</span>
-                          </div>
-                        )}
-                        {billingContact.phone_mobile && (
+                        <div>
+                          <span className="text-gray-600">Email:</span>
+                          <span className="ml-2 font-medium text-gray-900">{billingUser.email}</span>
+                        </div>
+                        {billingUser.phone_mobile && (
                           <div>
                             <span className="text-gray-600">Mobile:</span>
-                            <span className="ml-2 font-medium text-gray-900">{billingContact.phone_mobile}</span>
+                            <span className="ml-2 font-medium text-gray-900">{billingUser.phone_mobile}</span>
                           </div>
                         )}
-                        {billingContact.phone_office && (
+                        {billingUser.phone_office && (
                           <div>
                             <span className="text-gray-600">Office:</span>
-                            <span className="ml-2 font-medium text-gray-900">{billingContact.phone_office}</span>
+                            <span className="ml-2 font-medium text-gray-900">{billingUser.phone_office}</span>
                           </div>
                         )}
                       </div>

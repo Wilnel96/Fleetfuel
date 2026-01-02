@@ -116,6 +116,30 @@ Deno.serve(async (req: Request) => {
 
     const transactionData: FuelTransactionRequest = await req.json();
 
+    // ===================================================================
+    // STEP 1: ACQUIRE ADVISORY LOCK TO PREVENT CONCURRENT TRANSACTIONS
+    // ===================================================================
+    const { data: lockAcquired } = await supabase
+      .rpc("acquire_transaction_lock", {
+        p_driver_id: driver.id,
+        p_vehicle_id: transactionData.vehicleId,
+      });
+
+    if (!lockAcquired) {
+      return new Response(
+        JSON.stringify({
+          error: "Another transaction is being processed for this vehicle. Please wait and try again."
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // ===================================================================
+    // STEP 2: VALIDATE VEHICLE
+    // ===================================================================
     const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
       .select("organization_id, tank_capacity")
@@ -135,6 +159,88 @@ Deno.serve(async (req: Request) => {
     if (vehicle.organization_id !== driver.organization_id) {
       return new Response(
         JSON.stringify({ error: "Vehicle does not belong to driver's organization" }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // ===================================================================
+    // STEP 3: CHECK SPENDING LIMITS
+    // ===================================================================
+    const totalTransactionAmount = transactionData.totalAmount + (transactionData.oilTotalAmount || 0);
+
+    // Check organization spending limits
+    const { data: orgLimitCheck } = await supabase
+      .rpc("check_organization_spending_limit", {
+        p_organization_id: driver.organization_id,
+        p_transaction_amount: totalTransactionAmount,
+      })
+      .single();
+
+    if (orgLimitCheck && !orgLimitCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: orgLimitCheck.reason,
+          details: {
+            dailyLimit: orgLimitCheck.daily_limit,
+            dailySpent: orgLimitCheck.daily_spent,
+            monthlyLimit: orgLimitCheck.monthly_limit,
+            monthlySpent: orgLimitCheck.monthly_spent,
+          }
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Check driver spending limits
+    const { data: driverLimitCheck } = await supabase
+      .rpc("check_driver_spending_limit", {
+        p_driver_id: driver.id,
+        p_transaction_amount: totalTransactionAmount,
+      })
+      .single();
+
+    if (driverLimitCheck && !driverLimitCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: driverLimitCheck.reason,
+          details: {
+            dailyLimit: driverLimitCheck.daily_limit,
+            dailySpent: driverLimitCheck.daily_spent,
+            monthlyLimit: driverLimitCheck.monthly_limit,
+            monthlySpent: driverLimitCheck.monthly_spent,
+          }
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Check garage account limits (for Local Account payment option)
+    const { data: garageLimitCheck } = await supabase
+      .rpc("check_garage_account_limit", {
+        p_organization_id: driver.organization_id,
+        p_garage_id: transactionData.garageId,
+        p_transaction_amount: totalTransactionAmount,
+      })
+      .single();
+
+    if (garageLimitCheck && !garageLimitCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: garageLimitCheck.reason,
+          details: {
+            monthlyLimit: garageLimitCheck.monthly_limit,
+            monthlySpent: garageLimitCheck.monthly_spent,
+          }
+        }),
         {
           status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

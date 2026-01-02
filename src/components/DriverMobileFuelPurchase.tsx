@@ -381,29 +381,21 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         return;
       }
 
-      // Get organization spending limits
-      const { data: organization, error: orgError } = await supabase
-        .from('organizations')
-        .select('daily_spending_limit, monthly_spending_limit')
-        .eq('id', drawnVehicle.organization_id)
-        .single();
+      // Check if garage has set a specific monthly limit for this organization (garage credit risk)
+      const { data: garageAccount, error: garageAccountError } = await supabase
+        .from('organization_garage_accounts')
+        .select('monthly_spend_limit')
+        .eq('organization_id', drawnVehicle.organization_id)
+        .eq('garage_id', selectedGarage.id)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (orgError) {
-        console.error('Error fetching organization:', orgError);
-        setError('Failed to check spending limits.');
-        setCurrentStep('garage_selection');
-        return;
+      if (garageAccountError) {
+        console.error('Error fetching garage account:', garageAccountError);
       }
 
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;
       const tankCapacity = parseFloat(drawnVehicle.tank_capacity?.toString() || '0');
-
-      console.log('Spending check:', {
-        tankCapacity,
-        fuelPrice,
-        dailyLimit: organization.daily_spending_limit,
-        monthlyLimit: organization.monthly_spending_limit
-      });
 
       let mostRestrictiveLimit: {
         type: 'daily' | 'monthly';
@@ -412,58 +404,112 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         availableAmount: number;
       } | null = null;
 
-      // Check daily limit if set
-      if (organization.daily_spending_limit) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const { data: dailyTransactions, error: dailyError } = await supabase
-          .from('fuel_transactions')
-          .select('total_amount')
-          .eq('organization_id', drawnVehicle.organization_id)
-          .gte('created_at', today.toISOString());
-
-        if (dailyError) {
-          console.error('Error fetching daily transactions:', dailyError);
-        } else {
-          const dailySpending = dailyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
-          const availableDaily = organization.daily_spending_limit - dailySpending;
-
-          mostRestrictiveLimit = {
-            type: 'daily',
-            limit: organization.daily_spending_limit,
-            currentSpending: dailySpending,
-            availableAmount: availableDaily
-          };
-        }
-      }
-
-      // Check monthly limit if set
-      if (organization.monthly_spending_limit) {
+      // If garage has set a limit, use that (garage takes credit risk and overrides all other limits)
+      if (garageAccount?.monthly_spend_limit) {
         const firstDayOfMonth = new Date();
         firstDayOfMonth.setDate(1);
         firstDayOfMonth.setHours(0, 0, 0, 0);
 
-        const { data: monthlyTransactions, error: monthlyError } = await supabase
+        const { data: garageMonthlyTransactions, error: garageMonthlyError } = await supabase
           .from('fuel_transactions')
           .select('total_amount')
           .eq('organization_id', drawnVehicle.organization_id)
+          .eq('garage_id', selectedGarage.id)
           .gte('created_at', firstDayOfMonth.toISOString());
 
-        if (monthlyError) {
-          console.error('Error fetching monthly transactions:', monthlyError);
+        if (garageMonthlyError) {
+          console.error('Error fetching garage monthly transactions:', garageMonthlyError);
         } else {
-          const monthlySpending = monthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
-          const availableMonthly = organization.monthly_spending_limit - monthlySpending;
+          const garageMonthlySpending = garageMonthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableMonthly = garageAccount.monthly_spend_limit - garageMonthlySpending;
 
-          // Use the most restrictive limit
-          if (!mostRestrictiveLimit || availableMonthly < mostRestrictiveLimit.availableAmount) {
+          mostRestrictiveLimit = {
+            type: 'monthly',
+            limit: garageAccount.monthly_spend_limit,
+            currentSpending: garageMonthlySpending,
+            availableAmount: availableMonthly
+          };
+
+          console.log('Using garage-specific limit:', {
+            garage: selectedGarage.name,
+            limit: garageAccount.monthly_spend_limit,
+            spent: garageMonthlySpending,
+            available: availableMonthly
+          });
+        }
+      } else {
+        // No garage limit - fall back to organization limits (EFT payment scenario)
+        const { data: organization, error: orgError } = await supabase
+          .from('organizations')
+          .select('daily_spending_limit, monthly_spending_limit')
+          .eq('id', drawnVehicle.organization_id)
+          .single();
+
+        if (orgError) {
+          console.error('Error fetching organization:', orgError);
+          setError('Failed to check spending limits.');
+          setCurrentStep('garage_selection');
+          return;
+        }
+
+        console.log('Using organization limits (no garage limit set):', {
+          dailyLimit: organization.daily_spending_limit,
+          monthlyLimit: organization.monthly_spending_limit
+        });
+
+        // Check daily limit if set
+        if (organization.daily_spending_limit) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          const { data: dailyTransactions, error: dailyError } = await supabase
+            .from('fuel_transactions')
+            .select('total_amount')
+            .eq('organization_id', drawnVehicle.organization_id)
+            .gte('created_at', today.toISOString());
+
+          if (dailyError) {
+            console.error('Error fetching daily transactions:', dailyError);
+          } else {
+            const dailySpending = dailyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+            const availableDaily = organization.daily_spending_limit - dailySpending;
+
             mostRestrictiveLimit = {
-              type: 'monthly',
-              limit: organization.monthly_spending_limit,
-              currentSpending: monthlySpending,
-              availableAmount: availableMonthly
+              type: 'daily',
+              limit: organization.daily_spending_limit,
+              currentSpending: dailySpending,
+              availableAmount: availableDaily
             };
+          }
+        }
+
+        // Check monthly limit if set
+        if (organization.monthly_spending_limit) {
+          const firstDayOfMonth = new Date();
+          firstDayOfMonth.setDate(1);
+          firstDayOfMonth.setHours(0, 0, 0, 0);
+
+          const { data: monthlyTransactions, error: monthlyError } = await supabase
+            .from('fuel_transactions')
+            .select('total_amount')
+            .eq('organization_id', drawnVehicle.organization_id)
+            .gte('created_at', firstDayOfMonth.toISOString());
+
+          if (monthlyError) {
+            console.error('Error fetching monthly transactions:', monthlyError);
+          } else {
+            const monthlySpending = monthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+            const availableMonthly = organization.monthly_spending_limit - monthlySpending;
+
+            // Use the most restrictive limit
+            if (!mostRestrictiveLimit || availableMonthly < mostRestrictiveLimit.availableAmount) {
+              mostRestrictiveLimit = {
+                type: 'monthly',
+                limit: organization.monthly_spending_limit,
+                currentSpending: monthlySpending,
+                availableAmount: availableMonthly
+              };
+            }
           }
         }
       }

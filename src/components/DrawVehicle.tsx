@@ -23,7 +23,7 @@ interface DrawVehicleProps {
 }
 
 export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVehicleProps) {
-  const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch' | 'confirm-license-warning' | 'confirm-prdp-warning'>('scan');
+  const [step, setStep] = useState<'scan' | 'enter-odometer' | 'confirm-mismatch' | 'confirm-license-warning' | 'confirm-prdp-warning' | 'confirm-unreturned-vehicle'>('scan');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
@@ -41,6 +41,8 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const [driverLicenseCode, setDriverLicenseCode] = useState<string>('');
   const [driverPrdpCategories, setDriverPrdpCategories] = useState<string[]>([]);
   const [missingPrdpCategories, setMissingPrdpCategories] = useState<string[]>([]);
+  const [unreturnedVehicleWarning, setUnreturnedVehicleWarning] = useState(false);
+  const [previousDriverInfo, setPreviousDriverInfo] = useState<{ name: string; daysUnreturned: number; lastDrawDate: string } | null>(null);
 
   useEffect(() => {
     loadVehicles();
@@ -116,6 +118,19 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     }
 
     setSelectedVehicle(vehicle);
+
+    // Check if vehicle was not returned by another driver
+    const unreturnedCheck = await checkUnreturnedByOtherDriver(vehicle.id);
+    if (unreturnedCheck?.hasUnreturnedDraw) {
+      setPreviousDriverInfo({
+        name: unreturnedCheck.driverName,
+        daysUnreturned: unreturnedCheck.daysUnreturned,
+        lastDrawDate: unreturnedCheck.lastDrawDate
+      });
+      setUnreturnedVehicleWarning(true);
+      setStep('confirm-unreturned-vehicle');
+      return;
+    }
 
     // Check if driver's license qualifies for this vehicle
     const isQualified = await checkDriverLicenseQualifies(driverId, vehicle);
@@ -193,6 +208,54 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       .maybeSingle();
 
     return !returnTransaction;
+  };
+
+  const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
+    // Get the most recent draw transaction for this vehicle
+    const { data: lastDraw } = await supabase
+      .from('vehicle_transactions')
+      .select('id, driver_id, created_at')
+      .eq('vehicle_id', vehicleId)
+      .eq('transaction_type', 'draw')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!lastDraw) return null;
+
+    // Check if this draw has been returned
+    const { data: returnTransaction } = await supabase
+      .from('vehicle_transactions')
+      .select('id')
+      .eq('related_transaction_id', lastDraw.id)
+      .eq('transaction_type', 'return')
+      .maybeSingle();
+
+    // If there's a return transaction, the vehicle was returned
+    if (returnTransaction) return null;
+
+    // Vehicle has not been returned, get the driver's name
+    const { data: driver } = await supabase
+      .from('drivers')
+      .select('first_name, surname')
+      .eq('id', lastDraw.driver_id)
+      .maybeSingle();
+
+    if (!driver) return null;
+
+    // Calculate days unreturned
+    const drawDate = new Date(lastDraw.created_at);
+    const today = new Date();
+    const daysUnreturned = Math.floor((today.getTime() - drawDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      hasUnreturnedDraw: true,
+      driverName: `${driver.first_name} ${driver.surname}`,
+      daysUnreturned,
+      lastDrawDate: drawDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      previousDriverId: lastDraw.driver_id,
+      drawTransactionId: lastDraw.id
+    };
   };
 
   const checkDriverLicenseQualifies = async (driverId: string, vehicle: Vehicle): Promise<boolean> => {
@@ -302,11 +365,11 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       setOdometerMismatch(true);
       setStep('confirm-mismatch');
     } else {
-      handleSubmit(false, licenseWarning, prdpWarning);
+      handleSubmit(false, licenseWarning, prdpWarning, unreturnedVehicleWarning);
     }
   };
 
-  const handleSubmit = async (logOdometerException: boolean, logLicenseException: boolean = false, logPrdpException: boolean = false) => {
+  const handleSubmit = async (logOdometerException: boolean, logLicenseException: boolean = false, logPrdpException: boolean = false, logUnreturnedException: boolean = false) => {
     if (!odometerReading || !selectedVehicle) return;
 
     console.log('handleSubmit called with:', {
@@ -361,7 +424,6 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
             expected_value: expectedOdometer.toString(),
             actual_value: odometerReading,
             transaction_id: transaction.id,
-            transaction_type: 'vehicle_draw',
             resolved: false,
           });
 
@@ -394,7 +456,6 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
             expected_value: requiredLicense,
             actual_value: driverLicenseCode,
             transaction_id: transaction.id,
-            transaction_type: 'vehicle_draw',
             resolved: false,
           });
 
@@ -429,7 +490,6 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
             expected_value: requiredCategories.join(', '),
             actual_value: driverCategories,
             transaction_id: transaction.id,
-            transaction_type: 'vehicle_draw',
             resolved: false,
           });
 
@@ -438,6 +498,38 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
           setError(`Warning: Vehicle drawn but PrDP exception logging failed: ${exceptionError.message}`);
         } else {
           console.log('PrDP exception logged successfully');
+        }
+      }
+
+      if (logUnreturnedException && previousDriverInfo) {
+        console.log('Attempting to log unreturned vehicle exception:', {
+          driver_id: driverId,
+          vehicle_id: selectedVehicle.id,
+          organization_id: organizationId,
+          previous_driver: previousDriverInfo.name,
+          days_unreturned: previousDriverInfo.daysUnreturned,
+          last_draw_date: previousDriverInfo.lastDrawDate
+        });
+
+        const { error: exceptionError } = await supabase
+          .from('vehicle_exceptions')
+          .insert({
+            vehicle_id: selectedVehicle.id,
+            driver_id: driverId,
+            organization_id: organizationId,
+            exception_type: 'not_returned_by_previous_driver',
+            description: `Vehicle was drawn by ${previousDriverInfo.name} on ${previousDriverInfo.lastDrawDate} (${previousDriverInfo.daysUnreturned} days ago) and was never returned. New driver proceeded to draw the vehicle anyway.`,
+            expected_value: 'Vehicle should be returned before next draw',
+            actual_value: `Vehicle drawn without return by ${previousDriverInfo.name}`,
+            transaction_id: transaction.id,
+            resolved: false,
+          });
+
+        if (exceptionError) {
+          console.error('FAILED to log unreturned vehicle exception:', exceptionError);
+          setError(`Warning: Vehicle drawn but unreturned exception logging failed: ${exceptionError.message}`);
+        } else {
+          console.log('Unreturned vehicle exception logged successfully');
         }
       }
 
@@ -459,6 +551,8 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setLicenseWarning(false);
     setPrdpWarning(false);
     setMissingPrdpCategories([]);
+    setUnreturnedVehicleWarning(false);
+    setPreviousDriverInfo(null);
     setSuccess(false);
     setError('');
     onBack();
@@ -564,6 +658,19 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
               {selectedVehicle && (
                 <button
                   onClick={async () => {
+                    // Check if vehicle was not returned by another driver
+                    const unreturnedCheck = await checkUnreturnedByOtherDriver(selectedVehicle.id);
+                    if (unreturnedCheck?.hasUnreturnedDraw) {
+                      setPreviousDriverInfo({
+                        name: unreturnedCheck.driverName,
+                        daysUnreturned: unreturnedCheck.daysUnreturned,
+                        lastDrawDate: unreturnedCheck.lastDrawDate
+                      });
+                      setUnreturnedVehicleWarning(true);
+                      setStep('confirm-unreturned-vehicle');
+                      return;
+                    }
+
                     const isQualified = await checkDriverLicenseQualifies(driverId, selectedVehicle);
                     if (!isQualified) {
                       setLicenseWarning(true);
@@ -735,7 +842,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
             <div className="space-y-3">
               <button
-                onClick={() => handleSubmit(true, licenseWarning, prdpWarning)}
+                onClick={() => handleSubmit(true, licenseWarning, prdpWarning, unreturnedVehicleWarning)}
                 disabled={loading}
                 className="w-full bg-red-600 text-white py-4 rounded-lg font-semibold hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
@@ -922,6 +1029,101 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                   setIsFirstDraw(false);
                   setPrdpWarning(false);
                   setMissingPrdpCategories([]);
+                }}
+                className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Select Different Vehicle
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 'confirm-unreturned-vehicle' && previousDriverInfo && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-red-900 mb-4">Vehicle Not Returned Warning</h2>
+
+            <div className="bg-red-50 rounded-lg p-4 mb-6">
+              <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-3" />
+              <p className="text-sm font-medium text-red-900 text-center mb-4">
+                This vehicle was drawn by another driver and has not been returned.
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-red-700">Previous Driver:</span>
+                  <span className="text-lg font-bold text-red-900">{previousDriverInfo.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-red-700">Last Drawn:</span>
+                  <span className="text-lg font-bold text-red-900">{previousDriverInfo.lastDrawDate}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-red-700">Days Unreturned:</span>
+                  <span className="text-lg font-bold text-red-900">{previousDriverInfo.daysUnreturned}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-red-200">
+                <p className="text-sm text-red-900 font-medium">Vehicle Details:</p>
+                <p className="text-base font-bold text-red-900">{selectedVehicle?.registration_number}</p>
+                <p className="text-sm text-red-700">{selectedVehicle?.make} {selectedVehicle?.model}</p>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+              <p className="text-sm font-medium text-amber-900 mb-2">Important Information:</p>
+              <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside">
+                <li>The vehicle may have unauthorized use or damage</li>
+                <li>Previous driver may still be using the vehicle</li>
+                <li>The previous driver should be contacted about the unreturned vehicle</li>
+                <li>This exception will be logged and reported to management</li>
+              </ul>
+            </div>
+
+            <p className="text-sm text-gray-700 mb-6">
+              If you choose to proceed, an exception report will be logged for immediate investigation by your organization.
+              It is recommended that you verify the vehicle's current status before proceeding.
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  // Check driver's license qualification
+                  const isQualified = await checkDriverLicenseQualifies(driverId, selectedVehicle!);
+                  if (!isQualified) {
+                    setLicenseWarning(true);
+                    setStep('confirm-license-warning');
+                    return;
+                  }
+
+                  setLicenseWarning(false);
+
+                  // Check driver's PrDP qualification
+                  const hasPrdp = checkDriverPrdpQualifies(selectedVehicle!);
+                  if (!hasPrdp) {
+                    setPrdpWarning(true);
+                    setStep('confirm-prdp-warning');
+                    return;
+                  }
+
+                  setPrdpWarning(false);
+                  await loadExpectedOdometer(selectedVehicle!.id);
+                  setStep('enter-odometer');
+                }}
+                className="w-full bg-amber-600 text-white py-4 rounded-lg font-semibold hover:bg-amber-700 transition-colors"
+              >
+                I Understand, Continue Anyway
+              </button>
+
+              <button
+                onClick={() => {
+                  setStep('scan');
+                  setSelectedVehicle(null);
+                  setOdometerReading('');
+                  setExpectedOdometer(null);
+                  setIsFirstDraw(false);
+                  setUnreturnedVehicleWarning(false);
+                  setPreviousDriverInfo(null);
                 }}
                 className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
               >

@@ -382,10 +382,31 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         return;
       }
 
-      // Check if garage has set a specific monthly limit for this organization (garage credit risk)
+      // First, get organization details including payment option
+      const { data: organization, error: orgError } = await supabase
+        .from('organizations')
+        .select('payment_option, daily_spending_limit, monthly_spending_limit')
+        .eq('id', drawnVehicle.organization_id)
+        .single();
+
+      if (orgError) {
+        console.error('Error fetching organization:', orgError);
+        setError('Failed to check organization details.');
+        setCurrentStep('garage_selection');
+        return;
+      }
+
+      // Set payment option based on organization setting (not garage limits!)
+      const orgPaymentOption = organization.payment_option || 'Card Payment';
+      setPaymentOption(orgPaymentOption);
+      setIsLocalAccount(orgPaymentOption === 'Local Account');
+
+      console.log('[FuelPurchase] Organization payment option:', orgPaymentOption);
+
+      // Check if this garage has a local account for this organization
       const { data: garageAccount, error: garageAccountError } = await supabase
         .from('organization_garage_accounts')
-        .select('monthly_spend_limit')
+        .select('monthly_spend_limit, account_number')
         .eq('organization_id', drawnVehicle.organization_id)
         .eq('garage_id', selectedGarage.id)
         .eq('is_active', true)
@@ -393,6 +414,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
       if (garageAccountError) {
         console.error('Error fetching garage account:', garageAccountError);
+      }
+
+      // If local account payment but no garage account exists, show error
+      if (orgPaymentOption === 'Local Account' && !garageAccount) {
+        setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
+        setCurrentStep('garage_selection');
+        return;
       }
 
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;
@@ -405,7 +433,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         availableAmount: number;
       } | null = null;
 
-      // If garage has set a limit, use that (garage takes credit risk and overrides all other limits)
+      // Check garage-specific spending limit (if set, this overrides organization limits)
       if (garageAccount?.monthly_spend_limit) {
         const firstDayOfMonth = new Date();
         firstDayOfMonth.setDate(1);
@@ -437,89 +465,71 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             spent: garageMonthlySpending,
             available: availableMonthly
           });
-
-          // Set payment option to Local Account
-          setPaymentOption('Local Account');
-          setIsLocalAccount(true);
         }
-      } else {
-        // No garage limit - fall back to organization limits (EFT payment scenario)
-        const { data: organization, error: orgError } = await supabase
-          .from('organizations')
-          .select('daily_spending_limit, monthly_spending_limit')
-          .eq('id', drawnVehicle.organization_id)
-          .single();
+      }
 
-        if (orgError) {
-          console.error('Error fetching organization:', orgError);
-          setError('Failed to check spending limits.');
-          setCurrentStep('garage_selection');
-          return;
+      // Check organization daily limit (if no garage limit or as additional check)
+      if (organization.daily_spending_limit && !mostRestrictiveLimit) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const { data: dailyTransactions, error: dailyError } = await supabase
+          .from('fuel_transactions')
+          .select('total_amount')
+          .eq('organization_id', drawnVehicle.organization_id)
+          .gte('created_at', today.toISOString());
+
+        if (dailyError) {
+          console.error('Error fetching daily transactions:', dailyError);
+        } else {
+          const dailySpending = dailyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableDaily = organization.daily_spending_limit - dailySpending;
+
+          mostRestrictiveLimit = {
+            type: 'daily',
+            limit: organization.daily_spending_limit,
+            currentSpending: dailySpending,
+            availableAmount: availableDaily
+          };
+
+          console.log('Using organization daily limit:', {
+            limit: organization.daily_spending_limit,
+            spent: dailySpending,
+            available: availableDaily
+          });
         }
+      }
 
-        console.log('Using organization limits (no garage limit set):', {
-          dailyLimit: organization.daily_spending_limit,
-          monthlyLimit: organization.monthly_spending_limit
-        });
+      // Check organization monthly limit (if no garage limit or as additional check)
+      if (organization.monthly_spending_limit && !mostRestrictiveLimit) {
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
 
-        // Set payment option to Card Payment (EFT scenario)
-        setPaymentOption('Card Payment');
-        setIsLocalAccount(false);
+        const { data: monthlyTransactions, error: monthlyError } = await supabase
+          .from('fuel_transactions')
+          .select('total_amount')
+          .eq('organization_id', drawnVehicle.organization_id)
+          .gte('created_at', firstDayOfMonth.toISOString());
 
-        // Check daily limit if set
-        if (organization.daily_spending_limit) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
+        if (monthlyError) {
+          console.error('Error fetching monthly transactions:', monthlyError);
+        } else {
+          const monthlySpending = monthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableMonthly = organization.monthly_spending_limit - monthlySpending;
 
-          const { data: dailyTransactions, error: dailyError } = await supabase
-            .from('fuel_transactions')
-            .select('total_amount')
-            .eq('organization_id', drawnVehicle.organization_id)
-            .gte('created_at', today.toISOString());
+          mostRestrictiveLimit = {
+            type: 'monthly',
+            limit: organization.monthly_spending_limit,
+            currentSpending: monthlySpending,
+            availableAmount: availableMonthly
+          };
 
-          if (dailyError) {
-            console.error('Error fetching daily transactions:', dailyError);
-          } else {
-            const dailySpending = dailyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
-            const availableDaily = organization.daily_spending_limit - dailySpending;
-
-            mostRestrictiveLimit = {
-              type: 'daily',
-              limit: organization.daily_spending_limit,
-              currentSpending: dailySpending,
-              availableAmount: availableDaily
-            };
-          }
-        }
-
-        // Check monthly limit if set
-        if (organization.monthly_spending_limit) {
-          const firstDayOfMonth = new Date();
-          firstDayOfMonth.setDate(1);
-          firstDayOfMonth.setHours(0, 0, 0, 0);
-
-          const { data: monthlyTransactions, error: monthlyError } = await supabase
-            .from('fuel_transactions')
-            .select('total_amount')
-            .eq('organization_id', drawnVehicle.organization_id)
-            .gte('created_at', firstDayOfMonth.toISOString());
-
-          if (monthlyError) {
-            console.error('Error fetching monthly transactions:', monthlyError);
-          } else {
-            const monthlySpending = monthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
-            const availableMonthly = organization.monthly_spending_limit - monthlySpending;
-
-            // Use the most restrictive limit
-            if (!mostRestrictiveLimit || availableMonthly < mostRestrictiveLimit.availableAmount) {
-              mostRestrictiveLimit = {
-                type: 'monthly',
-                limit: organization.monthly_spending_limit,
-                currentSpending: monthlySpending,
-                availableAmount: availableMonthly
-              };
-            }
-          }
+          console.log('Using organization monthly limit:', {
+            limit: organization.monthly_spending_limit,
+            spent: monthlySpending,
+            available: availableMonthly
+          });
         }
       }
 
@@ -850,26 +860,21 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       );
       setFuelEfficiency(efficiency);
 
-      // For local accounts, move to PIN entry step. For EFT, show success
+      // For local accounts, move to PIN entry step. For EFT batch, show success
       console.log('[FuelPurchase] ✅ Transaction created successfully!');
       console.log('[FuelPurchase] ==========================================');
       console.log('[FuelPurchase] PAYMENT DECISION LOGIC:');
       console.log('[FuelPurchase] Current paymentOption state:', paymentOption);
       console.log('[FuelPurchase] isLocalAccount:', isLocalAccount);
-      console.log('[FuelPurchase] Checking: paymentOption === "Card Payment"?', paymentOption === 'Card Payment');
-      console.log('[FuelPurchase] Checking: paymentOption === "Local Account"?', paymentOption === 'Local Account');
       console.log('[FuelPurchase] ==========================================');
 
-      if (paymentOption === 'Card Payment' || paymentOption === 'Local Account') {
-        console.log('[FuelPurchase] ✅ CONDITION MET - Moving to PIN entry step for', paymentOption);
+      if (paymentOption === 'Local Account') {
+        console.log('[FuelPurchase] ✅ Local Account - Moving to PIN entry step');
         setCurrentStep('pin_entry');
-        console.log('[FuelPurchase] Current step set to: pin_entry');
       } else {
-        console.log('[FuelPurchase] ❌ CONDITION NOT MET - Defaulting to EFT success screen');
-        console.log('[FuelPurchase] paymentOption value is:', paymentOption, '(type:', typeof paymentOption, ')');
+        console.log('[FuelPurchase] ✅ EFT Batch Payment - Transaction complete');
         setSuccess(true);
       }
-      console.log('[FuelPurchase] About to exit completeFuelTransaction (before finally block)');
     } catch (err: any) {
       console.error('[FuelPurchase] ❌❌❌ CRITICAL ERROR ❌❌❌');
       console.error('[FuelPurchase] Error in completeFuelTransaction:', err);

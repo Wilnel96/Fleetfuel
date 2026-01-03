@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Edit2, Trash2, Search, AlertCircle, CheckCircle, X, Scan, RotateCcw, ArrowLeft, DollarSign } from 'lucide-react';
+import { Users, Plus, Edit2, Trash2, Search, AlertCircle, CheckCircle, X, Scan, RotateCcw, ArrowLeft, TrendingUp, Calendar, Lock, Unlock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import LicenseScanner, { ParsedLicenseData } from './LicenseScanner';
-import { DriverPaymentSettings } from './DriverPaymentSettings';
 
 interface Driver {
   id: string;
@@ -70,6 +69,25 @@ interface Organization {
   name: string;
 }
 
+interface PaymentSettings {
+  id: string;
+  driver_id: string;
+  daily_spending_limit: number;
+  monthly_spending_limit: number;
+  payment_enabled: boolean;
+  is_pin_active: boolean;
+  failed_pin_attempts: number;
+  locked_until: string | null;
+  last_payment_at: string | null;
+}
+
+interface SpendingData {
+  daily_spent: number;
+  monthly_spent: number;
+  daily_limit: number;
+  monthly_limit: number;
+}
+
 interface DriverManagementProps {
   onNavigate?: (view: string | null) => void;
 }
@@ -90,11 +108,14 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const [showScanner, setShowScanner] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
   const [idDobMismatch, setIdDobMismatch] = useState<string>('');
-  const [selectedDriverForPayment, setSelectedDriverForPayment] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize] = useState(50);
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
+  const [spendingData, setSpendingData] = useState<SpendingData | null>(null);
+  const [loadingPaymentData, setLoadingPaymentData] = useState(false);
+  const [savingPaymentSettings, setSavingPaymentSettings] = useState(false);
 
   const [formData, setFormData] = useState<DriverFormData>({
     first_name: '',
@@ -122,6 +143,12 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     medical_certificate_on_file: false,
     status: 'active',
     organization_id: '',
+  });
+
+  const [paymentFormData, setPaymentFormData] = useState({
+    dailyLimit: 5000,
+    monthlyLimit: 50000,
+    paymentEnabled: true,
   });
 
   useEffect(() => {
@@ -288,6 +315,40 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     }
   };
 
+  const loadPaymentData = async (driverId: string) => {
+    try {
+      setLoadingPaymentData(true);
+
+      const [settingsResult, spendingResult] = await Promise.all([
+        supabase
+          .from('driver_payment_settings')
+          .select('*')
+          .eq('driver_id', driverId)
+          .maybeSingle(),
+        supabase
+          .rpc('get_driver_current_spending', { p_driver_id: driverId })
+          .maybeSingle(),
+      ]);
+
+      if (settingsResult.data) {
+        setPaymentSettings(settingsResult.data);
+        setPaymentFormData({
+          dailyLimit: Number(settingsResult.data.daily_spending_limit),
+          monthlyLimit: Number(settingsResult.data.monthly_spending_limit),
+          paymentEnabled: settingsResult.data.payment_enabled,
+        });
+      }
+
+      if (spendingResult.data) {
+        setSpendingData(spendingResult.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to load payment data:', err);
+    } finally {
+      setLoadingPaymentData(false);
+    }
+  };
+
   const openModal = (driver?: Driver, orgId?: string) => {
     if (driver) {
       setEditingDriver(driver);
@@ -318,8 +379,13 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
         medical_certificate_on_file: driver.medical_certificate_on_file,
         status: driver.status,
       });
+
+      // Load payment data for existing driver
+      loadPaymentData(driver.id);
     } else {
       setEditingDriver(null);
+      setPaymentSettings(null);
+      setSpendingData(null);
       setFormData({
         first_name: '',
         surname: '',
@@ -353,9 +419,98 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     setSuccess('');
   };
 
+  const handleSavePaymentSettings = async () => {
+    if (!editingDriver) return;
+
+    try {
+      setSavingPaymentSettings(true);
+      setError('');
+
+      const { error: updateError } = await supabase
+        .from('driver_payment_settings')
+        .update({
+          daily_spending_limit: paymentFormData.dailyLimit,
+          monthly_spending_limit: paymentFormData.monthlyLimit,
+          payment_enabled: paymentFormData.paymentEnabled,
+        })
+        .eq('driver_id', editingDriver.id);
+
+      if (updateError) throw updateError;
+
+      setSuccess('Payment settings updated successfully!');
+      await loadPaymentData(editingDriver.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update payment settings');
+    } finally {
+      setSavingPaymentSettings(false);
+    }
+  };
+
+  const handleUnlockAccount = async () => {
+    if (!editingDriver) return;
+
+    try {
+      setSavingPaymentSettings(true);
+      setError('');
+
+      const { error: updateError } = await supabase
+        .from('driver_payment_settings')
+        .update({
+          failed_pin_attempts: 0,
+          locked_until: null,
+        })
+        .eq('driver_id', editingDriver.id);
+
+      if (updateError) throw updateError;
+
+      setSuccess('Driver account unlocked successfully!');
+      await loadPaymentData(editingDriver.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to unlock account');
+    } finally {
+      setSavingPaymentSettings(false);
+    }
+  };
+
+  const handleResetPIN = async () => {
+    if (!editingDriver) return;
+
+    if (!confirm('This will completely reset the driver\'s PIN. They will need to set up a new PIN on their next login. Continue?')) {
+      return;
+    }
+
+    try {
+      setSavingPaymentSettings(true);
+      setError('');
+
+      const { error: updateError } = await supabase
+        .from('driver_payment_settings')
+        .update({
+          pin_hash: null,
+          pin_salt: null,
+          is_pin_active: false,
+          require_pin_change: false,
+          failed_pin_attempts: 0,
+          locked_until: null,
+        })
+        .eq('driver_id', editingDriver.id);
+
+      if (updateError) throw updateError;
+
+      setSuccess('PIN has been reset. Driver must set up a new PIN on next login.');
+      await loadPaymentData(editingDriver.id);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset PIN');
+    } finally {
+      setSavingPaymentSettings(false);
+    }
+  };
+
   const closeModal = () => {
     setShowModal(false);
     setEditingDriver(null);
+    setPaymentSettings(null);
+    setSpendingData(null);
     setError('');
     setSuccess('');
     setIdDobMismatch('');
@@ -594,6 +749,17 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     return true;
   };
 
+  const getProgressColor = (spent: number, limit: number): string => {
+    const percentage = (spent / limit) * 100;
+    if (percentage >= 90) return 'bg-red-500';
+    if (percentage >= 75) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
+  const getProgressPercentage = (spent: number, limit: number): number => {
+    return Math.min((spent / limit) * 100, 100);
+  };
+
   if (showScanner) {
     return (
       <LicenseScanner
@@ -758,13 +924,6 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                               title="Edit Driver"
                             >
                               <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setSelectedDriverForPayment(driver.id)}
-                              className="text-green-600 hover:text-green-700"
-                              title="Payment Settings & PIN Reset"
-                            >
-                              <DollarSign className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(driver.id)}
@@ -1215,18 +1374,207 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                     <option value="suspended">Suspended</option>
                   </select>
                 </div>
+
+                {editingDriver && paymentSettings && (
+                  <>
+                    <div className="border-t border-gray-300 my-6"></div>
+
+                    <h3 className="font-semibold text-gray-900 text-sm uppercase tracking-wide mb-4">Payment Settings & Spending Limits</h3>
+
+                    {loadingPaymentData ? (
+                      <div className="py-8 text-center text-gray-500">
+                        Loading payment data...
+                      </div>
+                    ) : (
+                      <>
+                        {spendingData && (
+                          <div className="space-y-4 mb-6">
+                            <h4 className="font-medium text-gray-900 flex items-center space-x-2 text-sm">
+                              <TrendingUp className="w-4 h-4" />
+                              <span>Current Spending</span>
+                            </h4>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <p className="text-sm text-gray-600 mb-2">Daily Spending</p>
+                                <p className="text-2xl font-bold mb-2">
+                                  R{spendingData.daily_spent.toFixed(2)}
+                                </p>
+                                <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                  <div
+                                    className={`h-2 rounded-full transition-all ${getProgressColor(spendingData.daily_spent, spendingData.daily_limit)}`}
+                                    style={{ width: `${getProgressPercentage(spendingData.daily_spent, spendingData.daily_limit)}%` }}
+                                  />
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  Limit: R{spendingData.daily_limit.toFixed(2)}
+                                </p>
+                              </div>
+
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <p className="text-sm text-gray-600 mb-2">Monthly Spending</p>
+                                <p className="text-2xl font-bold mb-2">
+                                  R{spendingData.monthly_spent.toFixed(2)}
+                                </p>
+                                <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                  <div
+                                    className={`h-2 rounded-full transition-all ${getProgressColor(spendingData.monthly_spent, spendingData.monthly_limit)}`}
+                                    style={{ width: `${getProgressPercentage(spendingData.monthly_spent, spendingData.monthly_limit)}%` }}
+                                  />
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  Limit: R{spendingData.monthly_limit.toFixed(2)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-4 mb-6">
+                          <h4 className="font-medium text-gray-900 text-sm">Payment Status</h4>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-sm text-gray-600 mb-1">PIN Status</p>
+                              <p className={`font-medium ${paymentSettings.is_pin_active ? 'text-green-600' : 'text-yellow-600'}`}>
+                                {paymentSettings.is_pin_active ? 'Active' : 'Not Set'}
+                              </p>
+                            </div>
+
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-sm text-gray-600 mb-1">Account Status</p>
+                              <p className={`font-medium ${paymentSettings.locked_until && new Date(paymentSettings.locked_until) > new Date() ? 'text-red-600' : 'text-green-600'}`}>
+                                {paymentSettings.locked_until && new Date(paymentSettings.locked_until) > new Date() ? 'Locked' : 'Active'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {paymentSettings.failed_pin_attempts > 0 && (
+                            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                              <p className="text-sm text-yellow-800">
+                                Failed PIN attempts: {paymentSettings.failed_pin_attempts}/3
+                              </p>
+                            </div>
+                          )}
+
+                          {paymentSettings.locked_until && new Date(paymentSettings.locked_until) > new Date() && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                              <p className="text-sm text-red-800 mb-3">
+                                Account is locked until {new Date(paymentSettings.locked_until).toLocaleString()}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={handleUnlockAccount}
+                                disabled={savingPaymentSettings}
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm disabled:bg-gray-400 flex items-center space-x-2"
+                              >
+                                <Unlock className="w-4 h-4" />
+                                <span>Unlock Account</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {paymentSettings.last_payment_at && (
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <p className="text-sm text-gray-600 mb-1">Last Payment</p>
+                              <p className="font-medium flex items-center space-x-2">
+                                <Calendar className="w-4 h-4" />
+                                <span>{new Date(paymentSettings.last_payment_at).toLocaleString()}</span>
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-4 mb-6">
+                          <h4 className="font-medium text-gray-900 text-sm">Spending Limits</h4>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Daily Spending Limit (R)
+                            </label>
+                            <input
+                              type="number"
+                              value={paymentFormData.dailyLimit}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, dailyLimit: Number(e.target.value) })}
+                              min="0"
+                              step="100"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Maximum amount driver can spend per day
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Monthly Spending Limit (R)
+                            </label>
+                            <input
+                              type="number"
+                              value={paymentFormData.monthlyLimit}
+                              onChange={(e) => setPaymentFormData({ ...paymentFormData, monthlyLimit: Number(e.target.value) })}
+                              min="0"
+                              step="1000"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Maximum amount driver can spend per month
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                            <div>
+                              <p className="font-medium text-gray-900">Enable NFC Payments</p>
+                              <p className="text-sm text-gray-500">Allow driver to make instant NFC payments</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={paymentFormData.paymentEnabled}
+                                onChange={(e) => setPaymentFormData({ ...paymentFormData, paymentEnabled: e.target.checked })}
+                                className="sr-only peer"
+                              />
+                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            </label>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleSavePaymentSettings}
+                            disabled={savingPaymentSettings}
+                            className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
+                          >
+                            {savingPaymentSettings ? 'Saving...' : 'Save Payment Settings'}
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-gray-900 flex items-center space-x-2 text-sm">
+                            <Lock className="w-4 h-4" />
+                            <span>Security Actions</span>
+                          </h4>
+
+                          <button
+                            type="button"
+                            onClick={handleResetPIN}
+                            disabled={savingPaymentSettings}
+                            className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 text-sm font-medium"
+                          >
+                            Reset PIN (Forgotten PIN)
+                          </button>
+                          <p className="text-xs text-gray-500 px-1">
+                            Completely resets the driver's PIN. Use this when a driver has forgotten their PIN. They will be required to set up a new PIN on their next login.
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
               </div>
 
             </form>
           </div>
         </div>
-      )}
-
-      {selectedDriverForPayment && (
-        <DriverPaymentSettings
-          driverId={selectedDriverForPayment}
-          onClose={() => setSelectedDriverForPayment(null)}
-        />
       )}
     </div>
   );

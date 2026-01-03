@@ -99,11 +99,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [garages, setGarages] = useState<Garage[]>([]);
   const [garageAccountNumber, setGarageAccountNumber] = useState<string>('');
   const [isLocalAccount, setIsLocalAccount] = useState(false);
-  const [paymentOption, setPaymentOption] = useState<'Card Payment' | 'Local Account' | null>(null);
+  const [paymentOption, setPaymentOption] = useState<'Card Payment' | 'Local Account' | 'EFT Batch' | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [nfcStatus, setNfcStatus] = useState<'idle' | 'writing' | 'success' | 'failed' | 'not_supported'>('idle');
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [transactionWarning, setTransactionWarning] = useState<string | null>(null);
+  const [encryptedCardData, setEncryptedCardData] = useState<any>(null);
 
   useEffect(() => {
     validateSession();
@@ -396,14 +397,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         return;
       }
 
-      // Set payment option based on organization setting (not garage limits!)
       const orgPaymentOption = organization.payment_option || 'Card Payment';
-      setPaymentOption(orgPaymentOption);
-      setIsLocalAccount(orgPaymentOption === 'Local Account');
-
       console.log('[FuelPurchase] Organization payment option:', orgPaymentOption);
 
-      // Check if this garage has a local account for this organization
+      // Check if this garage has a spending limit set for this organization
       const { data: garageAccount, error: garageAccountError } = await supabase
         .from('organization_garage_accounts')
         .select('monthly_spend_limit, account_number')
@@ -416,11 +413,50 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         console.error('Error fetching garage account:', garageAccountError);
       }
 
-      // If local account payment but no garage account exists, show error
-      if (orgPaymentOption === 'Local Account' && !garageAccount) {
-        setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
-        setCurrentStep('garage_selection');
-        return;
+      const hasGarageSpendingLimit = garageAccount?.monthly_spend_limit ? true : false;
+
+      // Determine payment flow based on organization setting and garage configuration
+      if (orgPaymentOption === 'Local Account') {
+        // Local Account: Always use PIN + NFC with local account number
+        if (!garageAccount) {
+          setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
+          setCurrentStep('garage_selection');
+          return;
+        }
+        setPaymentOption('Local Account');
+        setIsLocalAccount(true);
+        setGarageAccountNumber(garageAccount.account_number);
+        console.log('[FuelPurchase] Payment flow: Local Account (PIN + NFC + Account Number)');
+      } else if (orgPaymentOption === 'Card Payment') {
+        if (hasGarageSpendingLimit) {
+          // Card Payment with garage limit: Garage takes credit risk, use PIN + NFC with encrypted card
+
+          // Fetch the organization's payment card
+          const { data: paymentCard, error: cardError } = await supabase
+            .from('organization_payment_cards')
+            .select('*')
+            .eq('organization_id', drawnVehicle.organization_id)
+            .eq('is_active', true)
+            .eq('is_default', true)
+            .maybeSingle();
+
+          if (cardError || !paymentCard) {
+            console.error('Error fetching payment card:', cardError);
+            setError('No active payment card found. Please contact your administrator.');
+            setCurrentStep('garage_selection');
+            return;
+          }
+
+          setPaymentOption('Card Payment');
+          setIsLocalAccount(false);
+          setEncryptedCardData(paymentCard);
+          console.log('[FuelPurchase] Payment flow: Card Payment with garage limit (PIN + NFC + Encrypted Card)');
+        } else {
+          // Card Payment without garage limit: Organization takes credit risk, use EFT Batch
+          setPaymentOption('EFT Batch');
+          setIsLocalAccount(false);
+          console.log('[FuelPurchase] Payment flow: EFT Batch (no PIN, no NFC, organization credit risk)');
+        }
       }
 
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;
@@ -860,7 +896,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       );
       setFuelEfficiency(efficiency);
 
-      // For local accounts, move to PIN entry step. For EFT batch, show success
+      // Route to appropriate payment flow based on payment option
       console.log('[FuelPurchase] ✅ Transaction created successfully!');
       console.log('[FuelPurchase] ==========================================');
       console.log('[FuelPurchase] PAYMENT DECISION LOGIC:');
@@ -868,11 +904,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       console.log('[FuelPurchase] isLocalAccount:', isLocalAccount);
       console.log('[FuelPurchase] ==========================================');
 
-      if (paymentOption === 'Local Account') {
-        console.log('[FuelPurchase] ✅ Local Account - Moving to PIN entry step');
+      if (paymentOption === 'Local Account' || paymentOption === 'Card Payment') {
+        // Both Local Account and Card Payment (with garage limit) use PIN + NFC flow
+        console.log('[FuelPurchase] ✅ Moving to PIN entry step for:', paymentOption);
         setCurrentStep('pin_entry');
       } else {
-        console.log('[FuelPurchase] ✅ EFT Batch Payment - Transaction complete');
+        // EFT Batch payment (Card Payment without garage limit)
+        console.log('[FuelPurchase] ✅ EFT Batch - Transaction complete, no PIN/NFC required');
         setSuccess(true);
       }
     } catch (err: any) {
@@ -943,7 +981,17 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   };
 
   const writeToNFC = async () => {
-    if (!garageAccountNumber || !drawnVehicle) {
+    if (!drawnVehicle) {
+      setNfcStatus('failed');
+      return;
+    }
+
+    // Validate we have the correct payment data
+    if (paymentOption === 'Local Account' && !garageAccountNumber) {
+      setNfcStatus('failed');
+      return;
+    }
+    if (paymentOption === 'Card Payment' && !encryptedCardData) {
       setNfcStatus('failed');
       return;
     }
@@ -960,18 +1008,48 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
       const ndef = new (window as any).NDEFReader();
 
-      // Prepare the data to write
-      const accountData = {
-        accountNumber: garageAccountNumber,
-        vehicleNumber: drawnVehicle.vehicle_number || drawnVehicle.registration_number,
-        amount: formData.totalAmount,
-        liters: formData.liters,
-        timestamp: new Date().toISOString()
-      };
+      // Prepare the data to write based on payment option
+      let nfcData: any;
+
+      if (paymentOption === 'Local Account') {
+        // Send local account number for local account payment
+        nfcData = {
+          paymentType: 'local_account',
+          accountNumber: garageAccountNumber,
+          vehicleNumber: drawnVehicle.vehicle_number || drawnVehicle.registration_number,
+          amount: formData.totalAmount,
+          liters: formData.liters,
+          timestamp: new Date().toISOString()
+        };
+      } else if (paymentOption === 'Card Payment') {
+        // Send encrypted card details for card payment
+        nfcData = {
+          paymentType: 'card_payment',
+          encryptedCardData: {
+            cardNumberEncrypted: encryptedCardData.card_number_encrypted,
+            cardHolderNameEncrypted: encryptedCardData.card_holder_name_encrypted,
+            expiryMonthEncrypted: encryptedCardData.expiry_month_encrypted,
+            expiryYearEncrypted: encryptedCardData.expiry_year_encrypted,
+            cvvEncrypted: encryptedCardData.cvv_encrypted,
+            ivCardNumber: encryptedCardData.iv_card_number,
+            ivHolderName: encryptedCardData.iv_holder_name,
+            ivExpiryMonth: encryptedCardData.iv_expiry_month,
+            ivExpiryYear: encryptedCardData.iv_expiry_year,
+            ivCvv: encryptedCardData.iv_cvv,
+            encryptionKeyId: encryptedCardData.encryption_key_id,
+            cardBrand: encryptedCardData.card_brand,
+            lastFourDigits: encryptedCardData.last_four_digits
+          },
+          vehicleNumber: drawnVehicle.vehicle_number || drawnVehicle.registration_number,
+          amount: formData.totalAmount,
+          liters: formData.liters,
+          timestamp: new Date().toISOString()
+        };
+      }
 
       await ndef.write({
         records: [
-          { recordType: "text", data: JSON.stringify(accountData) }
+          { recordType: "text", data: JSON.stringify(nfcData) }
         ]
       });
 
@@ -1334,17 +1412,24 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     );
   }
 
-  // PIN Entry Step for Local Accounts
+  // PIN Entry Step for Local Account and Card Payment with garage limit
   if (currentStep === 'pin_entry') {
     console.log('[FuelPurchase] 🔐 Rendering PIN Entry Screen');
+    const pinTitle = paymentOption === 'Local Account'
+      ? 'Enter PIN and Scan to Garage Account System'
+      : 'Enter PIN and Scan Card to Till';
+    const pinDescription = paymentOption === 'Local Account'
+      ? 'Transaction created. Enter your PIN to proceed with local account payment.'
+      : 'Transaction created. Enter your PIN to proceed with card payment.';
+
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
           <div className="text-center mb-6">
             <AlertCircle className="w-16 h-16 text-amber-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Enter PIN and Scan to Garage Account System to Finalize</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">{pinTitle}</h2>
             <p className="text-gray-600 text-sm">
-              Transaction created. Please enter your PIN below.
+              {pinDescription}
             </p>
           </div>
 
@@ -1444,7 +1529,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     );
   }
 
-  // Scan to Till Step for Local Accounts
+  // Scan to Till Step for Local Account and Card Payment with garage limit
   if (currentStep === 'scan_to_till') {
     const selectedGarage = garages.find(g => g.id === selectedGarageId);
     return (
@@ -1522,34 +1607,51 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           )}
 
           {/* Show Account Details Button or Details */}
-          {(nfcStatus === 'failed' || nfcStatus === 'not_supported' || showAccountDetails) && selectedGarage?.accountNumber && (
+          {(nfcStatus === 'failed' || nfcStatus === 'not_supported' || showAccountDetails) && (paymentOption === 'Local Account' ? garageAccountNumber : encryptedCardData) && (
             <>
               {!showAccountDetails && (
                 <button
                   onClick={() => setShowAccountDetails(true)}
                   className="w-full bg-gray-600 text-white py-3 rounded-lg font-semibold hover:bg-gray-700 transition-colors mb-4 text-sm"
                 >
-                  Show Account Details Manually
+                  Show Payment Details Manually
                 </button>
               )}
 
               {showAccountDetails && (
                 <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-4">
                   <p className="text-sm font-medium text-amber-900 mb-3">
-                    <strong>Account Details for Garage Till:</strong>
+                    <strong>{paymentOption === 'Local Account' ? 'Account Details for Garage Till:' : 'Card Details for Till:'}</strong>
                   </p>
                   <div className="space-y-2">
-                    <div>
-                      <p className="text-xs text-amber-700 mb-1">Account Number</p>
-                      <p className="text-3xl font-bold text-amber-900">{selectedGarage.accountNumber}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-amber-700 mb-1">Vehicle Number</p>
-                      <p className="text-2xl font-bold text-amber-900">{drawnVehicle?.vehicle_number || drawnVehicle?.registration_number}</p>
-                    </div>
+                    {paymentOption === 'Local Account' ? (
+                      <>
+                        <div>
+                          <p className="text-xs text-amber-700 mb-1">Account Number</p>
+                          <p className="text-3xl font-bold text-amber-900">{garageAccountNumber}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-amber-700 mb-1">Vehicle Number</p>
+                          <p className="text-2xl font-bold text-amber-900">{drawnVehicle?.vehicle_number || drawnVehicle?.registration_number}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="text-xs text-amber-700 mb-1">Card</p>
+                          <p className="text-2xl font-bold text-amber-900">{encryptedCardData?.card_brand} •••• {encryptedCardData?.last_four_digits}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-amber-700 mb-1">Vehicle Number</p>
+                          <p className="text-2xl font-bold text-amber-900">{drawnVehicle?.vehicle_number || drawnVehicle?.registration_number}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <p className="text-xs text-amber-700 mt-3 italic">
-                    Provide these numbers to the garage attendant
+                    {paymentOption === 'Local Account'
+                      ? 'Provide these numbers to the garage attendant'
+                      : 'Encrypted card data will be transmitted via NFC'}
                   </p>
                 </div>
               )}

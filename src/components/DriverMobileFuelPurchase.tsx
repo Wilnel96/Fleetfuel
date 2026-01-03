@@ -400,7 +400,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       const orgPaymentOption = organization.payment_option || 'Card Payment';
       console.log('[FuelPurchase] Organization payment option:', orgPaymentOption);
 
-      // Check if this garage has a spending limit set for this organization
+      // Check if this garage has a local account for this organization (only needed for Local Account option)
       const { data: garageAccount, error: garageAccountError } = await supabase
         .from('organization_garage_accounts')
         .select('monthly_spend_limit, account_number')
@@ -413,9 +413,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         console.error('Error fetching garage account:', garageAccountError);
       }
 
-      const hasGarageSpendingLimit = garageAccount?.monthly_spend_limit ? true : false;
-
-      // Determine payment flow based on organization setting and garage configuration
+      // Determine payment flow based ONLY on organization's payment_option
       if (orgPaymentOption === 'Local Account') {
         // Local Account: Always use PIN + NFC with local account number
         if (!garageAccount) {
@@ -428,35 +426,32 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         setGarageAccountNumber(garageAccount.account_number);
         console.log('[FuelPurchase] Payment flow: Local Account (PIN + NFC + Account Number)');
       } else if (orgPaymentOption === 'Card Payment') {
-        if (hasGarageSpendingLimit) {
-          // Card Payment with garage limit: Garage takes credit risk, use PIN + NFC with encrypted card
+        // Card Payment: Always use PIN + NFC with encrypted card details
+        // Fetch the organization's payment card
+        const { data: paymentCard, error: cardError } = await supabase
+          .from('organization_payment_cards')
+          .select('*')
+          .eq('organization_id', drawnVehicle.organization_id)
+          .eq('is_active', true)
+          .eq('is_default', true)
+          .maybeSingle();
 
-          // Fetch the organization's payment card
-          const { data: paymentCard, error: cardError } = await supabase
-            .from('organization_payment_cards')
-            .select('*')
-            .eq('organization_id', drawnVehicle.organization_id)
-            .eq('is_active', true)
-            .eq('is_default', true)
-            .maybeSingle();
-
-          if (cardError || !paymentCard) {
-            console.error('Error fetching payment card:', cardError);
-            setError('No active payment card found. Please contact your administrator.');
-            setCurrentStep('garage_selection');
-            return;
-          }
-
-          setPaymentOption('Card Payment');
-          setIsLocalAccount(false);
-          setEncryptedCardData(paymentCard);
-          console.log('[FuelPurchase] Payment flow: Card Payment with garage limit (PIN + NFC + Encrypted Card)');
-        } else {
-          // Card Payment without garage limit: Organization takes credit risk, use EFT Batch
-          setPaymentOption('EFT Batch');
-          setIsLocalAccount(false);
-          console.log('[FuelPurchase] Payment flow: EFT Batch (no PIN, no NFC, organization credit risk)');
+        if (cardError || !paymentCard) {
+          console.error('Error fetching payment card:', cardError);
+          setError('No active payment card found. Please contact your administrator.');
+          setCurrentStep('garage_selection');
+          return;
         }
+
+        setPaymentOption('Card Payment');
+        setIsLocalAccount(false);
+        setEncryptedCardData(paymentCard);
+        console.log('[FuelPurchase] Payment flow: Card Payment (PIN + NFC + Encrypted Card)');
+      } else if (orgPaymentOption === 'EFT') {
+        // EFT: No PIN, no NFC, just EFT batch processing
+        setPaymentOption('EFT Batch');
+        setIsLocalAccount(false);
+        console.log('[FuelPurchase] Payment flow: EFT Batch (no PIN, no NFC)');
       }
 
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;

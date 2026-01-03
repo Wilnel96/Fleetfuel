@@ -1976,13 +1976,98 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             {currentStep === 'fuel_details' && (
               <>
                 {spendingLimitInfo && !spendingLimitInfo.isBlocked && (
-                  <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-3 mb-4">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div className="bg-amber-50 border-2 border-amber-400 rounded-lg p-4 mb-4">
+                    <div className="flex items-start gap-2 mb-3">
+                      <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
-                        <p className="text-xs font-bold text-amber-900 mb-1">Spending Limit Active</p>
-                        <p className="text-xs text-amber-800">
-                          Total transaction (fuel + oil) must not exceed <strong>R {spendingLimitInfo.availableAmount.toFixed(2)}</strong>
+                        <p className="text-sm font-bold text-amber-900 mb-1">Spending Limit Active</p>
+                        <p className="text-xs text-amber-800 mb-2">
+                          Your {spendingLimitInfo.type} spending limit restricts total transaction amount
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-700">Available to spend:</span>
+                        <span className="text-base font-bold text-amber-900">R {spendingLimitInfo.availableAmount.toFixed(2)}</span>
+                      </div>
+
+                      {(() => {
+                        const currentTotal = parseFloat(formData.totalAmount || '0');
+                        const oilTotal = parseFloat(formData.oilTotalAmount || '0');
+                        const fuelTotal = currentTotal - oilTotal;
+                        const percentage = (currentTotal / spendingLimitInfo.availableAmount) * 100;
+                        const isOverLimit = currentTotal > spendingLimitInfo.availableAmount;
+
+                        return (
+                          <>
+                            {currentTotal > 0 && (
+                              <>
+                                <div className="border-t border-amber-200 pt-2">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs text-gray-700">Current transaction:</span>
+                                    <span className={`text-sm font-bold ${isOverLimit ? 'text-red-600' : 'text-gray-900'}`}>
+                                      R {currentTotal.toFixed(2)}
+                                    </span>
+                                  </div>
+                                  {oilTotal > 0 && (
+                                    <div className="text-xs text-gray-600 ml-4 space-y-0.5">
+                                      <div className="flex justify-between">
+                                        <span>- Fuel:</span>
+                                        <span>R {fuelTotal.toFixed(2)}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>- Oil:</span>
+                                        <span>R {oilTotal.toFixed(2)}</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="border-t border-amber-200 pt-2">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-xs text-gray-700">Remaining:</span>
+                                    <span className={`text-sm font-bold ${isOverLimit ? 'text-red-600' : 'text-green-600'}`}>
+                                      R {Math.max(0, spendingLimitInfo.availableAmount - currentTotal).toFixed(2)}
+                                    </span>
+                                  </div>
+
+                                  <div className="w-full bg-gray-200 rounded-full h-3">
+                                    <div
+                                      className={`h-3 rounded-full transition-all ${
+                                        isOverLimit
+                                          ? 'bg-red-500'
+                                          : percentage >= 90
+                                          ? 'bg-amber-500'
+                                          : percentage >= 75
+                                          ? 'bg-yellow-500'
+                                          : 'bg-green-500'
+                                      }`}
+                                      style={{ width: `${Math.min(percentage, 100)}%` }}
+                                    />
+                                  </div>
+                                  <p className="text-xs text-center mt-1 text-gray-600">
+                                    {percentage.toFixed(0)}% of limit
+                                  </p>
+                                </div>
+                              </>
+                            )}
+
+                            {isOverLimit && currentTotal > 0 && (
+                              <div className="border-t-2 border-red-300 pt-2 mt-2">
+                                <p className="text-xs font-bold text-red-700 text-center">
+                                  ⚠️ EXCEEDS SPENDING LIMIT - Payment will be declined
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+
+                      <div className="border-t border-amber-200 pt-2 mt-2">
+                        <p className="text-xs text-amber-700 text-center">
+                          Ensure fuel + oil total stays within the available amount
                         </p>
                       </div>
                     </div>
@@ -2040,13 +2125,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       step="0.01"
                       value={formData.totalAmount}
                       readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
+                      className={`w-full border rounded-lg px-4 py-3 bg-gray-50 ${
+                        spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount
+                          ? 'border-red-400 text-red-700 font-bold'
+                          : 'border-gray-300'
+                      }`}
                     />
-                    {spendingLimitInfo && !spendingLimitInfo.isBlocked && parseFloat(formData.totalAmount || '0') > spendingLimitInfo.availableAmount && (
-                      <p className="text-xs text-red-600 mt-1 font-semibold">
-                        Total Amount more than available Spending Limit
-                      </p>
-                    )}
                     {purchasingOil && formData.oilTotalAmount && (
                       <p className="text-xs text-gray-500 mt-1">
                         Includes R{formData.oilTotalAmount} for oil

@@ -464,6 +464,82 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         availableAmount: number;
       } | null = null;
 
+      // Check driver-specific spending limits (these are the most restrictive)
+      const { data: driverPaymentSettings, error: driverPaymentError } = await supabase
+        .from('driver_payment_settings')
+        .select('daily_spending_limit, monthly_spending_limit')
+        .eq('driver_id', drawnVehicle.driver_id)
+        .maybeSingle();
+
+      if (driverPaymentError) {
+        console.error('Error fetching driver payment settings:', driverPaymentError);
+      }
+
+      // Check driver's daily limit first (highest priority)
+      if (driverPaymentSettings?.daily_spending_limit) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const { data: driverDailyTransactions, error: driverDailyError } = await supabase
+          .from('fuel_transactions')
+          .select('total_amount')
+          .eq('driver_id', drawnVehicle.driver_id)
+          .gte('created_at', today.toISOString());
+
+        if (driverDailyError) {
+          console.error('Error fetching driver daily transactions:', driverDailyError);
+        } else {
+          const driverDailySpending = driverDailyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableDaily = parseFloat(driverPaymentSettings.daily_spending_limit) - driverDailySpending;
+
+          mostRestrictiveLimit = {
+            type: 'daily',
+            limit: parseFloat(driverPaymentSettings.daily_spending_limit),
+            currentSpending: driverDailySpending,
+            availableAmount: availableDaily
+          };
+
+          console.log('Using driver daily limit:', {
+            limit: driverPaymentSettings.daily_spending_limit,
+            spent: driverDailySpending,
+            available: availableDaily
+          });
+        }
+      }
+
+      // Check driver's monthly limit (if no daily limit or as additional check)
+      if (driverPaymentSettings?.monthly_spending_limit && !mostRestrictiveLimit) {
+        const firstDayOfMonth = new Date();
+        firstDayOfMonth.setDate(1);
+        firstDayOfMonth.setHours(0, 0, 0, 0);
+
+        const { data: driverMonthlyTransactions, error: driverMonthlyError } = await supabase
+          .from('fuel_transactions')
+          .select('total_amount')
+          .eq('driver_id', drawnVehicle.driver_id)
+          .gte('created_at', firstDayOfMonth.toISOString());
+
+        if (driverMonthlyError) {
+          console.error('Error fetching driver monthly transactions:', driverMonthlyError);
+        } else {
+          const driverMonthlySpending = driverMonthlyTransactions?.reduce((sum, t) => sum + parseFloat(t.total_amount || '0'), 0) || 0;
+          const availableMonthly = parseFloat(driverPaymentSettings.monthly_spending_limit) - driverMonthlySpending;
+
+          mostRestrictiveLimit = {
+            type: 'monthly',
+            limit: parseFloat(driverPaymentSettings.monthly_spending_limit),
+            currentSpending: driverMonthlySpending,
+            availableAmount: availableMonthly
+          };
+
+          console.log('Using driver monthly limit:', {
+            limit: driverPaymentSettings.monthly_spending_limit,
+            spent: driverMonthlySpending,
+            available: availableMonthly
+          });
+        }
+      }
+
       // Check garage-specific spending limit (if set, this overrides organization limits)
       if (garageAccount?.monthly_spend_limit) {
         const firstDayOfMonth = new Date();

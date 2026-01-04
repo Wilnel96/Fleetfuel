@@ -22,6 +22,7 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
+  const [paymentOption, setPaymentOption] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrganizationInfo();
@@ -43,12 +44,15 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
 
         const { data: org } = await supabase
           .from('organizations')
-          .select('name')
+          .select('name, payment_option')
           .eq('id', profile.organization_id)
           .maybeSingle();
 
-        if (org?.name) {
-          setOrganizationName(org.name);
+        if (org) {
+          if (org.name) {
+            setOrganizationName(org.name);
+          }
+          setPaymentOption(org.payment_option);
         }
       }
     } catch (err) {
@@ -267,14 +271,16 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: Building2,
       color: 'blue',
     },
-    {
+    // Only show NFC Payment Card if payment option is NFC
+    ...(paymentOption === 'NFC' ? [{
       id: 'payment-card',
       title: 'NFC Payment Card',
       description: 'Register debit/credit card for driver NFC payments',
       icon: CreditCard,
       color: 'green',
-    },
-    ...(userRole !== 'super_admin' ? [{
+    }] : []),
+    // Only show Local Garage Accounts if payment option is Local Account and user is not super admin
+    ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
       id: 'local-accounts',
       title: 'Local Garage Accounts',
       description: 'Manage local accounts with garages where you can refuel',

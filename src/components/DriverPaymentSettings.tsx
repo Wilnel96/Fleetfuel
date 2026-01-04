@@ -371,6 +371,15 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
               <span>Spending Limits</span>
             </h3>
 
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-blue-900 mb-2">Understanding Spending Limits:</p>
+              <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
+                <li><strong>Unlimited (No Limit checkbox)</strong> - Driver can spend any amount</li>
+                <li><strong>Set to R0</strong> - Driver is completely blocked from making any purchases</li>
+                <li><strong>Any positive amount</strong> - Driver can spend up to that amount</li>
+              </ul>
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -395,11 +404,27 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                 step="100"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.dailyLimitEnabled
-                  ? 'Maximum amount the driver can spend per day. Set to 0 to completely disable spending.'
-                  : 'No daily limit - driver can spend any amount per day (monthly limit still applies if enabled).'}
-              </p>
+              <div className="mt-2">
+                {formData.dailyLimitEnabled ? (
+                  <>
+                    {formData.dailyLimit === 0 ? (
+                      <div className="flex items-center space-x-2 text-xs bg-red-50 border border-red-200 rounded px-2 py-1">
+                        <AlertCircle className="w-3 h-3 text-red-600" />
+                        <span className="text-red-700 font-medium">R0 = SPENDING BLOCKED - Driver cannot make ANY purchases</span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-600">
+                        Driver can spend up to <strong>R{formData.dailyLimit.toFixed(2)}</strong> per day
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center space-x-2 text-xs bg-green-50 border border-green-200 rounded px-2 py-1">
+                    <CheckCircle2 className="w-3 h-3 text-green-600" />
+                    <span className="text-green-700 font-medium">UNLIMITED - No daily spending restrictions</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div>
@@ -426,11 +451,27 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                 step="1000"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {formData.monthlyLimitEnabled
-                  ? 'Maximum amount the driver can spend per month. Set to 0 to completely disable spending.'
-                  : 'No monthly limit - driver can spend any amount per month (daily limit still applies if enabled).'}
-              </p>
+              <div className="mt-2">
+                {formData.monthlyLimitEnabled ? (
+                  <>
+                    {formData.monthlyLimit === 0 ? (
+                      <div className="flex items-center space-x-2 text-xs bg-red-50 border border-red-200 rounded px-2 py-1">
+                        <AlertCircle className="w-3 h-3 text-red-600" />
+                        <span className="text-red-700 font-medium">R0 = SPENDING BLOCKED - Driver cannot make ANY purchases</span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-600">
+                        Driver can spend up to <strong>R{formData.monthlyLimit.toFixed(2)}</strong> per month
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center space-x-2 text-xs bg-green-50 border border-green-200 rounded px-2 py-1">
+                    <CheckCircle2 className="w-3 h-3 text-green-600" />
+                    <span className="text-green-700 font-medium">UNLIMITED - No monthly spending restrictions</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">

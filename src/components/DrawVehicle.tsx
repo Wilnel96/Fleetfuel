@@ -406,6 +406,31 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setLoading(true);
 
     try {
+      // If there's an unreturned draw by another driver, close it first
+      if (logUnreturnedException && previousDriverInfo) {
+        const unreturnedCheck = await checkUnreturnedByOtherDriver(selectedVehicle.id);
+        if (unreturnedCheck?.hasUnreturnedDraw) {
+          // Create a virtual return transaction for the previous draw
+          const { error: closeError } = await supabase
+            .from('vehicle_transactions')
+            .insert({
+              organization_id: organizationId,
+              vehicle_id: selectedVehicle.id,
+              driver_id: unreturnedCheck.previousDriverId,
+              transaction_type: 'return',
+              odometer_reading: parseInt(odometerReading),
+              location: 'Auto-closed',
+              related_transaction_id: unreturnedCheck.drawTransactionId,
+            });
+
+          if (closeError) {
+            console.error('Failed to auto-close previous unreturned draw:', closeError);
+          } else {
+            console.log('Successfully auto-closed previous unreturned draw');
+          }
+        }
+      }
+
       const { data: transaction, error: insertError } = await supabase
         .from('vehicle_transactions')
         .insert({

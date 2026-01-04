@@ -102,6 +102,28 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
       const tripRecords: TripRecord[] = [];
       let totalKmTravelled = 0;
 
+      // Track the most recent unreturned draw per vehicle
+      const vehicleLatestUnreturnedDraw = new Map<string, { id: string; created_at: string }>();
+
+      for (const draw of draws || []) {
+        const { data: returnData } = await supabase
+          .from('vehicle_transactions')
+          .select('odometer_reading, created_at')
+          .eq('related_transaction_id', draw.id)
+          .eq('transaction_type', 'return')
+          .maybeSingle();
+
+        if (!returnData) {
+          const existing = vehicleLatestUnreturnedDraw.get(draw.vehicle_id);
+          if (!existing || new Date(draw.created_at) > new Date(existing.created_at)) {
+            vehicleLatestUnreturnedDraw.set(draw.vehicle_id, {
+              id: draw.id,
+              created_at: draw.created_at
+            });
+          }
+        }
+      }
+
       for (const draw of draws || []) {
         const drawDate = new Date(draw.created_at);
         const { data: returnData } = await supabase
@@ -116,7 +138,10 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
         const returnedOnSelectedDate = returnData && new Date(returnData.created_at) >= startOfDay && new Date(returnData.created_at) <= endOfDay;
         const returnedAfterSelectedDate = returnData && new Date(returnData.created_at) > endOfDay;
 
-        if (drawnOnSelectedDate || isInProgress || returnedOnSelectedDate || returnedAfterSelectedDate) {
+        // Only show unreturned draws if they are the most recent for that vehicle
+        const isLatestUnreturnedForVehicle = isInProgress && vehicleLatestUnreturnedDraw.get(draw.vehicle_id)?.id === draw.id;
+
+        if (drawnOnSelectedDate || isLatestUnreturnedForVehicle || returnedOnSelectedDate || returnedAfterSelectedDate) {
           const kmTravelled = returnData
             ? returnData.odometer_reading - draw.odometer_reading
             : null;

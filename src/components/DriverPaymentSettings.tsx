@@ -371,12 +371,12 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
               <span>Spending Limits</span>
             </h3>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <p className="text-sm font-medium text-blue-900 mb-2">Understanding Spending Limits:</p>
               <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-                <li><strong>Unlimited (No Limit checkbox)</strong> - Driver can spend any amount</li>
-                <li><strong>Set to R0</strong> - Driver is completely blocked from making any purchases</li>
-                <li><strong>Any positive amount</strong> - Driver can spend up to that amount</li>
+                <li><strong>Check "No Limit"</strong> = Driver can spend any amount (UNLIMITED)</li>
+                <li><strong>Uncheck "No Limit" and set R0</strong> = Driver is BLOCKED from all purchases</li>
+                <li><strong>Uncheck "No Limit" and set any amount</strong> = Driver can spend up to that amount</li>
               </ul>
             </div>
 
@@ -404,24 +404,37 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                 step="100"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
-              <div className="mt-2">
+              <div className="mt-2 p-3 rounded-lg border-2" style={{
+                backgroundColor: !formData.dailyLimitEnabled ? '#f0fdf4' : formData.dailyLimit === 0 ? '#fef2f2' : '#f9fafb',
+                borderColor: !formData.dailyLimitEnabled ? '#86efac' : formData.dailyLimit === 0 ? '#fca5a5' : '#e5e7eb'
+              }}>
                 {formData.dailyLimitEnabled ? (
                   <>
                     {formData.dailyLimit === 0 ? (
-                      <div className="flex items-center space-x-2 text-xs bg-red-50 border border-red-200 rounded px-2 py-1">
-                        <AlertCircle className="w-3 h-3 text-red-600" />
-                        <span className="text-red-700 font-medium">R0 = SPENDING BLOCKED - Driver cannot make ANY purchases</span>
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-red-700">SPENDING BLOCKED</p>
+                          <p className="text-xs text-red-600">R0.00 = Driver cannot make ANY purchases</p>
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-600">
-                        Driver can spend up to <strong>R{formData.dailyLimit.toFixed(2)}</strong> per day
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <TrendingUp className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Daily Limit Set</p>
+                          <p className="text-xs text-gray-600">Driver can spend up to <strong>R{formData.dailyLimit.toFixed(2)}</strong> per day</p>
+                        </div>
+                      </div>
                     )}
                   </>
                 ) : (
-                  <div className="flex items-center space-x-2 text-xs bg-green-50 border border-green-200 rounded px-2 py-1">
-                    <CheckCircle2 className="w-3 h-3 text-green-600" />
-                    <span className="text-green-700 font-medium">UNLIMITED - No daily spending restrictions</span>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-green-700">UNLIMITED</p>
+                      <p className="text-xs text-green-600">No daily spending restrictions</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -451,24 +464,37 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                 step="1000"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
-              <div className="mt-2">
+              <div className="mt-2 p-3 rounded-lg border-2" style={{
+                backgroundColor: !formData.monthlyLimitEnabled ? '#f0fdf4' : formData.monthlyLimit === 0 ? '#fef2f2' : '#f9fafb',
+                borderColor: !formData.monthlyLimitEnabled ? '#86efac' : formData.monthlyLimit === 0 ? '#fca5a5' : '#e5e7eb'
+              }}>
                 {formData.monthlyLimitEnabled ? (
                   <>
                     {formData.monthlyLimit === 0 ? (
-                      <div className="flex items-center space-x-2 text-xs bg-red-50 border border-red-200 rounded px-2 py-1">
-                        <AlertCircle className="w-3 h-3 text-red-600" />
-                        <span className="text-red-700 font-medium">R0 = SPENDING BLOCKED - Driver cannot make ANY purchases</span>
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-red-700">SPENDING BLOCKED</p>
+                          <p className="text-xs text-red-600">R0.00 = Driver cannot make ANY purchases</p>
+                        </div>
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-600">
-                        Driver can spend up to <strong>R{formData.monthlyLimit.toFixed(2)}</strong> per month
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">Monthly Limit Set</p>
+                          <p className="text-xs text-gray-600">Driver can spend up to <strong>R{formData.monthlyLimit.toFixed(2)}</strong> per month</p>
+                        </div>
+                      </div>
                     )}
                   </>
                 ) : (
-                  <div className="flex items-center space-x-2 text-xs bg-green-50 border border-green-200 rounded px-2 py-1">
-                    <CheckCircle2 className="w-3 h-3 text-green-600" />
-                    <span className="text-green-700 font-medium">UNLIMITED - No monthly spending restrictions</span>
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-bold text-green-700">UNLIMITED</p>
+                      <p className="text-xs text-green-600">No monthly spending restrictions</p>
+                    </div>
                   </div>
                 )}
               </div>

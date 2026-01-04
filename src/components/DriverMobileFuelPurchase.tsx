@@ -468,7 +468,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       }> = [];
 
       console.log('========== SPENDING LIMIT CHECK START ==========');
-      console.log('Driver ID:', drawnVehicle.driver_id);
+      console.log('Driver ID:', driver.id);
       console.log('Organization ID:', drawnVehicle.organization_id);
       console.log('Garage ID:', selectedGarage.id);
 
@@ -476,7 +476,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       const { data: driverPaymentSettings, error: driverPaymentError } = await supabase
         .from('driver_payment_settings')
         .select('daily_spending_limit, monthly_spending_limit, payment_enabled')
-        .eq('driver_id', drawnVehicle.driver_id)
+        .eq('driver_id', driver.id)
         .maybeSingle();
 
       if (driverPaymentError) {
@@ -496,7 +496,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         const { data: driverDailyTransactions, error: driverDailyError } = await supabase
           .from('fuel_transactions')
           .select('total_amount')
-          .eq('driver_id', drawnVehicle.driver_id)
+          .eq('driver_id', driver.id)
           .gte('created_at', today.toISOString());
 
         if (!driverDailyError) {
@@ -536,7 +536,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         const { data: driverMonthlyTransactions, error: driverMonthlyError } = await supabase
           .from('fuel_transactions')
           .select('total_amount')
-          .eq('driver_id', drawnVehicle.driver_id)
+          .eq('driver_id', driver.id)
           .gte('created_at', firstDayOfMonth.toISOString());
 
         if (!driverMonthlyError) {

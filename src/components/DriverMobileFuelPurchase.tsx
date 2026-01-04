@@ -508,12 +508,16 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             source: 'driver'
           });
 
-          console.log('Driver daily limit:', {
-            limit: driverPaymentSettings.daily_spending_limit,
+          console.log('✅ Driver daily limit ADDED:', {
+            limit: parseFloat(driverPaymentSettings.daily_spending_limit),
             spent: driverDailySpending,
             available: availableDaily
           });
+        } else {
+          console.error('❌ Error fetching driver daily transactions:', driverDailyError);
         }
+      } else {
+        console.log('⚠️ Driver has NO daily spending limit set');
       }
 
       // Check driver's monthly limit
@@ -1449,12 +1453,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               <div className="flex items-start gap-3 mb-4">
                 <AlertCircle className="w-8 h-8 text-red-600 flex-shrink-0 mt-0.5 animate-pulse" />
                 <div className="flex-1">
-                  <p className="text-lg font-extrabold text-red-900 mb-2">CRITICAL: SPENDING LIMIT WARNING</p>
+                  <p className="text-lg font-extrabold text-red-900 mb-2">SPENDING LIMIT ACTIVE</p>
                   <p className="text-sm font-bold text-red-800 mb-2">
-                    {spendingLimitInfo.source === 'driver' && 'Your personal'}
-                    {spendingLimitInfo.source === 'organization' && 'Your organization\'s'}
-                    {spendingLimitInfo.source === 'garage' && 'The garage account\'s'}
-                    {' '}{spendingLimitInfo.type} spending limit is active.
+                    {spendingLimitInfo.source === 'driver' && 'YOUR PERSONAL LIMIT:'}
+                    {spendingLimitInfo.source === 'organization' && 'ORGANIZATION LIMIT:'}
+                    {spendingLimitInfo.source === 'garage' && 'GARAGE ACCOUNT LIMIT:'}
+                    {' '}
+                    <span className="text-2xl text-red-900">R {spendingLimitInfo.availableAmount.toFixed(2)}</span>
                   </p>
                   <div className="bg-red-100 border-2 border-red-400 rounded-md p-3 mb-3">
                     <p className="text-xs font-bold text-red-900 mb-1">
@@ -1468,55 +1473,18 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               </div>
 
               <div className="bg-white rounded-lg p-4 space-y-3 border-2 border-red-300">
-                <div className="text-center pb-3 border-b-2 border-red-200">
-                  <p className="text-xs text-gray-600 mb-1">MAXIMUM TRANSACTION AMOUNT</p>
-                  <p className="text-3xl font-bold text-red-700">R {spendingLimitInfo.availableAmount.toFixed(2)}</p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    {spendingLimitInfo.source === 'driver' && '(Your personal limit)'}
+                <div className="text-center pb-3">
+                  <p className="text-xs text-gray-600 mb-1">DO NOT EXCEED THIS AMOUNT</p>
+                  <p className="text-4xl font-bold text-red-700 mb-2">R {spendingLimitInfo.availableAmount.toFixed(2)}</p>
+                  <p className="text-base font-bold text-red-900 mb-1">
+                    {spendingLimitInfo.source === 'driver' && '(Your personal daily limit)'}
                     {spendingLimitInfo.source === 'organization' && '(Organization limit)'}
                     {spendingLimitInfo.source === 'garage' && '(Garage account limit)'}
                   </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-red-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-700 mb-1">Limit Type</p>
-                    <p className="text-sm font-bold text-red-900 capitalize">{spendingLimitInfo.type}</p>
-                  </div>
-                  <div className="bg-red-50 rounded-lg p-3 text-center">
-                    <p className="text-xs text-gray-700 mb-1">Limit Source</p>
-                    <p className="text-sm font-bold text-red-900 capitalize">{spendingLimitInfo.source}</p>
-                  </div>
-                </div>
-
-                <div className="border-t-2 border-red-200 pt-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-700">Total limit:</span>
-                    <span className="text-base font-bold text-gray-900">R {spendingLimitInfo.limit.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-700">Already spent:</span>
-                    <span className="text-base font-bold text-gray-900">R {spendingLimitInfo.currentSpending.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-red-700">Remaining available:</span>
-                    <span className="text-base font-bold text-red-700">R {spendingLimitInfo.availableAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-
-                <div className="border-t-2 border-red-200 pt-3">
-                  <div className="bg-amber-50 rounded-lg p-3">
-                    <p className="text-xs font-bold text-amber-900 mb-2 text-center">ESTIMATED MAXIMUM REFUEL</p>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-amber-900">{spendingLimitInfo.maxLiters.toFixed(1)} L</p>
-                      <p className="text-xs text-amber-700 mt-1">
-                        Based on fuel price: R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
-                      </p>
-                      <p className="text-xs text-amber-800 mt-2 italic">
-                        (Fuel only - oil purchases will reduce this amount)
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-sm text-gray-600">
+                    Maximum fuel: <span className="font-bold text-amber-900">{spendingLimitInfo.maxLiters.toFixed(1)} L</span>
+                    {' '}@ R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
+                  </p>
                 </div>
 
                 <div className="bg-red-100 rounded-lg p-3 border-2 border-red-400">

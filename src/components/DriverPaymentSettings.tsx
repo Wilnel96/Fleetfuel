@@ -79,13 +79,22 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
 
       if (settingsResult.data) {
         setSettings(settingsResult.data);
-        setFormData({
+
+        const newFormData = {
           dailyLimit: settingsResult.data.daily_spending_limit ? Number(settingsResult.data.daily_spending_limit) : 5000,
           monthlyLimit: settingsResult.data.monthly_spending_limit ? Number(settingsResult.data.monthly_spending_limit) : 50000,
           paymentEnabled: settingsResult.data.payment_enabled,
           dailyLimitEnabled: settingsResult.data.daily_spending_limit !== null,
           monthlyLimitEnabled: settingsResult.data.monthly_spending_limit !== null,
+        };
+
+        console.log('Driver Payment Settings loaded:', {
+          raw_daily_limit: settingsResult.data.daily_spending_limit,
+          raw_monthly_limit: settingsResult.data.monthly_spending_limit,
+          parsed_form_data: newFormData
         });
+
+        setFormData(newFormData);
       }
 
       if (spendingResult.data) {
@@ -104,24 +113,35 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
       setError('');
       setSuccess('');
 
+      const updatePayload = {
+        daily_spending_limit: formData.dailyLimitEnabled ? formData.dailyLimit : null,
+        monthly_spending_limit: formData.monthlyLimitEnabled ? formData.monthlyLimit : null,
+        payment_enabled: formData.paymentEnabled,
+      };
+
       console.log('Attempting to update driver payment settings:', {
         driver_id: driverId,
-        daily_spending_limit: formData.dailyLimit,
-        monthly_spending_limit: formData.monthlyLimit,
-        payment_enabled: formData.paymentEnabled,
+        form_state: formData,
+        update_payload: updatePayload,
       });
 
       const { data, error: updateError, count } = await supabase
         .from('driver_payment_settings')
-        .update({
-          daily_spending_limit: formData.dailyLimitEnabled ? formData.dailyLimit : null,
-          monthly_spending_limit: formData.monthlyLimitEnabled ? formData.monthlyLimit : null,
-          payment_enabled: formData.paymentEnabled,
-        })
+        .update(updatePayload)
         .eq('driver_id', driverId)
         .select();
 
-      console.log('Update result:', { data, error: updateError, count });
+      console.log('Update result:', {
+        data,
+        error: updateError,
+        count,
+        error_details: updateError ? {
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+          code: updateError.code
+        } : null
+      });
 
       if (updateError) throw updateError;
 

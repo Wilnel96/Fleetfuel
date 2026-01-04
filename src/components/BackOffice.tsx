@@ -271,8 +271,8 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: Building2,
       color: 'blue',
     },
-    // Only show NFC Payment Card if payment option is NFC
-    ...(paymentOption === 'NFC' ? [{
+    // Only show NFC Payment Card if payment option is Card Payment
+    ...(paymentOption === 'Card Payment' ? [{
       id: 'payment-card',
       title: 'NFC Payment Card',
       description: 'Register debit/credit card for driver NFC payments',

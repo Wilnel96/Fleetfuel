@@ -467,6 +467,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         source: 'driver' | 'organization' | 'garage';
       }> = [];
 
+      console.log('========== SPENDING LIMIT CHECK START ==========');
+      console.log('Driver ID:', drawnVehicle.driver_id);
+      console.log('Organization ID:', drawnVehicle.organization_id);
+      console.log('Garage ID:', selectedGarage.id);
+
       // Check driver-specific spending limits
       const { data: driverPaymentSettings, error: driverPaymentError } = await supabase
         .from('driver_payment_settings')
@@ -475,7 +480,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         .maybeSingle();
 
       if (driverPaymentError) {
-        console.error('Error fetching driver payment settings:', driverPaymentError);
+        console.error('❌ Error fetching driver payment settings:', driverPaymentError);
+      } else {
+        console.log('✅ Driver payment settings loaded:', driverPaymentSettings);
       }
 
       // Check driver's daily limit
@@ -639,6 +646,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       }
 
       // Find the most restrictive limit (lowest available amount)
+      console.log('📊 All collected limits:', allLimits);
+
       const mostRestrictiveLimit = allLimits.length > 0
         ? allLimits.reduce((prev, curr) =>
             curr.availableAmount < prev.availableAmount ? curr : prev
@@ -646,12 +655,17 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         : null;
 
       if (mostRestrictiveLimit) {
-        console.log('Most restrictive limit applied:', {
+        console.log('🎯 Most restrictive limit applied:', {
           source: mostRestrictiveLimit.source,
           type: mostRestrictiveLimit.type,
+          limit: mostRestrictiveLimit.limit,
+          currentSpending: mostRestrictiveLimit.currentSpending,
           available: mostRestrictiveLimit.availableAmount
         });
+      } else {
+        console.log('⚠️ No spending limits found - all limits will be unrestricted');
       }
+      console.log('========== SPENDING LIMIT CHECK END ==========');
 
       // Set spending limit info
       if (mostRestrictiveLimit) {

@@ -475,7 +475,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       // Check driver-specific spending limits
       const { data: driverPaymentSettings, error: driverPaymentError } = await supabase
         .from('driver_payment_settings')
-        .select('daily_spending_limit, monthly_spending_limit')
+        .select('daily_spending_limit, monthly_spending_limit, payment_enabled')
         .eq('driver_id', drawnVehicle.driver_id)
         .maybeSingle();
 
@@ -483,10 +483,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         console.error('❌ Error fetching driver payment settings:', driverPaymentError);
       } else {
         console.log('✅ Driver payment settings loaded:', driverPaymentSettings);
+        console.log('   - Daily limit:', driverPaymentSettings?.daily_spending_limit);
+        console.log('   - Monthly limit:', driverPaymentSettings?.monthly_spending_limit);
+        console.log('   - Payment enabled:', driverPaymentSettings?.payment_enabled);
       }
 
-      // Check driver's daily limit
-      if (driverPaymentSettings?.daily_spending_limit) {
+      // Check driver's daily limit (only if payment is enabled)
+      if (driverPaymentSettings?.payment_enabled && driverPaymentSettings?.daily_spending_limit) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -517,11 +520,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           console.error('❌ Error fetching driver daily transactions:', driverDailyError);
         }
       } else {
-        console.log('⚠️ Driver has NO daily spending limit set');
+        if (!driverPaymentSettings?.payment_enabled) {
+          console.log('⚠️ Driver payment is DISABLED - skipping daily limit');
+        } else {
+          console.log('⚠️ Driver has NO daily spending limit set');
+        }
       }
 
-      // Check driver's monthly limit
-      if (driverPaymentSettings?.monthly_spending_limit) {
+      // Check driver's monthly limit (only if payment is enabled)
+      if (driverPaymentSettings?.payment_enabled && driverPaymentSettings?.monthly_spending_limit) {
         const firstDayOfMonth = new Date();
         firstDayOfMonth.setDate(1);
         firstDayOfMonth.setHours(0, 0, 0, 0);
@@ -544,11 +551,19 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
             source: 'driver'
           });
 
-          console.log('Driver monthly limit:', {
-            limit: driverPaymentSettings.monthly_spending_limit,
+          console.log('✅ Driver monthly limit ADDED:', {
+            limit: parseFloat(driverPaymentSettings.monthly_spending_limit),
             spent: driverMonthlySpending,
             available: availableMonthly
           });
+        } else {
+          console.error('❌ Error fetching driver monthly transactions:', driverMonthlyError);
+        }
+      } else {
+        if (!driverPaymentSettings?.payment_enabled) {
+          console.log('⚠️ Driver payment is DISABLED - skipping monthly limit');
+        } else {
+          console.log('⚠️ Driver has NO monthly spending limit set');
         }
       }
 
@@ -650,7 +665,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       }
 
       // Find the most restrictive limit (lowest available amount)
-      console.log('📊 All collected limits:', allLimits);
+      console.log('========================================');
+      console.log('📊 ALL LIMITS COLLECTED:');
+      allLimits.forEach((limit, index) => {
+        console.log(`   ${index + 1}. ${limit.source.toUpperCase()} ${limit.type}:`,
+          `R${limit.availableAmount.toFixed(2)} available (limit: R${limit.limit.toFixed(2)}, spent: R${limit.currentSpending.toFixed(2)})`);
+      });
+      console.log('========================================');
 
       const mostRestrictiveLimit = allLimits.length > 0
         ? allLimits.reduce((prev, curr) =>
@@ -659,15 +680,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         : null;
 
       if (mostRestrictiveLimit) {
-        console.log('🎯 Most restrictive limit applied:', {
-          source: mostRestrictiveLimit.source,
-          type: mostRestrictiveLimit.type,
-          limit: mostRestrictiveLimit.limit,
-          currentSpending: mostRestrictiveLimit.currentSpending,
-          available: mostRestrictiveLimit.availableAmount
-        });
+        console.log('🎯🎯🎯 MOST RESTRICTIVE LIMIT SELECTED 🎯🎯🎯');
+        console.log(`   SOURCE: ${mostRestrictiveLimit.source.toUpperCase()}`);
+        console.log(`   TYPE: ${mostRestrictiveLimit.type.toUpperCase()}`);
+        console.log(`   TOTAL LIMIT: R${mostRestrictiveLimit.limit.toFixed(2)}`);
+        console.log(`   ALREADY SPENT: R${mostRestrictiveLimit.currentSpending.toFixed(2)}`);
+        console.log(`   AVAILABLE: R${mostRestrictiveLimit.availableAmount.toFixed(2)}`);
+        console.log('========================================');
       } else {
-        console.log('⚠️ No spending limits found - all limits will be unrestricted');
+        console.log('⚠️⚠️⚠️ NO SPENDING LIMITS FOUND ⚠️⚠️⚠️');
       }
       console.log('========== SPENDING LIMIT CHECK END ==========');
 

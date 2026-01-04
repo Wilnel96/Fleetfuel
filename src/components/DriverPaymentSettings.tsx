@@ -45,6 +45,8 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
     dailyLimit: 5000,
     monthlyLimit: 50000,
     paymentEnabled: true,
+    dailyLimitEnabled: true,
+    monthlyLimitEnabled: true,
   });
 
   useEffect(() => {
@@ -78,9 +80,11 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
       if (settingsResult.data) {
         setSettings(settingsResult.data);
         setFormData({
-          dailyLimit: Number(settingsResult.data.daily_spending_limit),
-          monthlyLimit: Number(settingsResult.data.monthly_spending_limit),
+          dailyLimit: settingsResult.data.daily_spending_limit ? Number(settingsResult.data.daily_spending_limit) : 5000,
+          monthlyLimit: settingsResult.data.monthly_spending_limit ? Number(settingsResult.data.monthly_spending_limit) : 50000,
           paymentEnabled: settingsResult.data.payment_enabled,
+          dailyLimitEnabled: settingsResult.data.daily_spending_limit !== null,
+          monthlyLimitEnabled: settingsResult.data.monthly_spending_limit !== null,
         });
       }
 
@@ -100,20 +104,35 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
       setError('');
       setSuccess('');
 
-      const { error: updateError } = await supabase
+      console.log('Attempting to update driver payment settings:', {
+        driver_id: driverId,
+        daily_spending_limit: formData.dailyLimit,
+        monthly_spending_limit: formData.monthlyLimit,
+        payment_enabled: formData.paymentEnabled,
+      });
+
+      const { data, error: updateError, count } = await supabase
         .from('driver_payment_settings')
         .update({
-          daily_spending_limit: formData.dailyLimit,
-          monthly_spending_limit: formData.monthlyLimit,
+          daily_spending_limit: formData.dailyLimitEnabled ? formData.dailyLimit : null,
+          monthly_spending_limit: formData.monthlyLimitEnabled ? formData.monthlyLimit : null,
           payment_enabled: formData.paymentEnabled,
         })
-        .eq('driver_id', driverId);
+        .eq('driver_id', driverId)
+        .select();
+
+      console.log('Update result:', { data, error: updateError, count });
 
       if (updateError) throw updateError;
+
+      if (!data || data.length === 0) {
+        throw new Error('No rows were updated. This may be a permissions issue.');
+      }
 
       setSuccess('Payment settings updated successfully!');
       await loadDriverData();
     } catch (err: any) {
+      console.error('Error updating payment settings:', err);
       setError(err.message || 'Failed to update settings');
     } finally {
       setSaving(false);
@@ -246,15 +265,23 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                   <p className="text-2xl font-bold mb-2">
                     R{spendingData.daily_spent.toFixed(2)}
                   </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                    <div
-                      className={`h-2 rounded-full transition-all ${getProgressColor(spendingData.daily_spent, spendingData.daily_limit)}`}
-                      style={{ width: `${getProgressPercentage(spendingData.daily_spent, spendingData.daily_limit)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Limit: R{spendingData.daily_limit.toFixed(2)}
-                  </p>
+                  {spendingData.daily_limit !== null ? (
+                    <>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                        <div
+                          className={`h-2 rounded-full transition-all ${getProgressColor(spendingData.daily_spent, spendingData.daily_limit)}`}
+                          style={{ width: `${getProgressPercentage(spendingData.daily_spent, spendingData.daily_limit)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Limit: R{spendingData.daily_limit.toFixed(2)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-green-600 font-medium mt-2">
+                      No daily limit (unlimited)
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-4">
@@ -262,15 +289,23 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                   <p className="text-2xl font-bold mb-2">
                     R{spendingData.monthly_spent.toFixed(2)}
                   </p>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
-                    <div
-                      className={`h-2 rounded-full transition-all ${getProgressColor(spendingData.monthly_spent, spendingData.monthly_limit)}`}
-                      style={{ width: `${getProgressPercentage(spendingData.monthly_spent, spendingData.monthly_limit)}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Limit: R{spendingData.monthly_limit.toFixed(2)}
-                  </p>
+                  {spendingData.monthly_limit !== null ? (
+                    <>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+                        <div
+                          className={`h-2 rounded-full transition-all ${getProgressColor(spendingData.monthly_spent, spendingData.monthly_limit)}`}
+                          style={{ width: `${getProgressPercentage(spendingData.monthly_spent, spendingData.monthly_limit)}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Limit: R{spendingData.monthly_limit.toFixed(2)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-green-600 font-medium mt-2">
+                      No monthly limit (unlimited)
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -337,36 +372,64 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
             </h3>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Daily Spending Limit (R)
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Daily Spending Limit (R)
+                </label>
+                <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!formData.dailyLimitEnabled}
+                    onChange={(e) => setFormData({ ...formData, dailyLimitEnabled: !e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-600">No Limit (Unlimited)</span>
+                </label>
+              </div>
               <input
                 type="number"
                 value={formData.dailyLimit}
                 onChange={(e) => setFormData({ ...formData, dailyLimit: Number(e.target.value) })}
+                disabled={!formData.dailyLimitEnabled}
                 min="0"
                 step="100"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Maximum amount driver can spend per day
+                {formData.dailyLimitEnabled
+                  ? 'Maximum amount the driver can spend per day. Set to 0 to completely disable spending.'
+                  : 'No daily limit - driver can spend any amount per day (monthly limit still applies if enabled).'}
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monthly Spending Limit (R)
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Monthly Spending Limit (R)
+                </label>
+                <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!formData.monthlyLimitEnabled}
+                    onChange={(e) => setFormData({ ...formData, monthlyLimitEnabled: !e.target.checked })}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-600">No Limit (Unlimited)</span>
+                </label>
+              </div>
               <input
                 type="number"
                 value={formData.monthlyLimit}
                 onChange={(e) => setFormData({ ...formData, monthlyLimit: Number(e.target.value) })}
+                disabled={!formData.monthlyLimitEnabled}
                 min="0"
                 step="1000"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Maximum amount driver can spend per month
+                {formData.monthlyLimitEnabled
+                  ? 'Maximum amount the driver can spend per month. Set to 0 to completely disable spending.'
+                  : 'No monthly limit - driver can spend any amount per month (daily limit still applies if enabled).'}
               </p>
             </div>
 

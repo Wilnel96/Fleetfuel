@@ -229,28 +229,19 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   };
 
   const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
-    // Get the most recent draw transaction for this vehicle
-    const { data: lastDraw } = await supabase
+    // Check if vehicle has ANY unreturned draws
+    const { data: unreturnedDraws } = await supabase
       .from('vehicle_transactions')
       .select('id, driver_id, created_at')
       .eq('vehicle_id', vehicleId)
       .eq('transaction_type', 'draw')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .is('related_transaction_id', null)
+      .order('created_at', { ascending: false });
 
-    if (!lastDraw) return null;
+    if (!unreturnedDraws || unreturnedDraws.length === 0) return null;
 
-    // Check if this draw has been returned
-    const { data: returnTransaction } = await supabase
-      .from('vehicle_transactions')
-      .select('id')
-      .eq('related_transaction_id', lastDraw.id)
-      .eq('transaction_type', 'return')
-      .maybeSingle();
-
-    // If there's a return transaction, the vehicle was returned
-    if (returnTransaction) return null;
+    // Get the most recent unreturned draw
+    const lastDraw = unreturnedDraws[0];
 
     // Vehicle has not been returned, get the driver's name
     const { data: driver } = await supabase
@@ -578,7 +569,13 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to draw vehicle');
+      const errorMessage = err.message || 'Failed to draw vehicle';
+
+      if (errorMessage.includes('already drawn out') || errorMessage.includes('not been returned')) {
+        setError(`This vehicle is already drawn out by another driver and has not been returned. Please return the vehicle first or select a different vehicle.`);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

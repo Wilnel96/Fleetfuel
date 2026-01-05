@@ -2307,7 +2307,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                         </div>
 
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Oil Brand (Optional)</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
                           <input
                             type="text"
                             value={formData.oilBrand}

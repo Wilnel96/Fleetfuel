@@ -149,6 +149,8 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     dailyLimit: 5000,
     monthlyLimit: 50000,
     paymentEnabled: true,
+    dailyLimitEnabled: true,
+    monthlyLimitEnabled: true,
   });
 
   useEffect(() => {
@@ -333,9 +335,11 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       if (settingsResult.data) {
         setPaymentSettings(settingsResult.data);
         setPaymentFormData({
-          dailyLimit: Number(settingsResult.data.daily_spending_limit),
-          monthlyLimit: Number(settingsResult.data.monthly_spending_limit),
+          dailyLimit: settingsResult.data.daily_spending_limit ? Number(settingsResult.data.daily_spending_limit) : 5000,
+          monthlyLimit: settingsResult.data.monthly_spending_limit ? Number(settingsResult.data.monthly_spending_limit) : 50000,
           paymentEnabled: settingsResult.data.payment_enabled,
+          dailyLimitEnabled: settingsResult.data.daily_spending_limit !== null,
+          monthlyLimitEnabled: settingsResult.data.monthly_spending_limit !== null,
         });
       }
 
@@ -429,8 +433,8 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       const { error: updateError } = await supabase
         .from('driver_payment_settings')
         .update({
-          daily_spending_limit: paymentFormData.dailyLimit,
-          monthly_spending_limit: paymentFormData.monthlyLimit,
+          daily_spending_limit: paymentFormData.dailyLimitEnabled ? paymentFormData.dailyLimit : null,
+          monthly_spending_limit: paymentFormData.monthlyLimitEnabled ? paymentFormData.monthlyLimit : null,
           payment_enabled: paymentFormData.paymentEnabled,
         })
         .eq('driver_id', editingDriver.id);
@@ -1489,36 +1493,60 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                           <h4 className="font-medium text-gray-900 text-sm">Spending Limits</h4>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Daily Spending Limit (R)
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                Daily Spending Limit (R)
+                              </label>
+                              <label className="flex items-center space-x-2 text-sm cursor-pointer bg-yellow-100 px-3 py-2 rounded-lg border-2 border-yellow-400">
+                                <input
+                                  type="checkbox"
+                                  checked={!paymentFormData.dailyLimitEnabled}
+                                  onChange={(e) => setPaymentFormData({ ...paymentFormData, dailyLimitEnabled: !e.target.checked })}
+                                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-gray-900 font-semibold">No Limit (Unlimited)</span>
+                              </label>
+                            </div>
                             <input
                               type="number"
                               value={paymentFormData.dailyLimit}
                               onChange={(e) => setPaymentFormData({ ...paymentFormData, dailyLimit: Number(e.target.value) })}
+                              disabled={!paymentFormData.dailyLimitEnabled}
                               min="0"
                               step="100"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Maximum amount driver can spend per day
+                              {paymentFormData.dailyLimitEnabled ? 'Maximum amount driver can spend per day' : 'No daily spending limit applied'}
                             </p>
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Monthly Spending Limit (R)
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="block text-sm font-medium text-gray-700">
+                                Monthly Spending Limit (R)
+                              </label>
+                              <label className="flex items-center space-x-2 text-sm cursor-pointer bg-yellow-100 px-3 py-2 rounded-lg border-2 border-yellow-400">
+                                <input
+                                  type="checkbox"
+                                  checked={!paymentFormData.monthlyLimitEnabled}
+                                  onChange={(e) => setPaymentFormData({ ...paymentFormData, monthlyLimitEnabled: !e.target.checked })}
+                                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-gray-900 font-semibold">No Limit (Unlimited)</span>
+                              </label>
+                            </div>
                             <input
                               type="number"
                               value={paymentFormData.monthlyLimit}
                               onChange={(e) => setPaymentFormData({ ...paymentFormData, monthlyLimit: Number(e.target.value) })}
+                              disabled={!paymentFormData.monthlyLimitEnabled}
                               min="0"
                               step="1000"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                             />
                             <p className="text-xs text-gray-500 mt-1">
-                              Maximum amount driver can spend per month
+                              {paymentFormData.monthlyLimitEnabled ? 'Maximum amount driver can spend per month' : 'No monthly spending limit applied'}
                             </p>
                           </div>
 

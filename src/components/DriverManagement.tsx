@@ -753,14 +753,16 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     return true;
   };
 
-  const getProgressColor = (spent: number, limit: number): string => {
+  const getProgressColor = (spent: number, limit: number | null): string => {
+    if (limit === null) return 'bg-gray-400';
     const percentage = (spent / limit) * 100;
     if (percentage >= 90) return 'bg-red-500';
     if (percentage >= 75) return 'bg-yellow-500';
     return 'bg-green-500';
   };
 
-  const getProgressPercentage = (spent: number, limit: number): number => {
+  const getProgressPercentage = (spent: number, limit: number | null): number => {
+    if (limit === null) return 0;
     return Math.min((spent / limit) * 100, 100);
   };
 
@@ -1411,7 +1413,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                                   />
                                 </div>
                                 <p className="text-xs text-gray-500">
-                                  Limit: R{spendingData.daily_limit.toFixed(2)}
+                                  Limit: {spendingData.daily_limit !== null ? `R${spendingData.daily_limit.toFixed(2)}` : 'Unlimited'}
                                 </p>
                               </div>
 
@@ -1427,7 +1429,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                                   />
                                 </div>
                                 <p className="text-xs text-gray-500">
-                                  Limit: R{spendingData.monthly_limit.toFixed(2)}
+                                  Limit: {spendingData.monthly_limit !== null ? `R${spendingData.monthly_limit.toFixed(2)}` : 'Unlimited'}
                                 </p>
                               </div>
                             </div>

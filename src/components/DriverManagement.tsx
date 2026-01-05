@@ -1574,7 +1574,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                             disabled={savingPaymentSettings}
                             className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 text-sm font-medium"
                           >
-                            {savingPaymentSettings ? 'Saving...' : 'Save Payment Settings'}
+                            {savingPaymentSettings ? 'Saving...' : 'Update & Save Payment Settings by Selecting this Button'}
                           </button>
                         </div>
 

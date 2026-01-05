@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Fuel, Car, LogOut, MapPin, ArrowLeft, Lock } from 'lucide-react';
+import { Fuel, Car, LogOut, MapPin, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import { DriverData } from './DriverAuth';
 import DriverMobileFuelPurchase from './DriverMobileFuelPurchase';
 import DrawVehicle from './DrawVehicle';
@@ -16,10 +16,19 @@ interface DriverMobileAppProps {
 
 type MenuOption = 'menu' | 'draw' | 'return' | 'refuel' | 'directory' | 'pin_setup';
 
+interface DrawnVehicle {
+  id: string;
+  vehicleId: string;
+  vehicleRegistration: string;
+  odometerReading: number;
+  drawnAt: string;
+}
+
 export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: DriverMobileAppProps) {
   const [localDriver, setLocalDriver] = useState(driver);
   const [needsPINSetup, setNeedsPINSetup] = useState(!localDriver.hasPIN);
   const [currentView, setCurrentView] = useState<MenuOption>(localDriver.hasPIN ? 'menu' : 'pin_setup');
+  const [drawnVehicles, setDrawnVehicles] = useState<DrawnVehicle[]>([]);
 
   console.log('[DriverMobileApp] Rendering. currentView:', currentView, 'needsPINSetup:', needsPINSetup, 'localDriver.hasPIN:', localDriver.hasPIN);
 
@@ -37,6 +46,46 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
       setCurrentView('menu');
     }
   }, [currentView, needsPINSetup, localDriver.hasPIN]);
+
+  // Fetch drawn vehicles that haven't been returned
+  useEffect(() => {
+    async function fetchDrawnVehicles() {
+      try {
+        const { data, error } = await supabase
+          .from('vehicle_transactions')
+          .select(`
+            id,
+            vehicle_id,
+            odometer_reading,
+            created_at,
+            vehicles!inner(registration_number)
+          `)
+          .eq('driver_id', driver.id)
+          .eq('transaction_type', 'draw')
+          .is('related_transaction_id', null)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          const drawn = data.map((item: any) => ({
+            id: item.id,
+            vehicleId: item.vehicle_id,
+            vehicleRegistration: item.vehicles.registration_number,
+            odometerReading: item.odometer_reading,
+            drawnAt: item.created_at
+          }));
+          setDrawnVehicles(drawn);
+        }
+      } catch (error) {
+        console.error('Error fetching drawn vehicles:', error);
+      }
+    }
+
+    if (currentView === 'menu') {
+      fetchDrawnVehicles();
+    }
+  }, [currentView, driver.id]);
 
   if (currentView === 'pin_setup') {
     console.log('[DriverMobileApp] Rendering PIN setup screen');
@@ -160,6 +209,41 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
       </div>
 
       <div className="p-4 max-w-2xl mx-auto">
+        {drawnVehicles.length > 0 && (
+          <div className="mb-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg p-4 shadow-md">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-amber-900 mb-2">Vehicle Drawn Reminder</h3>
+                <p className="text-sm text-amber-800 mb-3">
+                  You have {drawnVehicles.length} vehicle{drawnVehicles.length > 1 ? 's' : ''} currently drawn under your name:
+                </p>
+                <div className="space-y-2">
+                  {drawnVehicles.map((vehicle) => (
+                    <div key={vehicle.id} className="bg-white rounded-md p-3 border border-amber-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-gray-900">{vehicle.vehicleRegistration}</p>
+                          <p className="text-xs text-gray-600">
+                            Drawn at {vehicle.odometerReading.toLocaleString()} km
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(vehicle.drawnAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <Car className="w-6 h-6 text-amber-600" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-amber-800 mt-3 font-medium">
+                  Please remember to return {drawnVehicles.length > 1 ? 'these vehicles' : 'this vehicle'} when you're done.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h2>
           <p className="text-gray-600">Select an option to get started</p>

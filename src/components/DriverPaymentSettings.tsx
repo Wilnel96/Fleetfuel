@@ -405,14 +405,14 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                 <label className="block text-sm font-medium text-gray-700">
                   Daily Spending Limit (R)
                 </label>
-                <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <label className="flex items-center space-x-2 text-sm cursor-pointer bg-yellow-100 px-3 py-2 rounded-lg border-2 border-yellow-400">
                   <input
                     type="checkbox"
                     checked={!formData.dailyLimitEnabled}
                     onChange={(e) => setFormData({ ...formData, dailyLimitEnabled: !e.target.checked })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-gray-600">No Limit (Unlimited)</span>
+                  <span className="text-gray-900 font-semibold">No Limit (Unlimited)</span>
                 </label>
               </div>
               <input
@@ -465,14 +465,14 @@ export function DriverPaymentSettings({ driverId, onClose }: DriverPaymentSettin
                 <label className="block text-sm font-medium text-gray-700">
                   Monthly Spending Limit (R)
                 </label>
-                <label className="flex items-center space-x-2 text-sm cursor-pointer">
+                <label className="flex items-center space-x-2 text-sm cursor-pointer bg-yellow-100 px-3 py-2 rounded-lg border-2 border-yellow-400">
                   <input
                     type="checkbox"
                     checked={!formData.monthlyLimitEnabled}
                     onChange={(e) => setFormData({ ...formData, monthlyLimitEnabled: !e.target.checked })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-gray-600">No Limit (Unlimited)</span>
+                  <span className="text-gray-900 font-semibold">No Limit (Unlimited)</span>
                 </label>
               </div>
               <input

@@ -229,19 +229,34 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   };
 
   const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
-    // Check if vehicle has ANY unreturned draws
-    const { data: unreturnedDraws } = await supabase
+    // Get all draws for this vehicle
+    const { data: draws } = await supabase
       .from('vehicle_transactions')
       .select('id, driver_id, created_at')
       .eq('vehicle_id', vehicleId)
       .eq('transaction_type', 'draw')
-      .is('related_transaction_id', null)
       .order('created_at', { ascending: false });
 
-    if (!unreturnedDraws || unreturnedDraws.length === 0) return null;
+    if (!draws || draws.length === 0) return null;
 
-    // Get the most recent unreturned draw
-    const lastDraw = unreturnedDraws[0];
+    // Find the most recent draw that has no return
+    let lastDraw = null;
+    for (const draw of draws) {
+      const { data: returnData } = await supabase
+        .from('vehicle_transactions')
+        .select('id')
+        .eq('related_transaction_id', draw.id)
+        .eq('transaction_type', 'return')
+        .limit(1)
+        .maybeSingle();
+
+      if (!returnData) {
+        lastDraw = draw;
+        break;
+      }
+    }
+
+    if (!lastDraw) return null;
 
     // Vehicle has not been returned, get the driver's name
     const { data: driver } = await supabase

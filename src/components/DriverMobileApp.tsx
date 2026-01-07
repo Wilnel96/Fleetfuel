@@ -51,7 +51,7 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
   useEffect(() => {
     async function fetchDrawnVehicles() {
       try {
-        const { data, error } = await supabase
+        const { data: draws, error } = await supabase
           .from('vehicle_transactions')
           .select(`
             id,
@@ -62,20 +62,34 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
           `)
           .eq('driver_id', driver.id)
           .eq('transaction_type', 'draw')
-          .is('related_transaction_id', null)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        if (data) {
-          const drawn = data.map((item: any) => ({
-            id: item.id,
-            vehicleId: item.vehicle_id,
-            vehicleRegistration: item.vehicles.registration_number,
-            odometerReading: item.odometer_reading,
-            drawnAt: item.created_at
-          }));
-          setDrawnVehicles(drawn);
+        if (draws) {
+          const unreturned: DrawnVehicle[] = [];
+
+          for (const draw of draws) {
+            const { data: returnData } = await supabase
+              .from('vehicle_transactions')
+              .select('id')
+              .eq('related_transaction_id', draw.id)
+              .eq('transaction_type', 'return')
+              .limit(1)
+              .maybeSingle();
+
+            if (!returnData) {
+              unreturned.push({
+                id: draw.id,
+                vehicleId: draw.vehicle_id,
+                vehicleRegistration: draw.vehicles.registration_number,
+                odometerReading: draw.odometer_reading,
+                drawnAt: draw.created_at
+              });
+            }
+          }
+
+          setDrawnVehicles(unreturned);
         }
       } catch (error) {
         console.error('Error fetching drawn vehicles:', error);

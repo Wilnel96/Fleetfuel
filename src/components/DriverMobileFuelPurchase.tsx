@@ -1210,21 +1210,20 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         return;
       }
 
-      if (!selectedGarage?.fuel_prices) {
-        console.warn('[FuelPurchase] Garage has no fuel_prices defined');
-        setError('This garage has not set up fuel prices. Please select a different garage or contact the garage.');
-        return;
-      }
-
-      const price = selectedGarage.fuel_prices[drawnVehicle.fuel_type];
+      // Check if garage has fuel prices and if the specific fuel type has a price
+      const price = selectedGarage?.fuel_prices?.[drawnVehicle.fuel_type];
       console.log('[FuelPurchase] Price for', drawnVehicle.fuel_type, '=', price);
 
       if (price) {
+        // Garage has a set price - use it
         setFormData(prev => ({ ...prev, pricePerLiter: price.toFixed(2) }));
         setError(''); // Clear any previous errors
+        console.log('[FuelPurchase] Using garage set price:', price);
       } else {
-        console.warn('[FuelPurchase] No price found for fuel type:', drawnVehicle.fuel_type);
-        setError(`No price set for ${drawnVehicle.fuel_type} at this garage. Please contact the garage to set up fuel prices.`);
+        // No price available - allow manual entry
+        console.log('[FuelPurchase] No price found for fuel type:', drawnVehicle.fuel_type, '- allowing manual entry');
+        setFormData(prev => ({ ...prev, pricePerLiter: '' })); // Clear price to allow manual entry
+        setError(''); // Clear any errors - manual entry is allowed
       }
     }
   }, [selectedGarageId, drawnVehicle, garages, currentStep]);
@@ -1502,10 +1501,16 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                     {spendingLimitInfo.source === 'organization' && '(Organization limit)'}
                     {spendingLimitInfo.source === 'garage' && '(Garage account limit)'}
                   </p>
-                  <p className="text-sm text-gray-600">
-                    Maximum fuel: <span className="font-bold text-amber-900">{spendingLimitInfo.maxLiters.toFixed(1)} L</span>
-                    {' '}@ R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
-                  </p>
+                  {spendingLimitInfo.pricePerLiter > 0 ? (
+                    <p className="text-sm text-gray-600">
+                      Maximum fuel: <span className="font-bold text-amber-900">{spendingLimitInfo.maxLiters.toFixed(1)} L</span>
+                      {' '}@ R {spendingLimitInfo.pricePerLiter.toFixed(2)}/L
+                    </p>
+                  ) : (
+                    <p className="text-sm text-blue-600 font-medium">
+                      Enter diesel price below to see max liters
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-red-100 rounded-lg p-3 border-2 border-red-400">
@@ -2209,18 +2214,55 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price per Liter (R)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Price per Liter (R)
+                      {selectedGarageId && !formData.pricePerLiter && (
+                        <span className="text-blue-600 text-xs ml-2">- Enter price manually</span>
+                      )}
+                    </label>
                     <input
                       type="number"
                       step="0.01"
+                      min="0.01"
                       value={formData.pricePerLiter}
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg px-4 py-3 bg-gray-50"
-                      placeholder="Select garage to see price"
+                      onChange={(e) => {
+                        const newPrice = e.target.value;
+                        setFormData(prev => {
+                          const fuelTotal = parseFloat(prev.liters || '0') * parseFloat(newPrice || '0');
+                          const oilTotal = parseFloat(prev.oilTotalAmount || '0');
+                          const grandTotal = fuelTotal + oilTotal;
+
+                          return {
+                            ...prev,
+                            pricePerLiter: newPrice,
+                            totalAmount: !isNaN(grandTotal) ? grandTotal.toFixed(2) : ''
+                          };
+                        });
+                      }}
+                      className={`w-full border rounded-lg px-4 py-3 ${
+                        formData.pricePerLiter ? 'border-gray-300 bg-white' : 'border-blue-400 bg-blue-50'
+                      }`}
+                      placeholder={selectedGarageId ? "Enter diesel price" : "Select garage first"}
+                      required
                     />
                     {drawnVehicle?.fuel_type && (
                       <p className="text-xs text-gray-500 mt-1">
                         Fuel Type: {drawnVehicle.fuel_type}
+                      </p>
+                    )}
+                    {selectedGarageId && !formData.pricePerLiter && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        This garage hasn't set a price for {drawnVehicle?.fuel_type}. Please enter the current price per liter.
+                      </p>
+                    )}
+                    {formData.pricePerLiter && parseFloat(formData.pricePerLiter) > 30 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Price seems high. Please verify: R{formData.pricePerLiter}/L
+                      </p>
+                    )}
+                    {formData.pricePerLiter && parseFloat(formData.pricePerLiter) < 15 && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Price seems low. Please verify: R{formData.pricePerLiter}/L
                       </p>
                     )}
                   </div>

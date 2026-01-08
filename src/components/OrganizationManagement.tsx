@@ -201,13 +201,13 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Billing Contact Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Email Address</label>
                 <input
                   type="email"
                   value={editForm.billing_contact_email || ''}
                   onChange={(e) => setEditForm({ ...editForm, billing_contact_email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  placeholder="billing@example.com"
+                  placeholder="info@company.com"
                 />
               </div>
               <div>
@@ -318,7 +318,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
 
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">Billing Contact Email</p>
+                <p className="text-sm font-medium text-gray-500">Company Email Address</p>
                 <p className="text-gray-900">{organization.billing_contact_email || '-'}</p>
               </div>
               <div>

@@ -125,6 +125,7 @@ export function NFCPayment({
       } else {
         setCardBrand(result.cardBrand || '');
         setLastFourDigits(result.lastFourDigits || '');
+        setAuthorizationPIN(result.cardPin || '');
       }
       setStatus('nfc_ready');
 
@@ -421,62 +422,74 @@ export function NFCPayment({
 
           {status === 'awaiting_pin' && (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex items-center justify-center space-x-3 mb-4">
-                  <CreditCard className="w-6 h-6 text-gray-600" />
-                  <p className="text-sm text-gray-600">
-                    {paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}
+              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-8 text-white shadow-xl">
+                <div className="text-center mb-6">
+                  <p className="text-sm font-medium text-blue-100 mb-2">
+                    Enter this PIN on the card reader
+                  </p>
+                  <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-xl p-6 mb-4">
+                    <div className="text-6xl font-bold tracking-wider font-mono">
+                      {authorizationPIN || '----'}
+                    </div>
+                  </div>
+                  <p className="text-xs text-blue-100">
+                    Your card PIN for R{amount.toFixed(2)} payment
                   </p>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-2">
-                  R{amount.toFixed(2)}
-                </p>
-                <div className="border-t border-gray-200 my-4" />
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3 text-gray-700">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-bold text-blue-600">1</span>
-                    </div>
-                    <p className="text-sm">Card details transmitted via NFC</p>
-                  </div>
-                  <div className="flex items-center space-x-3 text-blue-600 font-medium">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 animate-pulse">
-                      <span className="text-sm font-bold text-white">2</span>
-                    </div>
-                    <p className="text-sm">Enter PIN on card reader</p>
-                  </div>
-                  <div className="flex items-center space-x-3 text-gray-400">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-bold">3</span>
-                    </div>
-                    <p className="text-sm">Payment authorization</p>
+
+                <div className="bg-white bg-opacity-10 rounded-lg p-4 backdrop-blur-sm">
+                  <div className="flex items-center justify-center space-x-3 mb-2">
+                    <CreditCard className="w-4 h-4 text-blue-200" />
+                    <p className="text-sm text-blue-100">
+                      {paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-start space-x-3 text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Card details transmitted</p>
+                      <p className="text-xs text-gray-500">Payment information sent via NFC</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 text-blue-600">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5 animate-pulse">
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Enter PIN on card reader</p>
+                      <p className="text-xs text-blue-500">Type the code shown above</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 text-gray-400">
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Payment authorization</p>
+                      <p className="text-xs text-gray-400">Waiting for confirmation</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <CreditCard className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900 mb-1">
-                      Authorization Required
+                    <p className="text-sm font-medium text-yellow-900 mb-1">
+                      Important
                     </p>
-                    <p className="text-xs text-blue-700">
-                      Please enter your card PIN on the card reader device to authorize this R{amount.toFixed(2)} payment
+                    <p className="text-xs text-yellow-700">
+                      Enter the PIN on the garage's card reader device to complete your transaction. Do not share this PIN with anyone.
                     </p>
                   </div>
-                </div>
-              </div>
-
-              <div className="flex justify-center">
-                <div className="flex space-x-2">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                      style={{ animationDelay: `${i * 0.2}s` }}
-                    />
-                  ))}
                 </div>
               </div>
             </div>

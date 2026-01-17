@@ -44,6 +44,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [userRole, setUserRole] = useState<string>('admin');
+  const [paymentOption, setPaymentOption] = useState<string | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -108,7 +109,7 @@ function App() {
 
         supabase
           .from('profiles')
-          .select('role')
+          .select('role, organization_id, organizations(payment_option)')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data: profile, error: profileError }) => {
@@ -128,6 +129,11 @@ function App() {
             if (profile) {
               setUserRole(profile.role);
               setCurrentView(null);
+
+              // Set payment option if organization data is available
+              if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
+                setPaymentOption((profile.organizations as any).payment_option);
+              }
             } else {
               console.warn('Auth state - No profile found, using defaults');
               setUserRole('admin');
@@ -179,7 +185,7 @@ function App() {
 
         supabase
           .from('profiles')
-          .select('role')
+          .select('role, organization_id, organizations(payment_option)')
           .eq('id', currentSession.user.id)
           .maybeSingle()
           .then(({ data: profile }) => {
@@ -188,6 +194,11 @@ function App() {
               console.log('Profile loaded on mount:', profile);
               setUserRole(profile.role);
               setCurrentView(null);
+
+              // Set payment option if organization data is available
+              if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
+                setPaymentOption((profile.organizations as any).payment_option);
+              }
             } else {
               console.warn('No profile on mount, using defaults');
               setUserRole('admin');
@@ -522,7 +533,7 @@ function App() {
           userRole === 'super_admin' ? (
             <SuperAdminDashboard key="dashboard-super" onNavigate={setCurrentView} />
           ) : (
-            <ClientDashboard key="dashboard-client" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} />
+            <ClientDashboard key="dashboard-client" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} paymentOption={paymentOption} />
           )
         ) : currentView === 'organization' ? (
           <div className="space-y-4">
@@ -565,13 +576,13 @@ function App() {
         ) : currentView === 'invoices' ? (
           userRole === 'super_admin' ? <InvoiceManagement key="invoices" /> : <ClientInvoices key="invoices" />
         ) : currentView === 'invoices-menu' ? (
-          <ClientDashboard key="invoices-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" />
+          <ClientDashboard key="invoices-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" paymentOption={paymentOption} />
         ) : currentView === 'fee-invoices' ? (
           <ClientInvoices key="fee-invoices" onNavigate={setCurrentView} />
         ) : currentView === 'fuel-invoices' ? (
           <ClientFuelInvoices key="fuel-invoices" onNavigate={setCurrentView} />
         ) : currentView === 'reports-menu' ? (
-          <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" />
+          <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" paymentOption={paymentOption} />
         ) : currentView === 'reports' ? (
           userRole === 'super_admin' ? <ConsolidatedReports key="reports" onNavigate={setCurrentView} /> : <ReportsDashboard key="reports" onNavigate={setCurrentView} />
         ) : currentView === 'backoffice' ? (

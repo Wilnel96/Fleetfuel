@@ -586,7 +586,7 @@ function App() {
         ) : currentView === 'reports' ? (
           userRole === 'super_admin' ? <ConsolidatedReports key="reports" onNavigate={setCurrentView} /> : <ReportsDashboard key="reports" onNavigate={setCurrentView} />
         ) : currentView === 'backoffice' ? (
-          <BackOffice key="backoffice" userRole={userRole} onNavigateToMain={() => setCurrentView(null)} />
+          <BackOffice key="backoffice" userRole={userRole} paymentOption={paymentOption} onNavigateToMain={() => setCurrentView(null)} />
         ) : currentView === 'custom-reports' ? (
           <CustomReportBuilder key="custom-reports" onNavigate={setCurrentView} />
         ) : currentView === 'backup' ? (

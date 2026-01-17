@@ -136,7 +136,7 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
     );
   }
 
-  const allMenuItems = [
+  const menuItems = [
     {
       id: 'vehicles',
       title: 'Vehicles',
@@ -151,8 +151,6 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
       id: 'garages',
       title: 'Garages',
       icon: Store,
-      // Only show for Garage Accounts payment option
-      showForPaymentOption: ['Garage Accounts'],
     },
     {
       id: 'invoices-menu',
@@ -170,14 +168,6 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
       icon: Settings,
     },
   ];
-
-  // Filter menu items based on payment option
-  const menuItems = allMenuItems.filter(item => {
-    if (item.showForPaymentOption) {
-      return paymentOption && item.showForPaymentOption.includes(paymentOption);
-    }
-    return true;
-  });
 
   return (
     <div className="space-y-2">

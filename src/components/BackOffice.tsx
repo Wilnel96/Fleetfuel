@@ -12,12 +12,13 @@ import ClientGarageAccounts from './ClientGarageAccounts';
 
 interface BackOfficeProps {
   userRole?: string;
+  paymentOption?: string | null;
   onNavigateToMain?: () => void;
 }
 
 type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts';
 
-export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
+export default function BackOffice({ userRole, paymentOption, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -252,7 +253,7 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: Building2,
       color: 'blue',
     },
-    ...(userRole !== 'super_admin' ? [{
+    ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
       id: 'local-accounts',
       title: 'Local Garage Accounts',
       description: 'Manage local accounts with garages where you can refuel',

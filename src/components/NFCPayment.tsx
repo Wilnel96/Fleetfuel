@@ -33,6 +33,7 @@ export function NFCPayment({
   const [paymentType, setPaymentType] = useState<'card' | 'local_account'>('card');
   const [cardBrand, setCardBrand] = useState('');
   const [lastFourDigits, setLastFourDigits] = useState('');
+  const [authorizationPIN, setAuthorizationPIN] = useState('');
   const [accountInfo, setAccountInfo] = useState('');
   const [countdown, setCountdown] = useState(60);
   const [retryCount, setRetryCount] = useState(0);

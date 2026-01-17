@@ -14,7 +14,7 @@ interface NFCPaymentProps {
   onCancel: () => void;
 }
 
-type PaymentStatus = 'preparing' | 'nfc_ready' | 'waiting_tap' | 'transmitting' | 'awaiting_pin' | 'processing' | 'completed' | 'failed' | 'timeout';
+type PaymentStatus = 'preparing' | 'nfc_ready' | 'waiting_tap' | 'transmitting' | 'pin_request' | 'awaiting_pin' | 'processing' | 'completed' | 'failed' | 'timeout';
 
 export function NFCPayment({
   driverId,
@@ -174,9 +174,8 @@ export function NFCPayment({
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // After NFC transmission, wait for PIN entry
-      setStatus('awaiting_pin');
-      await waitForPINEntry();
+      // After NFC transmission, wait for driver to request PIN
+      setStatus('pin_request');
     } catch (err: any) {
       throw new Error('NFC transmission failed');
     }
@@ -195,7 +194,11 @@ export function NFCPayment({
 
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
-    // After NFC transmission, wait for PIN entry
+    // After NFC transmission, wait for driver to request PIN
+    setStatus('pin_request');
+  };
+
+  const handleGetPIN = async () => {
     setStatus('awaiting_pin');
     await waitForPINEntry();
   };
@@ -295,6 +298,8 @@ export function NFCPayment({
         return <Smartphone className="w-20 h-20 text-blue-600 animate-pulse" />;
       case 'transmitting':
         return <Loader2 className="w-20 h-20 text-blue-600 animate-spin" />;
+      case 'pin_request':
+        return <CheckCircle2 className="w-20 h-20 text-green-600" />;
       case 'awaiting_pin':
         return <CreditCard className="w-20 h-20 text-blue-600 animate-pulse" />;
       case 'processing':
@@ -317,6 +322,8 @@ export function NFCPayment({
         return 'Hold Phone Near Card Machine';
       case 'transmitting':
         return 'Transmitting Payment...';
+      case 'pin_request':
+        return 'Card Details Transmitted';
       case 'awaiting_pin':
         return 'Enter PIN on Card Reader';
       case 'processing':
@@ -340,6 +347,8 @@ export function NFCPayment({
         return 'Tap your phone to the card machine to complete payment';
       case 'transmitting':
         return 'Sending encrypted payment data';
+      case 'pin_request':
+        return 'Payment information successfully transmitted via NFC';
       case 'awaiting_pin':
         return 'Enter your card PIN on the card reader device to authorize the transaction';
       case 'processing':
@@ -418,6 +427,57 @@ export function NFCPayment({
               <p className="text-sm text-gray-600">
                 Please do not close this screen
               </p>
+            </div>
+          )}
+
+          {status === 'pin_request' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-start space-x-3 text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Card details transmitted</p>
+                      <p className="text-xs text-gray-500">Payment information sent via NFC</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center space-x-3 pt-2">
+                    <CreditCard className="w-5 h-5 text-gray-600" />
+                    <p className="text-sm text-gray-600">
+                      {paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}
+                    </p>
+                  </div>
+                  <p className="text-center text-xl font-bold text-gray-900 pt-2">
+                    R{amount.toFixed(2)}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleGetPIN}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <CreditCard className="w-5 h-5" />
+                    <span>Get Card PIN</span>
+                  </div>
+                </button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Next Step
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Press the button above to retrieve your card PIN, then enter it on the card reader to complete the transaction.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

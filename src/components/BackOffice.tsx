@@ -9,6 +9,7 @@ import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
 import ClientGarageAccounts from './ClientGarageAccounts';
+import { OrganizationPaymentCard } from './OrganizationPaymentCard';
 
 interface BackOfficeProps {
   userRole?: string;
@@ -16,7 +17,7 @@ interface BackOfficeProps {
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card';
 
 export default function BackOffice({ userRole, paymentOption, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
@@ -245,6 +246,24 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
     );
   }
 
+  if (currentView === 'payment-card') {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setCurrentView('menu')}
+          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+        >
+          ← Back to Back Office
+        </button>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-2">Payment Card Management</h2>
+          <p className="text-gray-600 text-sm mb-6">Configure your credit/debit card for fuel payments. Your card is securely encrypted and drivers use their PIN + NFC to authorize payments.</p>
+          <OrganizationPaymentCard />
+        </div>
+      </div>
+    );
+  }
+
   const menuItems = [
     {
       id: 'management-org-menu',
@@ -253,6 +272,13 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
       icon: Building2,
       color: 'blue',
     },
+    ...(userRole !== 'super_admin' && paymentOption === 'Card Payment' ? [{
+      id: 'payment-card',
+      title: 'Payment Card Management',
+      description: 'Configure your credit/debit card for fuel payments',
+      icon: CreditCard,
+      color: 'teal',
+    }] : []),
     ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
       id: 'local-accounts',
       title: 'Local Garage Accounts',

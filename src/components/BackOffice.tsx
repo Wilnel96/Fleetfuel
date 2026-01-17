@@ -8,7 +8,6 @@ import EFTBatchProcessing from './EFTBatchProcessing';
 import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
-import { OrganizationPaymentCard } from './OrganizationPaymentCard';
 import ClientGarageAccounts from './ClientGarageAccounts';
 
 interface BackOfficeProps {
@@ -16,7 +15,7 @@ interface BackOfficeProps {
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'payment-card' | 'local-accounts';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts';
 
 export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
@@ -229,20 +228,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
     );
   }
 
-  if (currentView === 'payment-card') {
-    return (
-      <div className="space-y-4">
-        <button
-          onClick={() => setCurrentView('menu')}
-          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-        >
-          ← Back to Back Office
-        </button>
-        <OrganizationPaymentCard />
-      </div>
-    );
-  }
-
   if (currentView === 'local-accounts') {
     return (
       <div className="space-y-4">
@@ -271,14 +256,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: Building2,
       color: 'blue',
     },
-    // Only show NFC Payment Card if payment option is Card Payment
-    ...(paymentOption === 'Card Payment' ? [{
-      id: 'payment-card',
-      title: 'NFC Payment Card',
-      description: 'Register debit/credit card for driver NFC payments',
-      icon: CreditCard,
-      color: 'green',
-    }] : []),
     // Only show Local Garage Accounts if payment option is Local Account and user is not super admin
     ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
       id: 'local-accounts',

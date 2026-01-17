@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Truck, Users, FileText, Store, Settings, BarChart3, LogOut, ArrowLeft, DollarSign } from 'lucide-react';
+import { Truck, Users, FileText, Store, Settings, BarChart3, LogOut, ArrowLeft, DollarSign, CreditCard } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface ClientDashboardProps {
   onNavigate: (view: string) => void;
@@ -11,6 +12,7 @@ interface ClientDashboardProps {
 export default function ClientDashboard({ onNavigate, onSignOut, initialView = 'main', resetSubmenu }: ClientDashboardProps) {
   const [showReportsMenu, setShowReportsMenu] = useState(initialView === 'reports');
   const [showInvoicesMenu, setShowInvoicesMenu] = useState(initialView === 'invoices');
+  const [paymentOption, setPaymentOption] = useState<string | null>(null);
 
   // Reset submenu when parent requests it
   useEffect(() => {
@@ -25,6 +27,38 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
     setShowReportsMenu(initialView === 'reports');
     setShowInvoicesMenu(initialView === 'invoices');
   }, [initialView]);
+
+  // Load payment option
+  useEffect(() => {
+    loadPaymentOption();
+  }, []);
+
+  const loadPaymentOption = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.organization_id) {
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('payment_option')
+          .eq('id', profile.organization_id)
+          .maybeSingle();
+
+        if (org) {
+          setPaymentOption(org.payment_option);
+        }
+      }
+    } catch (err) {
+      console.error('Error loading payment option:', err);
+    }
+  };
 
   if (showInvoicesMenu) {
     const invoicesMenuItems = [
@@ -151,6 +185,12 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
       title: 'Garages',
       icon: Store,
     },
+    // Only show NFC Payment Card if payment option is Card Payment
+    ...(paymentOption === 'Card Payment' ? [{
+      id: 'payment-card',
+      title: 'NFC Payment Card',
+      icon: CreditCard,
+    }] : []),
     {
       id: 'invoices-menu',
       title: 'Invoices',

@@ -29,6 +29,7 @@ import BackupManagement from './components/BackupManagement';
 import ClientInvoices from './components/ClientInvoices';
 import InvoiceManagement from './components/InvoiceManagement';
 import ClientFuelInvoices from './components/ClientFuelInvoices';
+import { OrganizationPaymentCard } from './components/OrganizationPaymentCard';
 import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
 import { DriverData } from './components/DriverAuth';
 
@@ -41,7 +42,7 @@ function App() {
   const [garageName, setGarageName] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<UserMode>(null);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | 'payment-card' | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [userRole, setUserRole] = useState<string>('admin');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -580,6 +581,17 @@ function App() {
           <CustomReportBuilder key="custom-reports" onNavigate={setCurrentView} />
         ) : currentView === 'backup' ? (
           <BackupManagement key="backup" />
+        ) : currentView === 'payment-card' ? (
+          <div className="space-y-4">
+            <button
+              onClick={() => setCurrentView(null)}
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Main Menu
+            </button>
+            <OrganizationPaymentCard key="payment-card" />
+          </div>
         ) : null}
         </div>
       </main>

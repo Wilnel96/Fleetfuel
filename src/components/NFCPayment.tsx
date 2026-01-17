@@ -14,7 +14,7 @@ interface NFCPaymentProps {
   onCancel: () => void;
 }
 
-type PaymentStatus = 'preparing' | 'nfc_ready' | 'waiting_tap' | 'transmitting' | 'processing' | 'completed' | 'failed' | 'timeout';
+type PaymentStatus = 'preparing' | 'nfc_ready' | 'waiting_tap' | 'transmitting' | 'awaiting_pin' | 'processing' | 'completed' | 'failed' | 'timeout';
 
 export function NFCPayment({
   driverId,
@@ -172,8 +172,9 @@ export function NFCPayment({
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      setStatus('processing');
-      await completePayment();
+      // After NFC transmission, wait for PIN entry
+      setStatus('awaiting_pin');
+      await waitForPINEntry();
     } catch (err: any) {
       throw new Error('NFC transmission failed');
     }
@@ -192,6 +193,27 @@ export function NFCPayment({
 
     await new Promise((resolve) => setTimeout(resolve, 2500));
 
+    // After NFC transmission, wait for PIN entry
+    setStatus('awaiting_pin');
+    await waitForPINEntry();
+  };
+
+  const waitForPINEntry = async () => {
+    // Simulate waiting for driver to enter PIN on card reader
+    // In a real implementation, this would wait for confirmation from the card reader device
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    // Update database to record PIN verification
+    await supabase
+      .from('nfc_payment_transactions')
+      .update({
+        payment_status: 'pin_verified',
+        pin_entered_at: new Date().toISOString(),
+        pin_verified_at: new Date().toISOString(),
+      })
+      .eq('id', transactionId);
+
+    // Proceed to processing
     setStatus('processing');
     await completePayment();
   };
@@ -270,6 +292,9 @@ export function NFCPayment({
       case 'waiting_tap':
         return <Smartphone className="w-20 h-20 text-blue-600 animate-pulse" />;
       case 'transmitting':
+        return <Loader2 className="w-20 h-20 text-blue-600 animate-spin" />;
+      case 'awaiting_pin':
+        return <CreditCard className="w-20 h-20 text-blue-600 animate-pulse" />;
       case 'processing':
         return <Loader2 className="w-20 h-20 text-blue-600 animate-spin" />;
       case 'completed':
@@ -290,6 +315,8 @@ export function NFCPayment({
         return 'Hold Phone Near Card Machine';
       case 'transmitting':
         return 'Transmitting Payment...';
+      case 'awaiting_pin':
+        return 'Enter PIN on Card Reader';
       case 'processing':
         return 'Processing Payment...';
       case 'completed':
@@ -311,6 +338,8 @@ export function NFCPayment({
         return 'Tap your phone to the card machine to complete payment';
       case 'transmitting':
         return 'Sending encrypted payment data';
+      case 'awaiting_pin':
+        return 'Enter your card PIN on the card reader device to authorize the transaction';
       case 'processing':
         return 'Finalizing your transaction';
       case 'completed':
@@ -373,7 +402,87 @@ export function NFCPayment({
             </div>
           )}
 
-          {(status === 'transmitting' || status === 'processing') && (
+          {status === 'transmitting' && (
+            <div className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="flex justify-center space-x-2 mb-4">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-gray-600">
+                Please do not close this screen
+              </p>
+            </div>
+          )}
+
+          {status === 'awaiting_pin' && (
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                <div className="flex items-center justify-center space-x-3 mb-4">
+                  <CreditCard className="w-6 h-6 text-gray-600" />
+                  <p className="text-sm text-gray-600">
+                    {paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}
+                  </p>
+                </div>
+                <p className="text-3xl font-bold text-gray-900 mb-2">
+                  R{amount.toFixed(2)}
+                </p>
+                <div className="border-t border-gray-200 my-4" />
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 text-gray-700">
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-blue-600">1</span>
+                    </div>
+                    <p className="text-sm">Card details transmitted via NFC</p>
+                  </div>
+                  <div className="flex items-center space-x-3 text-blue-600 font-medium">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 animate-pulse">
+                      <span className="text-sm font-bold text-white">2</span>
+                    </div>
+                    <p className="text-sm">Enter PIN on card reader</p>
+                  </div>
+                  <div className="flex items-center space-x-3 text-gray-400">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold">3</span>
+                    </div>
+                    <p className="text-sm">Payment authorization</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <CreditCard className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Authorization Required
+                    </p>
+                    <p className="text-xs text-blue-700">
+                      Please enter your card PIN on the card reader device to authorize this R{amount.toFixed(2)} payment
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-center">
+                <div className="flex space-x-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                      style={{ animationDelay: `${i * 0.2}s` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {status === 'processing' && (
             <div className="bg-white rounded-lg p-6 shadow-sm">
               <div className="flex justify-center space-x-2 mb-4">
                 {[0, 1, 2].map((i) => (

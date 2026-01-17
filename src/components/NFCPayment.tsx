@@ -199,6 +199,14 @@ export function NFCPayment({
   };
 
   const handleGetPIN = async () => {
+    if (!authorizationPIN || authorizationPIN === '') {
+      setError('Card PIN not found. Please re-register your payment card with a PIN.');
+      setStatus('failed');
+      setTimeout(() => {
+        onFailure('Card PIN not configured', false);
+      }, 3000);
+      return;
+    }
     setStatus('awaiting_pin');
     await waitForPINEntry();
   };
@@ -432,48 +440,48 @@ export function NFCPayment({
 
           {status === 'pin_request' && (
             <div className="space-y-4">
-              <div className="bg-white rounded-lg p-6 shadow-sm">
+              <div className="bg-white rounded-lg p-6 shadow-sm border-2 border-green-200">
                 <div className="space-y-3 mb-6">
                   <div className="flex items-start space-x-3 text-gray-700">
-                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">Card details transmitted</p>
-                      <p className="text-xs text-gray-500">Payment information sent via NFC</p>
+                      <p className="text-base font-semibold text-green-700">Card Details Transmitted Successfully</p>
+                      <p className="text-sm text-gray-600 mt-1">Payment information sent via NFC</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-center space-x-3 pt-2">
+                  <div className="flex items-center justify-center space-x-3 pt-3 pb-2">
                     <CreditCard className="w-5 h-5 text-gray-600" />
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm font-medium text-gray-700">
                       {paymentType === 'local_account' ? accountInfo : `${cardBrand} •••• ${lastFourDigits}`}
                     </p>
                   </div>
-                  <p className="text-center text-xl font-bold text-gray-900 pt-2">
+                  <p className="text-center text-2xl font-bold text-gray-900">
                     R{amount.toFixed(2)}
                   </p>
                 </div>
 
                 <button
                   onClick={handleGetPIN}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold py-5 px-6 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 animate-pulse"
                 >
-                  <div className="flex items-center justify-center space-x-2">
-                    <CreditCard className="w-5 h-5" />
-                    <span>Get Card PIN</span>
+                  <div className="flex items-center justify-center space-x-3">
+                    <CreditCard className="w-6 h-6" />
+                    <span className="text-lg">Press to Get Card PIN</span>
                   </div>
                 </button>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
                 <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900 mb-1">
-                      Next Step
+                    <p className="text-sm font-bold text-yellow-900 mb-1">
+                      Action Required
                     </p>
-                    <p className="text-xs text-blue-700">
-                      Press the button above to retrieve your card PIN, then enter it on the card reader to complete the transaction.
+                    <p className="text-sm text-yellow-800">
+                      Press the button above to retrieve your card PIN. You'll then enter this PIN on the physical card reader to authorize the transaction.
                     </p>
                   </div>
                 </div>

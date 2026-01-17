@@ -9,16 +9,16 @@ import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
 import ClientGarageAccounts from './ClientGarageAccounts';
+import { OrganizationPaymentCard } from './OrganizationPaymentCard';
 
 interface BackOfficeProps {
   userRole?: string;
   onNavigateToMain?: () => void;
-  onNavigate?: (view: string) => void;
 }
 
 type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card';
 
-export default function BackOffice({ userRole, onNavigateToMain, onNavigate }: BackOfficeProps) {
+export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -249,6 +249,24 @@ export default function BackOffice({ userRole, onNavigateToMain, onNavigate }: B
     );
   }
 
+  if (currentView === 'payment-card') {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setCurrentView('menu')}
+          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+        >
+          ← Back to Back Office
+        </button>
+        <div>
+          <h2 className="text-base font-semibold text-gray-900 mb-2">NFC Payment Card</h2>
+          <p className="text-gray-600 text-sm mb-6">Setup and manage your payment card for fuel purchases</p>
+          <OrganizationPaymentCard />
+        </div>
+      </div>
+    );
+  }
+
   const menuItems = [
     {
       id: 'management-org-menu',
@@ -348,13 +366,7 @@ export default function BackOffice({ userRole, onNavigateToMain, onNavigate }: B
           return (
             <button
               key={item.id}
-              onClick={() => {
-                if (item.id === 'payment-card' && onNavigate) {
-                  onNavigate('payment-card');
-                } else {
-                  setCurrentView(item.id as BackOfficeView);
-                }
-              }}
+              onClick={() => setCurrentView(item.id as BackOfficeView)}
               className={`w-full ${colors.bg} ${colors.hover} border border-gray-200 rounded-lg p-2 text-left transition-all duration-200 hover:shadow-md flex items-center gap-3`}
             >
               <div className={`${colors.icon} flex-shrink-0`}>

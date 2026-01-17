@@ -176,12 +176,11 @@ Deno.serve(async (req: Request) => {
     // Get last 4 digits
     const lastFourDigits = cardNumber.slice(-4);
 
-    // Deactivate any existing default cards
+    // Delete any existing cards for this organization
     await supabase
       .from('organization_payment_cards')
-      .update({ is_default: false })
-      .eq('organization_id', organizationId)
-      .eq('is_default', true);
+      .delete()
+      .eq('organization_id', organizationId);
 
     // Insert encrypted card
     const { data: card, error: cardError } = await supabase

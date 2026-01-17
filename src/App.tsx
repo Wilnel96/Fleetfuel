@@ -576,7 +576,7 @@ function App() {
         ) : currentView === 'reports' ? (
           userRole === 'super_admin' ? <ConsolidatedReports key="reports" onNavigate={setCurrentView} /> : <ReportsDashboard key="reports" onNavigate={setCurrentView} />
         ) : currentView === 'backoffice' ? (
-          <BackOffice key="backoffice" userRole={userRole} onNavigateToMain={() => setCurrentView(null)} />
+          <BackOffice key="backoffice" userRole={userRole} onNavigateToMain={() => setCurrentView(null)} onNavigate={setCurrentView} />
         ) : currentView === 'custom-reports' ? (
           <CustomReportBuilder key="custom-reports" onNavigate={setCurrentView} />
         ) : currentView === 'backup' ? (
@@ -584,11 +584,11 @@ function App() {
         ) : currentView === 'payment-card' ? (
           <div className="space-y-4">
             <button
-              onClick={() => setCurrentView(null)}
+              onClick={() => setCurrentView('backoffice')}
               className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Main Menu
+              Back to Back Office
             </button>
             <OrganizationPaymentCard key="payment-card" />
           </div>

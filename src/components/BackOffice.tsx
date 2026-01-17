@@ -13,11 +13,12 @@ import ClientGarageAccounts from './ClientGarageAccounts';
 interface BackOfficeProps {
   userRole?: string;
   onNavigateToMain?: () => void;
+  onNavigate?: (view: string) => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card';
 
-export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
+export default function BackOffice({ userRole, onNavigateToMain, onNavigate }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -256,6 +257,14 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: Building2,
       color: 'blue',
     },
+    // Only show NFC Payment Card if payment option is Card Payment and user is not super admin
+    ...(userRole !== 'super_admin' && paymentOption === 'Card Payment' ? [{
+      id: 'payment-card',
+      title: 'NFC Payment Card',
+      description: 'Setup and manage your payment card for fuel purchases',
+      icon: CreditCard,
+      color: 'indigo',
+    }] : []),
     // Only show Local Garage Accounts if payment option is Local Account and user is not super admin
     ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
       id: 'local-accounts',
@@ -307,6 +316,11 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
         hover: 'hover:bg-amber-100 hover:border-amber-300',
         icon: 'text-amber-600',
       },
+      indigo: {
+        bg: 'bg-indigo-50',
+        hover: 'hover:bg-indigo-100 hover:border-indigo-300',
+        icon: 'text-indigo-600',
+      },
     };
     return colors[color] || colors.blue;
   };
@@ -334,7 +348,13 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
           return (
             <button
               key={item.id}
-              onClick={() => setCurrentView(item.id as BackOfficeView)}
+              onClick={() => {
+                if (item.id === 'payment-card' && onNavigate) {
+                  onNavigate('payment-card');
+                } else {
+                  setCurrentView(item.id as BackOfficeView);
+                }
+              }}
               className={`w-full ${colors.bg} ${colors.hover} border border-gray-200 rounded-lg p-2 text-left transition-all duration-200 hover:shadow-md flex items-center gap-3`}
             >
               <div className={`${colors.icon} flex-shrink-0`}>

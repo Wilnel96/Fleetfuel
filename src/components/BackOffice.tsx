@@ -9,20 +9,18 @@ import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
 import ClientGarageAccounts from './ClientGarageAccounts';
-import { OrganizationPaymentCard } from './OrganizationPaymentCard';
 
 interface BackOfficeProps {
   userRole?: string;
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts';
 
 export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
-  const [paymentOption, setPaymentOption] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrganizationInfo();
@@ -44,15 +42,12 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
 
         const { data: org } = await supabase
           .from('organizations')
-          .select('name, payment_option')
+          .select('name')
           .eq('id', profile.organization_id)
           .maybeSingle();
 
-        if (org) {
-          if (org.name) {
-            setOrganizationName(org.name);
-          }
-          setPaymentOption(org.payment_option);
+        if (org?.name) {
+          setOrganizationName(org.name);
         }
       }
     } catch (err) {
@@ -249,24 +244,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
     );
   }
 
-  if (currentView === 'payment-card') {
-    return (
-      <div className="space-y-4">
-        <button
-          onClick={() => setCurrentView('menu')}
-          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-        >
-          ← Back to Back Office
-        </button>
-        <div>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">NFC Payment Card</h2>
-          <p className="text-gray-600 text-sm mb-6">Setup and manage your payment card for fuel purchases</p>
-          <OrganizationPaymentCard />
-        </div>
-      </div>
-    );
-  }
-
   const menuItems = [
     {
       id: 'management-org-menu',
@@ -275,16 +252,7 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
       icon: Building2,
       color: 'blue',
     },
-    // Only show NFC Payment Card if payment option is Card Payment and user is not super admin
-    ...(userRole !== 'super_admin' && paymentOption === 'Card Payment' ? [{
-      id: 'payment-card',
-      title: 'NFC Payment Card',
-      description: 'Setup and manage your payment card for fuel purchases',
-      icon: CreditCard,
-      color: 'indigo',
-    }] : []),
-    // Only show Local Garage Accounts if payment option is Local Account and user is not super admin
-    ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
+    ...(userRole !== 'super_admin' ? [{
       id: 'local-accounts',
       title: 'Local Garage Accounts',
       description: 'Manage local accounts with garages where you can refuel',
@@ -333,11 +301,6 @@ export default function BackOffice({ userRole, onNavigateToMain }: BackOfficePro
         bg: 'bg-amber-50',
         hover: 'hover:bg-amber-100 hover:border-amber-300',
         icon: 'text-amber-600',
-      },
-      indigo: {
-        bg: 'bg-indigo-50',
-        hover: 'hover:bg-indigo-100 hover:border-indigo-300',
-        icon: 'text-indigo-600',
       },
     };
     return colors[color] || colors.blue;

@@ -121,6 +121,12 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setShowBarcodeScanner(false);
     setError('');
 
+    const anyDrawnVehicle = await checkAnyActiveDrawing(driverId);
+    if (anyDrawnVehicle) {
+      setError(`You already have a vehicle drawn (${anyDrawnVehicle}). Please return it before drawing another vehicle.`);
+      return;
+    }
+
     const result = await findVehicleByLicenseDisk(barcodeData);
     if (!result) {
       setError('License disk verification failed. The barcode data does not match any vehicle.');
@@ -226,6 +232,37 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
       .maybeSingle();
 
     return !returnTransaction;
+  };
+
+  const checkAnyActiveDrawing = async (driverId: string): Promise<string | null> => {
+    const { data: draws } = await supabase
+      .from('vehicle_transactions')
+      .select(`
+        id,
+        vehicle_id,
+        vehicles!inner(registration_number)
+      `)
+      .eq('driver_id', driverId)
+      .eq('transaction_type', 'draw')
+      .is('related_transaction_id', null)
+      .order('created_at', { ascending: false });
+
+    if (!draws || draws.length === 0) return null;
+
+    for (const draw of draws) {
+      const { data: returnTransaction } = await supabase
+        .from('vehicle_transactions')
+        .select('id')
+        .eq('related_transaction_id', draw.id)
+        .eq('transaction_type', 'return')
+        .maybeSingle();
+
+      if (!returnTransaction) {
+        return draw.vehicles.registration_number;
+      }
+    }
+
+    return null;
   };
 
   const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
@@ -707,6 +744,11 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                     const vehicle = vehicles.find(v => v.id === e.target.value);
                     if (vehicle) {
                       setError('');
+                      const anyDrawnVehicle = await checkAnyActiveDrawing(driverId);
+                      if (anyDrawnVehicle) {
+                        setError(`You already have a vehicle drawn (${anyDrawnVehicle}). Please return it before drawing another vehicle.`);
+                        return;
+                      }
                       const hasActiveDrawing = await checkActiveDrawing(vehicle.id, driverId);
                       if (hasActiveDrawing) {
                         setError('This vehicle is already drawn by you. Please return it before drawing again.');

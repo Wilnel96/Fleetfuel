@@ -151,6 +151,7 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
         organizationId={driver.organizationId}
         driverId={driver.id}
         onBack={() => setCurrentView('menu')}
+        drawnVehicleId={drawnVehicles.length > 0 ? drawnVehicles[0].vehicleId : undefined}
       />
     );
   }

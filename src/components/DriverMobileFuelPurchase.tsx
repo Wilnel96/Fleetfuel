@@ -2216,8 +2216,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Price per Liter (R)
-                      {selectedGarageId && !formData.pricePerLiter && (
+                      {selectedGarageId && !formData.pricePerLiter && drawnVehicle?.fuel_type?.startsWith('Diesel') && (
                         <span className="text-blue-600 text-xs ml-2">- Enter price manually</span>
+                      )}
+                      {drawnVehicle?.fuel_type?.startsWith('ULP') && (
+                        <span className="text-gray-500 text-xs ml-2">- Fixed by zone</span>
                       )}
                     </label>
                     <input
@@ -2239,10 +2242,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                           };
                         });
                       }}
+                      readOnly={drawnVehicle?.fuel_type?.startsWith('ULP')}
                       className={`w-full border rounded-lg px-4 py-3 ${
-                        formData.pricePerLiter ? 'border-gray-300 bg-white' : 'border-blue-400 bg-blue-50'
+                        drawnVehicle?.fuel_type?.startsWith('ULP')
+                          ? 'border-gray-300 bg-gray-100 cursor-not-allowed'
+                          : formData.pricePerLiter ? 'border-gray-300 bg-white' : 'border-blue-400 bg-blue-50'
                       }`}
-                      placeholder={selectedGarageId ? "Enter diesel price" : "Select garage first"}
+                      placeholder={selectedGarageId ? (drawnVehicle?.fuel_type?.startsWith('Diesel') ? "Enter diesel price" : "Price set by system") : "Select garage first"}
                       required
                     />
                     {drawnVehicle?.fuel_type && (
@@ -2250,7 +2256,12 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                         Fuel Type: {drawnVehicle.fuel_type}
                       </p>
                     )}
-                    {selectedGarageId && !formData.pricePerLiter && (
+                    {drawnVehicle?.fuel_type?.startsWith('ULP') && (
+                      <p className="text-xs text-gray-600 mt-1 bg-gray-50 p-2 rounded border border-gray-200">
+                        ℹ️ ULP prices are regulated and fixed per zone. Prices are updated automatically on the first Wednesday of each month by the system.
+                      </p>
+                    )}
+                    {selectedGarageId && !formData.pricePerLiter && drawnVehicle?.fuel_type?.startsWith('Diesel') && (
                       <p className="text-xs text-blue-600 mt-1">
                         This garage hasn't set a price for {drawnVehicle?.fuel_type}. Please enter the current price per liter.
                       </p>

@@ -1,22 +1,20 @@
+// Standard South African fuel types as per Department of Mineral Resources and Energy
 export const AVAILABLE_FUEL_TYPES = [
-  { value: 'ULP-93', label: 'ULP-93 Octane' },
-  { value: 'ULP-95', label: 'ULP-95 Octane' },
-  { value: 'ULP-97', label: 'ULP-97 Octane' },
-  { value: 'Diesel-10', label: 'Diesel-10 PPM' },
-  { value: 'Diesel-50', label: 'Diesel-50 PPM' },
-  { value: 'Diesel-500', label: 'Diesel-500 PPM' },
-  { value: 'LRP', label: 'Lead Replacement Petrol (LRP)' },
-  { value: 'AdBlue', label: 'AdBlue (Diesel Exhaust Fluid)' },
+  { value: 'ULP-93', label: 'Unleaded Petrol 93 (ULP-93)' },
+  { value: 'ULP-95', label: 'Unleaded Petrol 95 (ULP-95)' },
+  { value: 'Diesel-50', label: 'Diesel 50 ppm Sulphur' },
+  { value: 'Diesel-500', label: 'Diesel 500 ppm Sulphur' },
 ] as const;
 
 export const getFuelTypeDisplayName = (fuelType: string): string => {
   const displayNames: { [key: string]: string } = {
-    'ULP-93': 'ULP-93 Octane',
-    'ULP-95': 'ULP-95 Octane',
-    'ULP-97': 'ULP-97 Octane',
+    'ULP-93': 'Unleaded Petrol 93 (ULP-93)',
+    'ULP-95': 'Unleaded Petrol 95 (ULP-95)',
+    'Diesel-50': 'Diesel 50 ppm Sulphur',
+    'Diesel-500': 'Diesel 500 ppm Sulphur',
+    // Legacy fuel types (for backward compatibility with existing data)
     'Diesel-10': 'Diesel-10 PPM',
-    'Diesel-50': 'Diesel-50 PPM',
-    'Diesel-500': 'Diesel-500 PPM',
+    'ULP-97': 'ULP-97 Octane',
     'LRP': 'Lead Replacement Petrol (LRP)',
     'AdBlue': 'AdBlue (Diesel Exhaust Fluid)'
   };
@@ -27,11 +25,12 @@ export const sortFuelTypes = (fuelTypes: string[]): string[] => {
   const order = [
     'ULP-93',
     'ULP-95',
+    'Diesel-50',
+    'Diesel-500',
+    // Legacy types (for backward compatibility)
     'ULP-97',
     'LRP',
     'Diesel-10',
-    'Diesel-50',
-    'Diesel-500',
     'AdBlue'
   ];
 

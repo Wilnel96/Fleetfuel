@@ -23,11 +23,10 @@ interface ReturnVehicleProps {
   organizationId: string;
   driverId: string;
   onBack: () => void;
-  drawnVehicleId?: string;
 }
 
-export default function ReturnVehicle({ organizationId, driverId, onBack, drawnVehicleId }: ReturnVehicleProps) {
-  const [step, setStep] = useState<'scan' | 'enter-odometer'>(drawnVehicleId ? 'enter-odometer' : 'scan');
+export default function ReturnVehicle({ organizationId, driverId, onBack }: ReturnVehicleProps) {
+  const [step, setStep] = useState<'scan' | 'enter-odometer'>('scan');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [drawTransaction, setDrawTransaction] = useState<DrawTransaction | null>(null);
@@ -43,12 +42,6 @@ export default function ReturnVehicle({ organizationId, driverId, onBack, drawnV
     loadVehicles();
     getCurrentLocation();
   }, []);
-
-  useEffect(() => {
-    if (drawnVehicleId) {
-      autoLoadDrawnVehicle(drawnVehicleId);
-    }
-  }, [drawnVehicleId]);
 
   const getCurrentLocation = () => {
     if ('geolocation' in navigator) {
@@ -75,43 +68,6 @@ export default function ReturnVehicle({ organizationId, driverId, onBack, drawnV
       .order('registration_number');
 
     if (data) setVehicles(data);
-  };
-
-  const autoLoadDrawnVehicle = async (vehicleId: string) => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const { data: vehicle, error: vehicleError } = await supabase
-        .from('vehicles')
-        .select('*')
-        .eq('id', vehicleId)
-        .maybeSingle();
-
-      if (vehicleError) throw vehicleError;
-      if (!vehicle) {
-        setError('Drawn vehicle not found');
-        setStep('scan');
-        return;
-      }
-
-      const drawTx = await getActiveDrawing(vehicleId, driverId);
-      if (!drawTx) {
-        setError('No active drawing found for this vehicle');
-        setStep('scan');
-        return;
-      }
-
-      setSelectedVehicle(vehicle);
-      setDrawTransaction(drawTx);
-      setStep('enter-odometer');
-    } catch (err: any) {
-      console.error('Error loading drawn vehicle:', err);
-      setError(err.message || 'Failed to load drawn vehicle');
-      setStep('scan');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleScanStart = () => {

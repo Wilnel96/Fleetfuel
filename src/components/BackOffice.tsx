@@ -8,21 +8,21 @@ import EFTBatchProcessing from './EFTBatchProcessing';
 import FeeStructureView from './FeeStructureView';
 import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
-import ClientGarageAccounts from './ClientGarageAccounts';
 import { OrganizationPaymentCard } from './OrganizationPaymentCard';
+import ClientGarageAccounts from './ClientGarageAccounts';
 
 interface BackOfficeProps {
   userRole?: string;
-  paymentOption?: string | null;
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'payment-card' | 'local-accounts';
 
-export default function BackOffice({ userRole, paymentOption, onNavigateToMain }: BackOfficeProps) {
+export default function BackOffice({ userRole, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
+  const [paymentOption, setPaymentOption] = useState<string | null>(null);
 
   useEffect(() => {
     loadOrganizationInfo();
@@ -44,12 +44,15 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
 
         const { data: org } = await supabase
           .from('organizations')
-          .select('name')
+          .select('name, payment_option')
           .eq('id', profile.organization_id)
           .maybeSingle();
 
-        if (org?.name) {
-          setOrganizationName(org.name);
+        if (org) {
+          if (org.name) {
+            setOrganizationName(org.name);
+          }
+          setPaymentOption(org.payment_option);
         }
       }
     } catch (err) {
@@ -226,6 +229,20 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
     );
   }
 
+  if (currentView === 'payment-card') {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setCurrentView('menu')}
+          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+        >
+          ← Back to Back Office
+        </button>
+        <OrganizationPaymentCard />
+      </div>
+    );
+  }
+
   if (currentView === 'local-accounts') {
     return (
       <div className="space-y-4">
@@ -246,24 +263,6 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
     );
   }
 
-  if (currentView === 'payment-card') {
-    return (
-      <div className="space-y-4">
-        <button
-          onClick={() => setCurrentView('menu')}
-          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-        >
-          ← Back to Back Office
-        </button>
-        <div>
-          <h2 className="text-base font-semibold text-gray-900 mb-2">Payment Card Management</h2>
-          <p className="text-gray-600 text-sm mb-6">Configure your credit/debit card for fuel payments. Your card is securely encrypted and drivers use their PIN + NFC to authorize payments.</p>
-          <OrganizationPaymentCard />
-        </div>
-      </div>
-    );
-  }
-
   const menuItems = [
     {
       id: 'management-org-menu',
@@ -272,13 +271,15 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
       icon: Building2,
       color: 'blue',
     },
-    ...(userRole !== 'super_admin' && paymentOption === 'Card Payment' ? [{
+    // Only show NFC Payment Card if payment option is Card Payment
+    ...(paymentOption === 'Card Payment' ? [{
       id: 'payment-card',
-      title: 'Payment Card Management',
-      description: 'Configure your credit/debit card for fuel payments',
+      title: 'NFC Payment Card',
+      description: 'Register debit/credit card for driver NFC payments',
       icon: CreditCard,
-      color: 'teal',
+      color: 'green',
     }] : []),
+    // Only show Local Garage Accounts if payment option is Local Account and user is not super admin
     ...(userRole !== 'super_admin' && paymentOption === 'Local Account' ? [{
       id: 'local-accounts',
       title: 'Local Garage Accounts',

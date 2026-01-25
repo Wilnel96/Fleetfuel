@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { getFuelTypeDisplayName, sortFuelTypes } from '../lib/fuelTypes';
+import { getFuelTypeDisplayName, sortFuelTypes, AVAILABLE_FUEL_TYPES } from '../lib/fuelTypes';
 import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2 } from 'lucide-react';
 import GarageContactManagement from './GarageContactManagement';
 import GarageLocalAccounts from './GarageLocalAccounts';
@@ -143,17 +143,16 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
   };
 
   const handleAddFuelType = () => {
-    const trimmedType = newFuelType.trim().toUpperCase();
-    if (!trimmedType) {
-      setError('Please enter a fuel type name');
+    if (!newFuelType) {
+      setError('Please select a fuel type');
       return;
     }
-    if (fuelTypes.includes(trimmedType)) {
-      setError('This fuel type already exists');
+    if (fuelTypes.includes(newFuelType)) {
+      setError('This fuel type is already added');
       return;
     }
-    setFuelTypes([...fuelTypes, trimmedType]);
-    setFuelPrices({ ...fuelPrices, [trimmedType]: 0 });
+    setFuelTypes([...fuelTypes, newFuelType]);
+    setFuelPrices({ ...fuelPrices, [newFuelType]: 0 });
     setNewFuelType('');
     setError('');
   };
@@ -163,6 +162,10 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
     const newPrices = { ...fuelPrices };
     delete newPrices[fuelType];
     setFuelPrices(newPrices);
+  };
+
+  const getAvailableFuelTypesForSelection = () => {
+    return AVAILABLE_FUEL_TYPES.filter(ft => !fuelTypes.includes(ft.value));
   };
 
 
@@ -253,24 +256,34 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-600 mb-3">
-                  Add fuel types you offer and set their prices. Prices are in Rand per liter.
+                  Select the fuel types you offer and set their prices. Prices are in Rand per liter.
                 </p>
 
                 <div className="flex gap-2">
-                  <input
-                    type="text"
+                  <select
                     value={newFuelType}
                     onChange={(e) => setNewFuelType(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddFuelType()}
-                    placeholder="Enter fuel type (e.g., ULP-93, Diesel-10)"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                    disabled={getAvailableFuelTypesForSelection().length === 0}
+                  >
+                    <option value="">
+                      {getAvailableFuelTypesForSelection().length === 0
+                        ? 'All fuel types added'
+                        : 'Select a fuel type to add'}
+                    </option>
+                    {getAvailableFuelTypesForSelection().map((fuelType) => (
+                      <option key={fuelType.value} value={fuelType.value}>
+                        {fuelType.label}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     onClick={handleAddFuelType}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={!newFuelType || getAvailableFuelTypesForSelection().length === 0}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
                     <Plus className="w-4 h-4" />
-                    Add Fuel Type
+                    Add
                   </button>
                 </div>
               </div>
@@ -279,7 +292,7 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
                 <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                   <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600">No fuel types added yet.</p>
-                  <p className="text-gray-500 text-sm mt-2">Use the field above to add your first fuel type.</p>
+                  <p className="text-gray-500 text-sm mt-2">Use the dropdown above to add your first fuel type.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -329,7 +342,7 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
                 <p className="text-blue-900 text-sm font-medium">Guidelines:</p>
                 <ul className="text-blue-800 text-sm mt-2 space-y-1 list-disc list-inside">
-                  <li>Common fuel types: ULP-93, ULP-95, Diesel-10, Diesel-50, Diesel-500</li>
+                  <li>Select from standard South African fuel types</li>
                   <li>Enter prices in Rand per liter</li>
                   <li>Prices are visible to all users on the system</li>
                   <li>Update prices regularly to reflect market changes</li>

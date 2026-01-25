@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Store, Plus, Edit2, Trash2, X, Search, MapPin, Phone, Mail, Smartphone, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GarageContactManagement from './GarageContactManagement';
-import { getFuelTypeDisplayName } from '../lib/fuelTypes';
+import { getFuelTypeDisplayName, AVAILABLE_FUEL_TYPES } from '../lib/fuelTypes';
 import { SOUTH_AFRICAN_FUEL_BRANDS } from '../lib/fuelBrands';
 
 interface OtherOfferings {
@@ -422,25 +422,25 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
               <div className="border-t pt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Fuel Types & Prices</label>
                 <div className="space-y-3">
-                  {['ULP-93', 'ULP-95', 'Diesel-10', 'Diesel-50', 'Diesel-500'].map((fuelType) => (
-                    <div key={fuelType} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  {AVAILABLE_FUEL_TYPES.map((fuelTypeOption) => (
+                    <div key={fuelTypeOption.value} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                       <input
                         type="checkbox"
-                        checked={formData.fuel_types.includes(fuelType)}
+                        checked={formData.fuel_types.includes(fuelTypeOption.value)}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            setFormData({ ...formData, fuel_types: [...formData.fuel_types, fuelType] });
+                            setFormData({ ...formData, fuel_types: [...formData.fuel_types, fuelTypeOption.value] });
                           } else {
-                            const newFuelTypes = formData.fuel_types.filter(ft => ft !== fuelType);
+                            const newFuelTypes = formData.fuel_types.filter(ft => ft !== fuelTypeOption.value);
                             const newFuelPrices = { ...formData.fuel_prices };
-                            delete newFuelPrices[fuelType];
+                            delete newFuelPrices[fuelTypeOption.value];
                             setFormData({ ...formData, fuel_types: newFuelTypes, fuel_prices: newFuelPrices });
                           }
                         }}
                         className="w-4 h-4"
                       />
-                      <span className="text-sm font-medium text-gray-700 w-24">{getFuelTypeDisplayName(fuelType)}</span>
-                      {formData.fuel_types.includes(fuelType) && (
+                      <span className="text-sm font-medium text-gray-700 w-32">{fuelTypeOption.label}</span>
+                      {formData.fuel_types.includes(fuelTypeOption.value) && (
                         <div className="flex items-center gap-2 flex-1">
                           <span className="text-sm text-gray-600">R</span>
                           <input
@@ -448,7 +448,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                             step="0.01"
                             min="0"
                             placeholder="0.00"
-                            value={formData.fuel_prices[fuelType] || ''}
+                            value={formData.fuel_prices[fuelTypeOption.value] || ''}
                             onChange={(e) => {
                               const value = parseFloat(e.target.value);
                               const roundedValue = isNaN(value) ? 0 : Math.round(value * 100) / 100;
@@ -456,7 +456,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                                 ...formData,
                                 fuel_prices: {
                                   ...formData.fuel_prices,
-                                  [fuelType]: roundedValue
+                                  [fuelTypeOption.value]: roundedValue
                                 }
                               });
                             }}
@@ -1035,9 +1035,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                         </div>
                         {garage.fuel_types && garage.fuel_types.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {['ULP-93', 'ULP-95', 'Diesel-10', 'Diesel-50', 'Diesel-500']
-                              .filter(fuelType => garage.fuel_types.includes(fuelType))
-                              .map((fuelType) => (
+                            {garage.fuel_types.map((fuelType) => (
                               <span key={fuelType} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
                                 {getFuelTypeDisplayName(fuelType)}
                                 {garage.fuel_prices && garage.fuel_prices[fuelType] && (
@@ -1202,9 +1200,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 mb-2">Fuel Types & Prices</h3>
                       <div className="space-y-2">
-                        {['ULP-93', 'ULP-95', 'Diesel-10', 'Diesel-50', 'Diesel-500']
-                          .filter(fuelType => selectedGarage.fuel_types.includes(fuelType))
-                          .map((fuelType) => (
+                        {selectedGarage.fuel_types.map((fuelType) => (
                           <div key={fuelType} className="flex items-center justify-between px-3 py-2 bg-blue-50 rounded-lg">
                             <span className="text-sm font-medium text-blue-900">{getFuelTypeDisplayName(fuelType)}</span>
                             {selectedGarage.fuel_prices && selectedGarage.fuel_prices[fuelType] ? (

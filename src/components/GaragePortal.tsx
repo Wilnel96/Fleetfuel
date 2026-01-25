@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName, sortFuelTypes } from '../lib/fuelTypes';
-import { Store, LogOut, Save, MapPin, AlertCircle, X } from 'lucide-react';
+import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2 } from 'lucide-react';
 import GarageContactManagement from './GarageContactManagement';
 import GarageLocalAccounts from './GarageLocalAccounts';
 
@@ -49,9 +49,11 @@ interface GarageData {
 
 export default function GaragePortal({ garageId, garageName, onLogout }: GaragePortalProps) {
   const [garage, setGarage] = useState<GarageData | null>(null);
+  const [fuelTypes, setFuelTypes] = useState<string[]>([]);
   const [fuelPrices, setFuelPrices] = useState<Record<string, number>>({});
   const [otherOfferings, setOtherOfferings] = useState<OtherOfferings>({});
   const [contactPersons, setContactPersons] = useState<ContactPerson[]>([]);
+  const [newFuelType, setNewFuelType] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -81,6 +83,7 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
       }
 
       setGarage(data);
+      setFuelTypes(data.fuel_types || []);
       setFuelPrices(roundedFuelPrices);
       setOtherOfferings(data.other_offerings || {});
       setContactPersons(data.contact_persons || []);
@@ -101,6 +104,7 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
       const { error: updateError } = await supabase
         .from('garages')
         .update({
+          fuel_types: fuelTypes,
           fuel_prices: fuelPrices,
           other_offerings: otherOfferings,
           contact_persons: contactPersons
@@ -128,12 +132,37 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
           roundedFuelPrices[fuelType] = Math.round(garage.fuel_prices![fuelType] * 100) / 100;
         });
       }
+      setFuelTypes(garage.fuel_types || []);
       setFuelPrices(roundedFuelPrices);
       setOtherOfferings(garage.other_offerings || {});
       setContactPersons(garage.contact_persons || []);
+      setNewFuelType('');
       setError('');
       setSuccess('');
     }
+  };
+
+  const handleAddFuelType = () => {
+    const trimmedType = newFuelType.trim().toUpperCase();
+    if (!trimmedType) {
+      setError('Please enter a fuel type name');
+      return;
+    }
+    if (fuelTypes.includes(trimmedType)) {
+      setError('This fuel type already exists');
+      return;
+    }
+    setFuelTypes([...fuelTypes, trimmedType]);
+    setFuelPrices({ ...fuelPrices, [trimmedType]: 0 });
+    setNewFuelType('');
+    setError('');
+  };
+
+  const handleRemoveFuelType = (fuelType: string) => {
+    setFuelTypes(fuelTypes.filter(ft => ft !== fuelType));
+    const newPrices = { ...fuelPrices };
+    delete newPrices[fuelType];
+    setFuelPrices(newPrices);
   };
 
 
@@ -219,22 +248,42 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
           </div>
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Fuel Prices Management</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Fuel Types & Prices Management</h2>
 
-            {!garage.fuel_types || garage.fuel_types.length === 0 ? (
-              <div className="text-center py-8">
-                <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">No fuel types configured for this garage.</p>
-                <p className="text-gray-500 text-sm mt-2">Contact system administrator to add fuel types.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Update your fuel prices below. Prices are in Rand per liter.
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-3">
+                  Add fuel types you offer and set their prices. Prices are in Rand per liter.
                 </p>
 
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newFuelType}
+                    onChange={(e) => setNewFuelType(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddFuelType()}
+                    placeholder="Enter fuel type (e.g., ULP-93, Diesel-10)"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <button
+                    onClick={handleAddFuelType}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Fuel Type
+                  </button>
+                </div>
+              </div>
+
+              {fuelTypes.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600">No fuel types added yet.</p>
+                  <p className="text-gray-500 text-sm mt-2">Use the field above to add your first fuel type.</p>
+                </div>
+              ) : (
                 <div className="space-y-3">
-                  {sortFuelTypes(garage.fuel_types).map((fuelType) => (
+                  {sortFuelTypes(fuelTypes).map((fuelType) => (
                     <div
                       key={fuelType}
                       className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -264,22 +313,30 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
                           className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="0.00"
                         />
+                        <button
+                          onClick={() => handleRemoveFuelType(fuelType)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Remove fuel type"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
 
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
-                  <p className="text-blue-900 text-sm font-medium">Price Update Guidelines:</p>
-                  <ul className="text-blue-800 text-sm mt-2 space-y-1 list-disc list-inside">
-                    <li>Enter prices in Rand per liter</li>
-                    <li>Prices are visible to all users on the system</li>
-                    <li>Update prices regularly to reflect market changes</li>
-                    <li>Click "Save Changes" at the bottom to apply your updates</li>
-                  </ul>
-                </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
+                <p className="text-blue-900 text-sm font-medium">Guidelines:</p>
+                <ul className="text-blue-800 text-sm mt-2 space-y-1 list-disc list-inside">
+                  <li>Common fuel types: ULP-93, ULP-95, Diesel-10, Diesel-50, Diesel-500</li>
+                  <li>Enter prices in Rand per liter</li>
+                  <li>Prices are visible to all users on the system</li>
+                  <li>Update prices regularly to reflect market changes</li>
+                  <li>Click "Save Changes" at the bottom to apply your updates</li>
+                </ul>
               </div>
-            )}
+            </div>
           </div>
 
           <GarageContactManagement

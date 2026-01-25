@@ -111,8 +111,6 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
           .select('odometer_reading, created_at')
           .eq('related_transaction_id', draw.id)
           .eq('transaction_type', 'return')
-          .order('created_at', { ascending: true })
-          .limit(1)
           .maybeSingle();
 
         if (!returnData) {
@@ -133,8 +131,6 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
           .select('odometer_reading, created_at')
           .eq('related_transaction_id', draw.id)
           .eq('transaction_type', 'return')
-          .order('created_at', { ascending: true })
-          .limit(1)
           .maybeSingle();
 
         const drawnOnSelectedDate = drawDate >= startOfDay && drawDate <= endOfDay;

@@ -20,7 +20,6 @@ export function OrganizationPaymentCard() {
   const [existingCard, setExistingCard] = useState<PaymentCard | null>(null);
   const [showCardNumber, setShowCardNumber] = useState(false);
   const [showCvv, setShowCvv] = useState(false);
-  const [showPin, setShowPin] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [checkingPermissions, setCheckingPermissions] = useState(true);
 
@@ -30,7 +29,6 @@ export function OrganizationPaymentCard() {
     expiryMonth: '',
     expiryYear: '',
     cvv: '',
-    cardPin: '',
     cardType: 'debit' as 'debit' | 'credit',
     cardNickname: '',
   });
@@ -183,7 +181,6 @@ export function OrganizationPaymentCard() {
             expiryMonth: formData.expiryMonth,
             expiryYear: formData.expiryYear,
             cvv: formData.cvv,
-            cardPin: formData.cardPin,
             cardType: formData.cardType,
             cardBrand,
             cardNickname: formData.cardNickname || `${cardBrand} •••• ${cardNumberClean.slice(-4)}`,
@@ -208,7 +205,6 @@ export function OrganizationPaymentCard() {
         expiryMonth: '',
         expiryYear: '',
         cvv: '',
-        cardPin: '',
         cardType: 'debit',
         cardNickname: '',
       });
@@ -526,39 +522,6 @@ export function OrganizationPaymentCard() {
               </button>
             </div>
           </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Card PIN <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type={showPin ? 'text' : 'password'}
-              value={formData.cardPin}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '');
-                if (value.length <= 6) {
-                  setFormData({ ...formData, cardPin: value });
-                }
-              }}
-              placeholder="Enter 4-6 digit PIN"
-              required
-              minLength={4}
-              maxLength={6}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPin(!showPin)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-            >
-              {showPin ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            This PIN will be displayed to drivers when they make NFC payments so they can enter it on the garage's card reader
-          </p>
         </div>
 
         <div>

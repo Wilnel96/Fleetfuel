@@ -13,7 +13,6 @@ interface EncryptCardRequest {
   expiryMonth: string;
   expiryYear: string;
   cvv: string;
-  cardPin: string;
   cardType: 'debit' | 'credit';
   cardBrand: string;
   cardNickname?: string;
@@ -72,7 +71,6 @@ Deno.serve(async (req: Request) => {
       expiryMonth,
       expiryYear,
       cvv,
-      cardPin,
       cardType,
       cardBrand,
       cardNickname,
@@ -120,14 +118,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Validate card PIN (4-6 digits)
-    if (!cardPin || !/^\d{4,6}$/.test(cardPin)) {
-      return new Response(
-        JSON.stringify({ error: 'Card PIN must be 4-6 digits' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Get or create encryption key
     const { data: encryptionKey } = await supabase
       .from('encryption_keys')
@@ -171,16 +161,16 @@ Deno.serve(async (req: Request) => {
     const encryptedExpiryMonth = await encryptField(dataKey, expiryMonth);
     const encryptedExpiryYear = await encryptField(dataKey, expiryYear);
     const encryptedCvv = await encryptField(dataKey, cvv);
-    const encryptedPin = await encryptField(dataKey, cardPin);
 
     // Get last 4 digits
     const lastFourDigits = cardNumber.slice(-4);
 
-    // Delete any existing cards for this organization
+    // Deactivate any existing default cards
     await supabase
       .from('organization_payment_cards')
-      .delete()
-      .eq('organization_id', organizationId);
+      .update({ is_default: false })
+      .eq('organization_id', organizationId)
+      .eq('is_default', true);
 
     // Insert encrypted card
     const { data: card, error: cardError } = await supabase
@@ -192,7 +182,6 @@ Deno.serve(async (req: Request) => {
         expiry_month_encrypted: encryptedExpiryMonth.encrypted,
         expiry_year_encrypted: encryptedExpiryYear.encrypted,
         cvv_encrypted: encryptedCvv.encrypted,
-        pin_encrypted: encryptedPin.encrypted,
         card_type: cardType,
         card_brand: cardBrand,
         last_four_digits: lastFourDigits,
@@ -203,7 +192,6 @@ Deno.serve(async (req: Request) => {
         iv_expiry_month: encryptedExpiryMonth.iv,
         iv_expiry_year: encryptedExpiryYear.iv,
         iv_cvv: encryptedCvv.iv,
-        iv_pin: encryptedPin.iv,
         is_active: true,
         is_default: true,
         created_by: user.id,

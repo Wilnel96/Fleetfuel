@@ -5,7 +5,7 @@ import { Building2, Edit2, Save, X, AlertCircle, CheckCircle } from 'lucide-reac
 interface Organization {
   id: string;
   name: string;
-  billing_contact_email: string;
+  email: string;
   phone_number: string;
   address_line1: string;
   address_line2: string;
@@ -89,7 +89,6 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
       const { error: updateError } = await supabase
         .from('organizations')
         .update({
-          billing_contact_email: editForm.billing_contact_email,
           phone_number: editForm.phone_number,
           address_line1: editForm.address_line1,
           address_line2: editForm.address_line2,
@@ -201,14 +200,14 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Email Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <input
                   type="email"
-                  value={editForm.billing_contact_email || ''}
-                  onChange={(e) => setEditForm({ ...editForm, billing_contact_email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  placeholder="info@company.com"
+                  value={editForm.email || ''}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
                 />
+                <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
@@ -318,8 +317,8 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
 
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">Company Email Address</p>
-                <p className="text-gray-900">{organization.billing_contact_email || '-'}</p>
+                <p className="text-sm font-medium text-gray-500">Email</p>
+                <p className="text-gray-900">{organization.email || '-'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Office Number</p>

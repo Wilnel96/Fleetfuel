@@ -43,7 +43,6 @@ interface Garage {
   latitude?: number;
   longitude?: number;
   distance?: number;
-  hasAccount?: boolean;
 }
 
 interface MobileGarageDirectoryProps {
@@ -68,27 +67,19 @@ export default function MobileGarageDirectory({ onBack, organizationId }: Mobile
     setLoading(true);
 
     if (organizationId) {
-      // For drivers: show all garages, mark which ones have accounts
-      const [garagesResult, accountsResult] = await Promise.all([
-        supabase
-          .from('garages')
-          .select('*')
-          .eq('status', 'active')
-          .order('name'),
-        supabase
-          .from('organization_garage_accounts')
-          .select('garage_id')
-          .eq('organization_id', organizationId)
-          .eq('is_active', true)
-      ]);
+      // For drivers: only show garages where the organization has an account
+      const { data: accountsData } = await supabase
+        .from('organization_garage_accounts')
+        .select('garage_id, garages(*)')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true);
 
-      if (garagesResult.data) {
-        const accountGarageIds = accountsResult.data?.map(acc => acc.garage_id) || [];
-        const allGarages = garagesResult.data.map(garage => ({
-          ...garage,
-          hasAccount: accountGarageIds.includes(garage.id)
-        }));
-        setGarages(allGarages);
+      if (accountsData) {
+        const garagesWithAccounts = accountsData
+          .map(account => account.garages)
+          .filter(garage => garage && garage.status === 'active')
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setGarages(garagesWithAccounts as Garage[]);
       }
     } else {
       // For non-drivers: show all active garages
@@ -263,15 +254,6 @@ export default function MobileGarageDirectory({ onBack, organizationId }: Mobile
           )}
         </div>
 
-        {organizationId && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="text-sm text-blue-900">
-              <p className="font-medium mb-1">Garage Directory</p>
-              <p>All registered garages are shown. Garages marked as "Active" have accounts set up for your organization. Contact your administrator to set up new garage accounts.</p>
-            </div>
-          </div>
-        )}
-
         {loading ? (
           <div className="text-center py-8">
             <p className="text-gray-600">Loading garages...</p>
@@ -292,20 +274,7 @@ export default function MobileGarageDirectory({ onBack, organizationId }: Mobile
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-gray-900">{garage.name}</h3>
-                        {organizationId && (
-                          garage.hasAccount ? (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                              Not Setup
-                            </span>
-                          )
-                        )}
-                      </div>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{garage.name}</h3>
                       {garage.fuel_brand && (
                         <div className="text-xs font-medium text-blue-600 mb-1">
                           {garage.fuel_brand}

@@ -129,13 +129,37 @@ Deno.serve(async (req: Request) => {
         const vatAmount = subtotal * VAT_RATE;
         const totalAmount = subtotal + vatAmount;
 
-        // Get next invoice number from global sequence
-        const { data: invoiceNumberData, error: seqError } = await supabase
-          .rpc('get_next_invoice_number');
+        // Get next invoice number
+        const { data: sequence, error: seqError } = await supabase
+          .from('invoice_sequences')
+          .select('current_number, prefix')
+          .eq('organization_id', org.id)
+          .maybeSingle();
 
-        if (seqError) throw seqError;
+        let invoiceNumber: string;
+        let nextNumber = 1;
 
-        const invoiceNumber = invoiceNumberData as string;
+        if (sequence) {
+          nextNumber = sequence.current_number + 1;
+          invoiceNumber = `${sequence.prefix}${String(nextNumber).padStart(6, '0')}`;
+
+          // Update sequence
+          await supabase
+            .from('invoice_sequences')
+            .update({ current_number: nextNumber, updated_at: new Date().toISOString() })
+            .eq('organization_id', org.id);
+        } else {
+          // Create new sequence for this organization
+          invoiceNumber = `INV-${String(nextNumber).padStart(6, '0')}`;
+
+          await supabase
+            .from('invoice_sequences')
+            .insert({
+              organization_id: org.id,
+              prefix: 'INV-',
+              current_number: nextNumber,
+            });
+        }
 
         // Create invoice with payment option details
         const { data: invoice, error: invoiceError } = await supabase

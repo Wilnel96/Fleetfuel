@@ -6,9 +6,10 @@ interface ClientDashboardProps {
   onSignOut: () => void;
   initialView?: 'main' | 'reports' | 'invoices';
   resetSubmenu?: boolean;
+  paymentOption?: string | null;
 }
 
-export default function ClientDashboard({ onNavigate, onSignOut, initialView = 'main', resetSubmenu }: ClientDashboardProps) {
+export default function ClientDashboard({ onNavigate, onSignOut, initialView = 'main', resetSubmenu, paymentOption }: ClientDashboardProps) {
   const [showReportsMenu, setShowReportsMenu] = useState(initialView === 'reports');
   const [showInvoicesMenu, setShowInvoicesMenu] = useState(initialView === 'invoices');
 

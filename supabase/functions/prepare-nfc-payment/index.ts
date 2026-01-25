@@ -286,6 +286,7 @@ Deno.serve(async (req: Request) => {
       const expiryMonth = await decryptField(dataKey, paymentCard.expiry_month_encrypted, paymentCard.iv_expiry_month);
       const expiryYear = await decryptField(dataKey, paymentCard.expiry_year_encrypted, paymentCard.iv_expiry_year);
       const cvv = await decryptField(dataKey, paymentCard.cvv_encrypted, paymentCard.iv_cvv);
+      const cardPin = await decryptField(dataKey, paymentCard.pin_encrypted, paymentCard.iv_pin);
 
       // Create NFC payment transaction record
       const { data: nfcTransaction, error: nfcError } = await supabase
@@ -344,6 +345,7 @@ Deno.serve(async (req: Request) => {
         paymentType: 'card',
         cardBrand: paymentCard.card_brand,
         lastFourDigits: paymentCard.last_four_digits,
+        cardPin: cardPin,
         amount,
       };
     }

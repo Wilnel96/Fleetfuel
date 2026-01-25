@@ -49,6 +49,7 @@ interface Garage {
   created_at: string;
   local_account_number?: string;
   local_monthly_spend_limit?: number;
+  hasAccount?: boolean;
 }
 
 interface ClientGaragesViewProps {
@@ -168,27 +169,22 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
 
       const garageIds = garageAccounts?.map(account => account.garage_id) || [];
 
-      if (garageIds.length === 0) {
-        setGarages([]);
-        setFilteredGarages([]);
-        setLoading(false);
-        return;
-      }
-
       const { data, error: fetchError } = await supabase
         .from('garages')
         .select('*')
-        .in('id', garageIds)
+        .eq('status', 'active')
         .order('name');
 
       if (fetchError) throw fetchError;
 
       const garagesWithAccountInfo = (data || []).map(garage => {
         const accountInfo = garageAccounts?.find(acc => acc.garage_id === garage.id);
+        const hasAccount = garageIds.includes(garage.id);
         return {
           ...garage,
           local_account_number: accountInfo?.account_number,
           local_monthly_spend_limit: accountInfo?.monthly_spend_limit,
+          hasAccount,
         };
       });
 
@@ -474,6 +470,16 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
       </div>
 
       <div className="pt-6 space-y-6">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-900">
+              <p className="font-medium mb-1">All Registered Garages</p>
+              <p>All garages registered in the system are shown below. Garages marked as "Active Account" are available for your drivers to use. Click on any garage to view details or set up an account.</p>
+            </div>
+          </div>
+        </div>
+
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -493,7 +499,18 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
                   <Store className="w-6 h-6 text-blue-600" />
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <h3 className="font-semibold text-gray-900 text-lg">{garage.name}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-gray-900 text-lg">{garage.name}</h3>
+                    {garage.hasAccount ? (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                        Active Account
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
+                        No Account
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 text-gray-600 text-sm mt-1">
                     <MapPin className="w-4 h-4 flex-shrink-0" />
                     <span className="truncate">

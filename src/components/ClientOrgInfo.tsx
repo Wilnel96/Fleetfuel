@@ -18,6 +18,12 @@ interface ClientOrganization {
   payment_option: string | null;
   fuel_payment_terms: string | null;
   fuel_payment_interest_rate: number | null;
+  billing_contact_name: string | null;
+  billing_contact_surname: string | null;
+  billing_contact_email: string | null;
+  billing_contact_phone_mobile: string | null;
+  billing_contact_phone_office: string | null;
+  phone_number: string | null;
 }
 
 interface ClientOrgInfoProps {
@@ -47,7 +53,10 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
       const term = searchTerm.toLowerCase();
       const filtered = organizations.filter((org) =>
         org.name.toLowerCase().includes(term) ||
-        (org.company_registration_number || '').toLowerCase().includes(term)
+        (org.company_registration_number || '').toLowerCase().includes(term) ||
+        (org.billing_contact_email || '').toLowerCase().includes(term) ||
+        (org.billing_contact_name || '').toLowerCase().includes(term) ||
+        (org.billing_contact_surname || '').toLowerCase().includes(term)
       );
       setFilteredOrganizations(filtered);
     }
@@ -134,6 +143,12 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
           payment_option: editForm.payment_option || null,
           fuel_payment_terms: editForm.payment_option === 'EFT Payment' ? (editForm.fuel_payment_terms || null) : null,
           fuel_payment_interest_rate: editForm.payment_option === 'EFT Payment' && editForm.fuel_payment_terms !== 'Same Day' ? editForm.fuel_payment_interest_rate : null,
+          billing_contact_name: editForm.billing_contact_name,
+          billing_contact_surname: editForm.billing_contact_surname,
+          billing_contact_email: editForm.billing_contact_email,
+          billing_contact_phone_mobile: editForm.billing_contact_phone_mobile,
+          billing_contact_phone_office: editForm.billing_contact_phone_office,
+          phone_number: editForm.phone_number,
         })
         .eq('id', editingId);
 
@@ -346,6 +361,74 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                 </div>
 
                 <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Contact Information</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Company Phone Number</label>
+                      <input
+                        type="text"
+                        value={editForm.phone_number || ''}
+                        onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="Company main number"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 mt-2">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing Contact Person</h4>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">First Name</label>
+                      <input
+                        type="text"
+                        value={editForm.billing_contact_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_contact_name: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Surname</label>
+                      <input
+                        type="text"
+                        value={editForm.billing_contact_surname || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_contact_surname: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Email Address</label>
+                      <input
+                        type="email"
+                        value={editForm.billing_contact_email || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_contact_email: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="billing@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Mobile Phone</label>
+                      <input
+                        type="text"
+                        value={editForm.billing_contact_phone_mobile || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_contact_phone_mobile: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Office Phone</label>
+                      <input
+                        type="text"
+                        value={editForm.billing_contact_phone_office || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_contact_phone_office: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-2 mt-2">
                   <h4 className="text-sm font-semibold text-gray-900 mb-2">Payment Configuration</h4>
                   <div className="space-y-2">
                     <div>
@@ -535,6 +618,42 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                         }`}>
                           {org.status || 'Active'}
                         </span>
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 border-t pt-3 mt-3">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Contact Information</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Company Phone Number</label>
+                          <p className="text-gray-900">{org.phone_number || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 border-t pt-3 mt-3">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing Contact Person</h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">First Name</label>
+                          <p className="text-gray-900">{org.billing_contact_name || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Surname</label>
+                          <p className="text-gray-900">{org.billing_contact_surname || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Email Address</label>
+                          <p className="text-gray-900">{org.billing_contact_email || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Mobile Phone</label>
+                          <p className="text-gray-900">{org.billing_contact_phone_mobile || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Office Phone</label>
+                          <p className="text-gray-900">{org.billing_contact_phone_office || 'N/A'}</p>
+                        </div>
                       </div>
                     </div>
 

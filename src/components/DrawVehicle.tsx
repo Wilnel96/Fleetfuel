@@ -121,6 +121,12 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     setShowBarcodeScanner(false);
     setError('');
 
+    const anyDrawnVehicle = await checkAnyActiveDrawing(driverId);
+    if (anyDrawnVehicle) {
+      setError(`You already have a vehicle drawn (${anyDrawnVehicle}). Please return it before drawing another vehicle.`);
+      return;
+    }
+
     const result = await findVehicleByLicenseDisk(barcodeData);
     if (!result) {
       setError('License disk verification failed. The barcode data does not match any vehicle.');
@@ -228,20 +234,66 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     return !returnTransaction;
   };
 
-  const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
-    // Check if vehicle has ANY unreturned draws
-    const { data: unreturnedDraws } = await supabase
+  const checkAnyActiveDrawing = async (driverId: string): Promise<string | null> => {
+    const { data: draws } = await supabase
       .from('vehicle_transactions')
-      .select('id, driver_id, created_at')
-      .eq('vehicle_id', vehicleId)
+      .select(`
+        id,
+        vehicle_id,
+        vehicles!inner(registration_number)
+      `)
+      .eq('driver_id', driverId)
       .eq('transaction_type', 'draw')
       .is('related_transaction_id', null)
       .order('created_at', { ascending: false });
 
-    if (!unreturnedDraws || unreturnedDraws.length === 0) return null;
+    if (!draws || draws.length === 0) return null;
 
-    // Get the most recent unreturned draw
-    const lastDraw = unreturnedDraws[0];
+    for (const draw of draws) {
+      const { data: returnTransaction } = await supabase
+        .from('vehicle_transactions')
+        .select('id')
+        .eq('related_transaction_id', draw.id)
+        .eq('transaction_type', 'return')
+        .maybeSingle();
+
+      if (!returnTransaction) {
+        return draw.vehicles.registration_number;
+      }
+    }
+
+    return null;
+  };
+
+  const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
+    // Get all draws for this vehicle
+    const { data: draws } = await supabase
+      .from('vehicle_transactions')
+      .select('id, driver_id, created_at')
+      .eq('vehicle_id', vehicleId)
+      .eq('transaction_type', 'draw')
+      .order('created_at', { ascending: false });
+
+    if (!draws || draws.length === 0) return null;
+
+    // Find the most recent draw that has no return
+    let lastDraw = null;
+    for (const draw of draws) {
+      const { data: returnData } = await supabase
+        .from('vehicle_transactions')
+        .select('id')
+        .eq('related_transaction_id', draw.id)
+        .eq('transaction_type', 'return')
+        .limit(1)
+        .maybeSingle();
+
+      if (!returnData) {
+        lastDraw = draw;
+        break;
+      }
+    }
+
+    if (!lastDraw) return null;
 
     // Vehicle has not been returned, get the driver's name
     const { data: driver } = await supabase
@@ -692,6 +744,11 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                     const vehicle = vehicles.find(v => v.id === e.target.value);
                     if (vehicle) {
                       setError('');
+                      const anyDrawnVehicle = await checkAnyActiveDrawing(driverId);
+                      if (anyDrawnVehicle) {
+                        setError(`You already have a vehicle drawn (${anyDrawnVehicle}). Please return it before drawing another vehicle.`);
+                        return;
+                      }
                       const hasActiveDrawing = await checkActiveDrawing(vehicle.id, driverId);
                       if (hasActiveDrawing) {
                         setError('This vehicle is already drawn by you. Please return it before drawing again.');

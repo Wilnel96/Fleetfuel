@@ -14,28 +14,28 @@ The file `garage_import_template.csv` contains:
 Use this prompt with ChatGPT:
 
 ```
-I need you to fill out a CSV file with real garage/fuel station data for South Africa.
+I need you to fill out a CSV file with garage/fuel station data for South Africa.
 
 The CSV has these columns:
-name,address,address_line_2,city,province,postal_code,latitude,longitude,phone,email,fuel_brand,price_zone,available_fuel_types,fuel_prices_petrol_95,fuel_prices_petrol_93,fuel_prices_diesel_50ppm,fuel_prices_diesel_500ppm,other_offerings,contact_1_name,contact_1_surname,contact_1_email,contact_1_office_phone,contact_1_mobile_phone,contact_2_name,contact_2_surname,contact_2_email,contact_2_office_phone,contact_2_mobile_phone,vat_number
+name,address,address_line_2,city,province,postal_code,latitude,longitude,email,fuel_brand,price_zone,available_fuel_types,fuel_prices_petrol_95,fuel_prices_petrol_93,fuel_prices_diesel_50ppm,fuel_prices_diesel_500ppm,other_offerings,contact_1_name,contact_1_surname,contact_1_email,contact_1_office_phone,contact_1_mobile_phone,contact_2_name,contact_2_surname,contact_2_email,contact_2_office_phone,contact_2_mobile_phone,vat_number,bank_name,account_holder,account_number,branch_code
 
-Please provide at least 20-30 real fuel stations across major South African cities (Johannesburg, Cape Town, Durban, Pretoria, Port Elizabeth, Bloemfontein).
+Please provide at least 20-30 fuel stations across major South African cities (Johannesburg, Cape Town, Durban, Pretoria, Port Elizabeth, Bloemfontein).
 
-Requirements:
-1. Use real fuel brands: Shell, BP, Engen, Sasol, Total, Caltex
-2. Include accurate GPS coordinates
+IMPORTANT: Only the "name" field is required. All other fields are optional - fill in what you can and leave the rest empty.
+
+Requirements (when providing data):
+1. Use fuel brands: Shell, BP, Engen, Sasol, Total, Caltex
+2. Include GPS coordinates if possible
 3. Use realistic South African addresses
-4. Phone numbers in format: 012 345 6789
-5. Mobile numbers in format: 082 123 4567
-6. Province must be one of: Gauteng, Western Cape, KwaZulu-Natal, Eastern Cape, Free State, Limpopo, Mpumalanga, Northern Cape, North West
-7. Price zone: "Inland" or "Coastal"
-8. Available fuel types: Use pipe separator like "Petrol 95|Diesel 50ppm"
-9. Fuel prices: Current realistic SA prices per liter (around R23-25)
-10. Other offerings: Use pipe separator like "Car Wash|Convenience Store|ATM"
-11. Create realistic contact person details
-12. VAT numbers: 10 digits
+4. Mobile numbers format: 082 123 4567
+5. Province (if known): Gauteng, Western Cape, KwaZulu-Natal, Eastern Cape, Free State, Limpopo, Mpumalanga, Northern Cape, North West
+6. Price zone: "Inland" or "Coastal"
+7. Available fuel types: Use pipe separator like "Petrol 95|Diesel 50ppm"
+8. Fuel prices: Current realistic SA prices per liter (around R23-25)
+9. Other offerings: Use pipe separator like "Car Wash|Convenience Store|ATM"
+10. VAT numbers: 10 digits
 
-Make it as realistic as possible with actual locations that could exist.
+Don't worry if you can't fill all fields - garages can update their information later.
 ```
 
 ## Step 3: Clean the CSV
@@ -84,41 +84,54 @@ If you prefer to add garages manually through the UI:
 ## CSV Field Reference
 
 ### Required Fields
-- `name` - Garage name
+- `name` - Garage name (ONLY field required)
+
+### Optional Fields
+All other fields are optional! Import garages with minimal information and they can update their details later once operational.
+
+#### Location Fields (Optional)
 - `address` - Street address
+- `address_line_2` - Additional address info
 - `city` - City name
 - `province` - SA province name
-
-### Location Fields
 - `latitude` - GPS latitude (negative for South)
 - `longitude` - GPS longitude (positive for East)
 - `postal_code` - SA postal code
 
-### Fuel Information
+#### Fuel Information (Optional)
 - `fuel_brand` - Shell, BP, Engen, Sasol, Total, Caltex
 - `price_zone` - Inland or Coastal
 - `available_fuel_types` - Pipe-separated: `Petrol 95|Diesel 50ppm`
 - `fuel_prices_*` - Price per liter in Rands
 
-### Contact Information
-- `phone` - Main phone
+#### Contact Information (Optional)
 - `email` - Main email
 - `contact_1_*` - Primary contact person
-- `contact_2_*` - Secondary contact person (optional)
+- `contact_2_*` - Secondary contact person
 
-### Additional
+#### Banking Information (Optional)
+- `bank_name` - Bank name
+- `account_holder` - Account holder name
+- `account_number` - Bank account number
+- `branch_code` - Bank branch code
+
+#### Additional (Optional)
 - `other_offerings` - Pipe-separated services
 - `vat_number` - 10-digit VAT number
+- `password` - Custom password (defaults to TempPassword123!)
 
 ## Troubleshooting
 
 ### "Missing Supabase credentials"
 Make sure your `.env` file has:
 - `VITE_SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `VITE_SUPABASE_ANON_KEY`
+
+### "Authentication failed"
+The script authenticates as the super admin user (willem@fleetfuel.com). If this fails, check the credentials in the script.
 
 ### "Garage already exists"
-The script checks for duplicates by name and city. If a garage already exists, it will be skipped.
+The script checks for duplicates by name. If a garage already exists, it will be skipped.
 
 ### "Error importing garage"
 Check the error message. Common issues:
@@ -134,7 +147,9 @@ Make sure:
 
 ## Notes
 
-- The import script uses the service role key to bypass RLS
-- Garages are created with `is_active = true` by default
+- The import script authenticates as super admin to create garages
+- Only the garage `name` is required - all other fields are optional
+- Garages can update their information later once operational
 - You can re-run the import script - it will skip duplicates
+- Each garage gets its own organization record automatically
 - Consider backing up your database before importing large datasets

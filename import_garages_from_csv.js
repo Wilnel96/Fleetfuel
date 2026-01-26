@@ -118,27 +118,27 @@ function transformRow(row) {
 
   return {
     name: row.name,
-    address_line_1: row.address,
+    address_line_1: row.address || null,
     address_line_2: row.address_line_2 || null,
-    city: row.city,
-    province: row.province,
+    city: row.city || null,
+    province: row.province || null,
     postal_code: row.postal_code || null,
     latitude: row.latitude ? parseFloat(row.latitude) : null,
     longitude: row.longitude ? parseFloat(row.longitude) : null,
     email_address: row.email || null,
     fuel_brand: row.fuel_brand || null,
     price_zone: row.price_zone || null,
-    fuel_types: fuelTypes,
+    fuel_types: fuelTypes.length > 0 ? fuelTypes : null,
     fuel_prices: Object.keys(fuelPrices).length > 0 ? fuelPrices : null,
     other_offerings: otherOfferings.length > 0 ? otherOfferings : null,
     contact_persons: contacts.length > 0 ? contacts : null,
     vat_number: row.vat_number || null,
-    password: 'TempPassword123!', // Default password - garages should change this
-    // Required fields with defaults
-    bank_name: 'To Be Updated',
-    account_holder: 'To Be Updated',
-    account_number: '0000000000',
-    branch_code: '000000'
+    password: row.password || 'TempPassword123!', // Default password if not provided
+    // Bank details - all optional, garages can update later
+    bank_name: row.bank_name || null,
+    account_holder: row.account_holder || null,
+    account_number: row.account_number || null,
+    branch_code: row.branch_code || null
   };
 }
 
@@ -169,16 +169,15 @@ async function importGarages() {
 
         console.log(`Importing: ${garageData.name}...`);
 
-        // Check if garage already exists
+        // Check if garage already exists (by name only, since city might be null)
         const { data: existing } = await supabase
           .from('garages')
           .select('id')
           .eq('name', garageData.name)
-          .eq('city', garageData.city)
           .maybeSingle();
 
         if (existing) {
-          console.log(`⚠️  Garage already exists: ${garageData.name} in ${garageData.city}`);
+          console.log(`⚠️  Garage already exists: ${garageData.name}`);
           continue;
         }
 

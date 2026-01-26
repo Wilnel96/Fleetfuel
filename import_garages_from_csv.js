@@ -29,30 +29,22 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 function parseCSV(content) {
   const lines = content.split('\n').filter(line => line.trim() && !line.startsWith('INSTRUCTIONS'));
-  const headers = lines[0].split(',').map(h => h.trim());
+
+  // Parse header (can be comma or tab delimited)
+  const firstLine = lines[0];
+  const headerDelimiter = firstLine.includes(',') ? ',' : '\t';
+  const headers = firstLine.split(headerDelimiter).map(h => h.trim());
+  console.log(`Found ${headers.length} columns`);
+
   const rows = [];
 
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
     if (!line.trim()) continue;
 
-    const values = [];
-    let currentValue = '';
-    let insideQuotes = false;
-
-    for (let j = 0; j < line.length; j++) {
-      const char = line[j];
-
-      if (char === '"') {
-        insideQuotes = !insideQuotes;
-      } else if (char === ',' && !insideQuotes) {
-        values.push(currentValue.trim());
-        currentValue = '';
-      } else {
-        currentValue += char;
-      }
-    }
-    values.push(currentValue.trim());
+    // Auto-detect delimiter for each line (tab or comma)
+    const lineDelimiter = line.includes('\t') ? '\t' : ',';
+    const values = line.split(lineDelimiter).map(v => v.trim());
 
     if (values.length === headers.length) {
       const row = {};
@@ -60,6 +52,8 @@ function parseCSV(content) {
         row[header] = values[index];
       });
       rows.push(row);
+    } else {
+      console.log(`Skipping line ${i + 1}: Expected ${headers.length} columns, got ${values.length}`);
     }
   }
 

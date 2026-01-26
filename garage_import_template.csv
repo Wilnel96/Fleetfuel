@@ -1,62 +1,23 @@
 name,address,address_line_2,city,province,postal_code,latitude,longitude,phone,email,fuel_brand,price_zone,available_fuel_types,fuel_prices_petrol_95,fuel_prices_petrol_93,fuel_prices_diesel_50ppm,fuel_prices_diesel_500ppm,other_offerings,contact_1_name,contact_1_surname,contact_1_email,contact_1_office_phone,contact_1_mobile_phone,contact_2_name,contact_2_surname,contact_2_email,contact_2_office_phone,contact_2_mobile_phone,vat_number
-Shell Sandton City,123 Rivonia Road,,Sandton,Gauteng,2196,-26.1076,28.0567,011 123 4567,sandton@shell.co.za,Shell,Inland,Petrol 95|Petrol 93|Diesel 50ppm,24.50,23.80,23.20,,Car Wash|Convenience Store|ATM,John,Smith,john.smith@shell.co.za,011 123 4567,082 123 4567,Jane,Doe,jane.doe@shell.co.za,011 123 4568,083 234 5678,4123456789
-BP Cape Town Central,456 Strand Street,Unit 2A,Cape Town,Western Cape,8001,-33.9249,18.4241,021 234 5678,capetown@bp.co.za,BP,Coastal,Petrol 95|Petrol 93|Diesel 50ppm|Diesel 500ppm,25.20,24.50,23.90,22.50,Car Wash|Convenience Store|Tire Services,Sarah,Johnson,sarah.j@bp.co.za,021 234 5678,084 345 6789,,,,,,,4234567890
-
-INSTRUCTIONS FOR COMPLETING THIS TEMPLATE:
-==============================================
-
-REQUIRED FIELDS (must have data):
-- name: Full name of the garage/station
-- address: Street address
-- city: City name
-- province: One of: Gauteng, Western Cape, KwaZulu-Natal, Eastern Cape, Free State, Limpopo, Mpumalanga, Northern Cape, North West
-
-LOCATION FIELDS:
-- latitude: GPS latitude (negative for South, e.g., -26.1076)
-- longitude: GPS longitude (positive for East, e.g., 28.0567)
-- postal_code: South African postal code
-
-CONTACT FIELDS:
-- phone: Main garage phone (format: 012 345 6789 or 0123456789)
-- email: Main garage email
-
-FUEL BRAND:
-- One of: Shell, BP, Engen, Sasol, Total, Caltex
-
-PRICE ZONE:
-- Either: Inland or Coastal
-
-AVAILABLE FUEL TYPES (use pipe | to separate multiple):
-- Options: Petrol 95|Petrol 93|Diesel 50ppm|Diesel 500ppm
-- Example: Petrol 95|Diesel 50ppm
-
-FUEL PRICES (per liter in Rands):
-- fuel_prices_petrol_95: Price for 95 Octane Petrol
-- fuel_prices_petrol_93: Price for 93 Octane Petrol
-- fuel_prices_diesel_50ppm: Price for 50ppm Diesel
-- fuel_prices_diesel_500ppm: Price for 500ppm Diesel
-- Leave blank if fuel type not available
-
-OTHER OFFERINGS (use pipe | to separate multiple):
-- Options: Car Wash|Convenience Store|ATM|Restaurant|Tire Services|Oil Change|Repairs
-- Example: Car Wash|Convenience Store|ATM
-
-CONTACT PERSONS (up to 2):
-- contact_1_name: First name
-- contact_1_surname: Last name
-- contact_1_email: Email address
-- contact_1_office_phone: Office phone
-- contact_1_mobile_phone: Mobile phone (format: 082 123 4567)
-- (Same fields for contact_2 - optional)
-
-VAT NUMBER:
-- South African VAT number (10 digits)
-- Example: 4123456789
-
-NOTES:
-- Remove the example rows before importing
-- Add as many garage rows as needed
-- Leave optional fields blank if not available
-- Ensure GPS coordinates are accurate for mapping
-- Fuel prices should reflect current market rates
-- All phone numbers should be valid SA numbers
+Shell Rosebank Motors	175 Jan Smuts Ave		Johannesburg	Gauteng	2196	-26.1466	28.0406	011 788 1234	rosebank@shell.co.za	Shell	Inland	Petrol 95|Diesel 50ppm|Diesel 500ppm	24.99	24.49	24.85	24.3	Car Wash|Convenience Store|ATM	Thabo	Molefe	thabo.molefe@shell.co.za	011 788 1235	082 345 6789	Naledi	Khumalo	naledi.khumalo@shell.co.za	011 788 1236	083 456 7890	4123456789
+BP Sandton Drive	90 Sandton Dr		Sandton	Gauteng	2196	-26.1076	28.0567	011 884 5678	sandton@bp.co.za	BP	Inland	Petrol 95|Diesel 50ppm	24.89	24.39	24.7	24.2	Convenience Store|ATM	Michael	Steyn	michael.steyn@bp.co.za	011 884 5679	082 987 6543	Ayanda	Ndlovu	ayanda.ndlovu@bp.co.za	011 884 5680	083 876 5432	4234567890
+Engen William Nicol	298 William Nicol Dr		Johannesburg	Gauteng	2194	-26.0738	28.0211	011 462 3344	williamnicol@engen.co.za	Engen	Inland	Petrol 95|Diesel 50ppm|Diesel 500ppm	25.1	24.6	24.95	24.4	Car Wash|Convenience Store|ATM	Jason	Naidoo	jason.naidoo@engen.co.za	011 462 3345	082 222 3344	Lerato	Mokoena	lerato.mokoena@engen.co.za	011 462 3346	083 333 4455	4345678901
+Sasol Pretoria Central	321 Church St		Pretoria	Gauteng	2	-25.7461	28.1881	012 323 4567	church@sasol.co.za	Sasol	Inland	Petrol 95|Diesel 50ppm	24.95	24.45	24.8	24.25	Convenience Store|ATM	Pieter	van Wyk	pieter.vw@sasol.co.za	012 323 4568	082 111 2233	Nomsa	Zulu	nomsa.zulu@sasol.co.za	012 323 4569	083 444 5566	4456789012
+Total Energies Hatfield	1147 Burnett St		Pretoria	Gauteng	83	-25.7467	28.2354	012 362 7788	hatfield@total.co.za	Total	Inland	Petrol 95|Diesel 50ppm	24.9	24.4	24.75	24.2	Car Wash|Convenience Store|ATM	Andre	Botha	andre.botha@total.co.za	012 362 7789	082 555 6677	Kagiso	Tshepo	kagiso.tshepo@total.co.za	012 362 7790	083 666 7788	4567890123
+Caltex Rondebosch	120 Main Rd		Cape Town	Western Cape	7700	-33.9631	18.4765	021 689 1122	rondebosch@caltex.co.za	Caltex	Coastal	Petrol 95|Diesel 50ppm	23.95		23.6	23.1	Car Wash|Convenience Store|ATM	Daniel	Jacobs	daniel.jacobs@caltex.co.za	021 689 1123	082 444 5566	Shireen	Abrahams	shireen.abrahams@caltex.co.za	021 689 1124	083 555 6677	4678901234
+Shell Sea Point	154 Main Rd		Cape Town	Western Cape	8005	-33.9154	18.3841	021 439 9988	seapoint@shell.co.za	Shell	Coastal	Petrol 95|Diesel 50ppm	24.05		23.7	23.2	Convenience Store|ATM	Mark	Wilson	mark.wilson@shell.co.za	021 439 9989	082 777 8899	Zanele	Mkhize	zanele.mkhize@shell.co.za	021 439 9990	083 888 9900	4789012345
+BP Claremont	33 Imam Haron Rd		Cape Town	Western Cape	7708	-33.9806	18.4667	021 671 2233	claremont@bp.co.za	BP	Coastal	Petrol 95|Diesel 50ppm	23.99		23.65	23.15	Car Wash|Convenience Store|ATM	Ahmed	Khan	ahmed.khan@bp.co.za	021 671 2234	082 999 1111	Fatima	Patel	fatima.patel@bp.co.za	021 671 2235	083 000 2222	4890123456
+Engen Umhlanga Rocks	2 Lighthouse Rd		Durban	KwaZulu-Natal	4320	-29.7276	31.0847	031 561 4455	umhlanga@engen.co.za	Engen	Coastal	Petrol 95|Diesel 50ppm|Diesel 500ppm	23.85		23.55	23.05	Car Wash|Convenience Store|ATM	Sipho	Dlamini	sipho.dlamini@engen.co.za	031 561 4456	082 123 8899	Nicole	Pillay	nicole.pillay@engen.co.za	031 561 4457	083 234 9900	4901234567
+Sasol Florida Rd	201 Florida Rd		Durban	KwaZulu-Natal	4001	-29.8363	31.0096	031 303 7788	florida@sasol.co.za	Sasol	Coastal	Petrol 95|Diesel 50ppm	23.9		23.6	23.1	Convenience Store|ATM	Grant	Meyer	grant.meyer@sasol.co.za	031 303 7789	082 456 7788	Busisiwe	Ngcobo	busisiwe.ngcobo@sasol.co.za	031 303 7790	083 567 8899	4012345678
+Total Port Elizabeth Central	45 Govan Mbeki Ave		Port Elizabeth	Eastern Cape	6001	-33.9608	25.6022	041 501 3344	centralpe@total.co.za	Total	Coastal	Petrol 95|Diesel 50ppm	23.88		23.58	23.08	Car Wash|Convenience Store|ATM	Brendan	Owen	brendan.owen@total.co.za	041 501 3345	082 334 5566	Yolanda	Smith	yolanda.smith@total.co.za	041 501 3346	083 445 6677	4123987654
+Caltex Walmer	105 Heugh Rd		Port Elizabeth	Eastern Cape	6070	-33.9833	25.5472	041 581 2299	walmer@caltex.co.za	Caltex	Coastal	Petrol 95|Diesel 50ppm	23.92		23.62	23.12	Convenience Store|ATM	Kevin	Adams	kevin.adams@caltex.co.za	041 581 2300	082 998 7766	Leigh	Brown	leigh.brown@caltex.co.za	041 581 2301	083 887 6655	4239876543
+Shell Bloemfontein Central	45 Nelson Mandela Dr		Bloemfontein	Free State	9301	-29.1183	26.214	051 447 8899	bfncentral@shell.co.za	Shell	Inland	Petrol 95|Diesel 50ppm	25.2	24.7	25.05	24.5	Car Wash|Convenience Store|ATM	Johan	Kruger	johan.kruger@shell.co.za	051 447 8900	082 665 4433	Karabo	Mosala	karabo.mosala@shell.co.za	051 447 8901	083 776 5544	4345566778
+BP Universitas	1 Du Preez Ave		Bloemfontein	Free State	9301	-29.1217	26.2035	051 430 5566	universitas@bp.co.za	BP	Inland	Petrol 95|Diesel 50ppm	25.15	24.65	25	24.45	Convenience Store|ATM	Samuel	Fourie	samuel.fourie@bp.co.za	051 430 5567	082 554 3322	Mpho	Tau	mpho.tau@bp.co.za	051 430 5568	083 665 4433	4455667789
+Total Fourways	Cnr William Nicol & Leslie Ave	Fourways	Johannesburg	Gauteng	2191	-26.0219	28.0127	011 465 7788	fourways@total.co.za	Total	Inland	Petrol 95|Diesel 50ppm	25.1	24.6	24.95	24.4	Car Wash|Convenience Store|ATM	Ruan	Botha	ruan.botha@total.co.za	011 465 7789	082 321 4455	Sindi	Maseko	sindi.maseko@total.co.za	011 465 7790	083 432 5566	5012345678
+Shell Melville	7th Ave & Main Rd	Melville	Johannesburg	Gauteng	2109	-26.1756	28.0085	011 726 3344	melville@shell.co.za	Shell	Inland	Petrol 95|Diesel 50ppm	25.05	24.55	24.9	24.35	Convenience Store|ATM	Neo	Petersen	neo.petersen@shell.co.za	011 726 3345	082 654 7788	Tom	van Rensburg	tom.vr@shell.co.za	011 726 3346	083 765 8899	5123456789
+BP Menlyn	Lois Ave	Menlyn	Pretoria	Gauteng	0181	-25.7829	28.2764	012 348 6677	menlyn@bp.co.za	BP	Inland	Petrol 95|Diesel 50ppm	25	24.5	24.85	24.3	Car Wash|Convenience Store|ATM	Herman	Strydom	herman.strydom@bp.co.za	012 348 6678	082 998 1122	Lebo	Mahlangu	lebo.mahlangu@bp.co.za	012 348 6679	083 887 2211	5234567890
+Engen Waterfront	Dock Rd	V&A Waterfront	Cape Town	Western Cape	8001	-33.9068	18.4173	021 418 9900	waterfront@engen.co.za	Engen	Coastal	Petrol 95|Diesel 50ppm	23.95		23.6	23.1	Convenience Store|ATM	Kyle	Daniels	kyle.daniels@engen.co.za	021 418 9901	082 112 3344	Taryn	Lewis	taryn.lewis@engen.co.za	021 418 9902	083 223 4455	5345678901
+Total Bellville	Voortrekker Rd	Bellville	Cape Town	Western Cape	7530	-33.9023	18.6308	021 946 2211	bellville@total.co.za	Total	Coastal	Petrol 95|Diesel 50ppm	24.05		23.7	23.2	Car Wash|Convenience Store|ATM	Ashley	Coetzee	ashley.coetzee@total.co.za	021 946 2212	082 334 5566	Nadine	Visser	nadine.visser@total.co.za	021 946 2213	083 445 6677	5456789012
+BP Westville	Jan Hofmeyr Rd	Westville	Durban	KwaZulu-Natal	3629	-29.8347	30.9416	031 266 4455	westville@bp.co.za	BP	Coastal	Petrol 95|Diesel 50ppm	23.9		23.55	23.05	Car Wash|Convenience Store|ATM	Deon	Marais	deon.marais@bp.co.za	031 266 4456	082 667 8899	Nokuthula	Cele	nokuthula.cele@bp.co.za	031 266 4457	083 778 9900	5567890123
+Shell Summerstrand	Marine Dr	Summerstrand	Port Elizabeth	Eastern Cape	6001	-34.0056	25.6569	041 583 4455	summerstrand@shell.co.za	Shell	Coastal	Petrol 95|Diesel 50ppm	23.85		23.5	23	Convenience Store|ATM	Warren	Lee	warren.lee@shell.co.za	041 583 4456	082 445 6677	Chantal	Bester	chantal.bester@shell.co.za	041 583 4457	083 556 7788	5678901234
+Engen Langenhoven Park	Wynand Mouton Dr	Langenhoven Park	Bloemfontein	Free State	9301	-29.0852	26.1566	051 401 2299	langenhoven@engen.co.za	Engen	Inland	Petrol 95|Diesel 50ppm	25.25	24.75	25.1	24.55	Car Wash|Convenience Store|ATM	Henk	Olivier	henk.olivier@engen.co.za	051 401 2300	082 778 9900	Refilwe	Dube	refilwe.dube@engen.co.za	051 401 2301	083 889 0011	5789012345

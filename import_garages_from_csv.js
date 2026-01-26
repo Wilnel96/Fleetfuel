@@ -18,14 +18,31 @@ envContent.split('\n').forEach(line => {
 });
 
 const supabaseUrl = envVars.VITE_SUPABASE_URL;
-const supabaseServiceKey = envVars.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = envVars.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase credentials in .env file');
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Authenticate as super admin
+async function authenticateAdmin() {
+  console.log('Authenticating as super admin...');
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: 'willem@fleetfuel.com',
+    password: 'FleetFuel2024!'
+  });
+
+  if (error) {
+    console.error('Authentication failed:', error.message);
+    process.exit(1);
+  }
+
+  console.log('✅ Authenticated successfully\n');
+  return data;
+}
 
 function parseCSV(content) {
   const lines = content.split('\n').filter(line => line.trim() && !line.startsWith('INSTRUCTIONS'));
@@ -101,35 +118,42 @@ function transformRow(row) {
 
   return {
     name: row.name,
-    address: row.address,
+    address_line_1: row.address,
     address_line_2: row.address_line_2 || null,
     city: row.city,
     province: row.province,
     postal_code: row.postal_code || null,
     latitude: row.latitude ? parseFloat(row.latitude) : null,
     longitude: row.longitude ? parseFloat(row.longitude) : null,
-    phone: row.phone || null,
-    email: row.email || null,
+    email_address: row.email || null,
     fuel_brand: row.fuel_brand || null,
     price_zone: row.price_zone || null,
-    available_fuel_types: fuelTypes,
+    fuel_types: fuelTypes,
     fuel_prices: Object.keys(fuelPrices).length > 0 ? fuelPrices : null,
-    other_offerings: otherOfferings,
-    contacts: contacts.length > 0 ? contacts : null,
+    other_offerings: otherOfferings.length > 0 ? otherOfferings : null,
+    contact_persons: contacts.length > 0 ? contacts : null,
     vat_number: row.vat_number || null,
-    password: 'TempPassword123!' // Default password - garages should change this
+    password: 'TempPassword123!', // Default password - garages should change this
+    // Required fields with defaults
+    bank_name: 'To Be Updated',
+    account_holder: 'To Be Updated',
+    account_number: '0000000000',
+    branch_code: '000000'
   };
 }
 
 async function importGarages() {
   try {
+    // Authenticate first
+    await authenticateAdmin();
+
     console.log('Reading CSV file...');
     const csvPath = join(__dirname, 'garage_import_template.csv');
     const csvContent = fs.readFileSync(csvPath, 'utf-8');
 
     console.log('Parsing CSV...');
     const rows = parseCSV(csvContent);
-    console.log(`Found ${rows.length} garages to import`);
+    console.log(`Found ${rows.length} garages to import\n`);
 
     if (rows.length === 0) {
       console.log('No garages to import. Please fill in the CSV template first.');
@@ -143,7 +167,7 @@ async function importGarages() {
       try {
         const garageData = transformRow(row);
 
-        console.log(`\nImporting: ${garageData.name}...`);
+        console.log(`Importing: ${garageData.name}...`);
 
         // Check if garage already exists
         const { data: existing } = await supabase
@@ -158,11 +182,14 @@ async function importGarages() {
           continue;
         }
 
-        const { data, error } = await supabase
-          .from('garages')
-          .insert(garageData)
-          .select()
-          .single();
+        // Use database function to create garage with organization
+        const { data, error } = await supabase.rpc('create_garage_with_organization', {
+          p_garage_data: garageData,
+          p_org_name: garageData.name,
+          p_org_vat_number: garageData.vat_number,
+          p_org_city: garageData.city,
+          p_org_province: garageData.province
+        });
 
         if (error) {
           console.error(`❌ Error importing ${garageData.name}:`, error.message);

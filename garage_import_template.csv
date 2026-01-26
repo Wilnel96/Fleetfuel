@@ -1,0 +1,62 @@
+name,address,address_line_2,city,province,postal_code,latitude,longitude,phone,email,fuel_brand,price_zone,available_fuel_types,fuel_prices_petrol_95,fuel_prices_petrol_93,fuel_prices_diesel_50ppm,fuel_prices_diesel_500ppm,other_offerings,contact_1_name,contact_1_surname,contact_1_email,contact_1_office_phone,contact_1_mobile_phone,contact_2_name,contact_2_surname,contact_2_email,contact_2_office_phone,contact_2_mobile_phone,vat_number
+Shell Sandton City,123 Rivonia Road,,Sandton,Gauteng,2196,-26.1076,28.0567,011 123 4567,sandton@shell.co.za,Shell,Inland,Petrol 95|Petrol 93|Diesel 50ppm,24.50,23.80,23.20,,Car Wash|Convenience Store|ATM,John,Smith,john.smith@shell.co.za,011 123 4567,082 123 4567,Jane,Doe,jane.doe@shell.co.za,011 123 4568,083 234 5678,4123456789
+BP Cape Town Central,456 Strand Street,Unit 2A,Cape Town,Western Cape,8001,-33.9249,18.4241,021 234 5678,capetown@bp.co.za,BP,Coastal,Petrol 95|Petrol 93|Diesel 50ppm|Diesel 500ppm,25.20,24.50,23.90,22.50,Car Wash|Convenience Store|Tire Services,Sarah,Johnson,sarah.j@bp.co.za,021 234 5678,084 345 6789,,,,,,,4234567890
+
+INSTRUCTIONS FOR COMPLETING THIS TEMPLATE:
+==============================================
+
+REQUIRED FIELDS (must have data):
+- name: Full name of the garage/station
+- address: Street address
+- city: City name
+- province: One of: Gauteng, Western Cape, KwaZulu-Natal, Eastern Cape, Free State, Limpopo, Mpumalanga, Northern Cape, North West
+
+LOCATION FIELDS:
+- latitude: GPS latitude (negative for South, e.g., -26.1076)
+- longitude: GPS longitude (positive for East, e.g., 28.0567)
+- postal_code: South African postal code
+
+CONTACT FIELDS:
+- phone: Main garage phone (format: 012 345 6789 or 0123456789)
+- email: Main garage email
+
+FUEL BRAND:
+- One of: Shell, BP, Engen, Sasol, Total, Caltex
+
+PRICE ZONE:
+- Either: Inland or Coastal
+
+AVAILABLE FUEL TYPES (use pipe | to separate multiple):
+- Options: Petrol 95|Petrol 93|Diesel 50ppm|Diesel 500ppm
+- Example: Petrol 95|Diesel 50ppm
+
+FUEL PRICES (per liter in Rands):
+- fuel_prices_petrol_95: Price for 95 Octane Petrol
+- fuel_prices_petrol_93: Price for 93 Octane Petrol
+- fuel_prices_diesel_50ppm: Price for 50ppm Diesel
+- fuel_prices_diesel_500ppm: Price for 500ppm Diesel
+- Leave blank if fuel type not available
+
+OTHER OFFERINGS (use pipe | to separate multiple):
+- Options: Car Wash|Convenience Store|ATM|Restaurant|Tire Services|Oil Change|Repairs
+- Example: Car Wash|Convenience Store|ATM
+
+CONTACT PERSONS (up to 2):
+- contact_1_name: First name
+- contact_1_surname: Last name
+- contact_1_email: Email address
+- contact_1_office_phone: Office phone
+- contact_1_mobile_phone: Mobile phone (format: 082 123 4567)
+- (Same fields for contact_2 - optional)
+
+VAT NUMBER:
+- South African VAT number (10 digits)
+- Example: 4123456789
+
+NOTES:
+- Remove the example rows before importing
+- Add as many garage rows as needed
+- Leave optional fields blank if not available
+- Ensure GPS coordinates are accurate for mapping
+- Fuel prices should reflect current market rates
+- All phone numbers should be valid SA numbers

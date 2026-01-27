@@ -75,6 +75,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
         .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
+        .eq('organization_type', 'client')
         .neq('name', 'My Organization')
         .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
         .order('name');

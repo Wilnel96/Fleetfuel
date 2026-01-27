@@ -196,6 +196,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
       const { data, error } = await supabase
         .from('organizations')
         .select('id, name')
+        .eq('organization_type', 'client')
         .eq('is_management_org', false)
         .order('name');
 

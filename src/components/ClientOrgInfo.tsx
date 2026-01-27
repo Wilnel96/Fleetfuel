@@ -68,6 +68,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
         .select('*')
+        .eq('organization_type', 'client')
         .neq('name', 'My Organization')
         .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
         .order('name');

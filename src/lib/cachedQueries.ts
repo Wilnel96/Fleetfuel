@@ -26,21 +26,23 @@ export async function getCachedOrganizations(userId: string, options: CachedQuer
   if (profile.role === 'super_admin') {
     const { data } = await supabase
       .from('organizations')
-      .select('id, name, is_management_org')
+      .select('id, name, is_management_org, organization_type')
       .neq('is_management_org', true)
+      .eq('organization_type', 'client')
       .order('name');
 
     organizations = data || [];
   } else {
     const { data: childOrgs } = await supabase
       .from('organizations')
-      .select('id, name, is_management_org')
+      .select('id, name, is_management_org, organization_type')
       .eq('parent_org_id', profile.organization_id)
+      .eq('organization_type', 'client')
       .neq('is_management_org', true);
 
     const { data: ownOrg } = await supabase
       .from('organizations')
-      .select('id, name, is_management_org')
+      .select('id, name, is_management_org, organization_type')
       .eq('id', profile.organization_id)
       .maybeSingle();
 

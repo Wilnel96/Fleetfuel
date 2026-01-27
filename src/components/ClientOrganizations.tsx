@@ -230,6 +230,7 @@ export default function ClientOrganizations() {
           .from('organizations')
           .select('*')
           .eq('parent_org_id', profile.organization_id)
+          .eq('organization_type', 'client')
           .order('name');
 
         if (error) {

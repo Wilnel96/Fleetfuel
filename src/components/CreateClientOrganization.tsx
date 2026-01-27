@@ -93,7 +93,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         .from('organizations')
         .insert({
           ...formData,
-          parent_organization_id: parentOrg.id,
+          parent_org_id: parentOrg.id,
+          organization_type: 'client',
           status: 'active',
           billing_email: billingContact.email,
           billing_contact_name: billingContact.name,

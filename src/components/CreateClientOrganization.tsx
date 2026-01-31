@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Building2, Save, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -10,6 +10,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [componentError, setComponentError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     company_registration_number: '',
@@ -62,6 +63,50 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     can_manage_users: false,
     can_view_financial_data: true,
   });
+
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setComponentError('Not authenticated');
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!profile?.organization_id) {
+          setComponentError('No organization found');
+          return;
+        }
+
+        const { data: parentOrg } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .eq('id', profile.organization_id)
+          .maybeSingle();
+
+        if (!parentOrg) {
+          setComponentError('Parent organization not found');
+          return;
+        }
+
+        if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
+          setComponentError('Only management organization can create client organizations');
+          return;
+        }
+      } catch (err: any) {
+        console.error('Error checking permissions:', err);
+        setComponentError(err.message || 'Failed to verify permissions');
+      }
+    };
+
+    checkPermissions();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,6 +270,24 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-4xl mx-auto">
+        {componentError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-red-800 font-semibold mb-1">Access Denied</h3>
+                <p className="text-red-700 text-sm">{componentError}</p>
+                <button
+                  onClick={() => onNavigate && onNavigate('client-organizations-menu')}
+                  className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-2.5 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
@@ -239,6 +302,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           </div>
         )}
 
+        {!componentError && (
         <form id="create-client-form" onSubmit={handleSubmit} className="space-y-3">
         <div>
           <h3 className="text-base font-semibold text-gray-900 mb-2">Organization Details</h3>
@@ -861,6 +925,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           </div>
         </div>
         </form>
+        )}
         </div>
       </div>
     </div>

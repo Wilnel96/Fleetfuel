@@ -14,7 +14,6 @@ interface OrganizationUser {
   first_name: string;
   surname: string;
   title: string;
-  user_type: string | null;
   phone_office: string | null;
   phone_mobile: string | null;
   is_main_user: boolean;
@@ -65,7 +64,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
   const [clientOrganizations, setClientOrganizations] = useState<Organization[]>([]);
   const [demoteForm, setDemoteForm] = useState({
     title: 'User',
-    user_type: '',
     can_add_vehicles: false,
     can_edit_vehicles: false,
     can_delete_vehicles: false,
@@ -86,7 +84,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
     first_name: '',
     surname: '',
     title: 'User',
-    user_type: '',
     phone_office: '',
     phone_mobile: '',
     can_add_vehicles: false,
@@ -103,18 +100,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
     can_manage_users: false,
     can_view_financial_data: false,
   });
-
-  // User type options for client organizations (OPTIONAL supplementary classification)
-  const userTypes = [
-    { value: '', label: 'None', description: 'No additional classification' },
-    { value: 'standard_user', label: 'Standard User', description: 'Basic access user' },
-    { value: 'billing_user', label: 'Billing User', description: 'Handles invoices and payments' },
-    { value: 'fleet_user', label: 'Fleet User', description: 'Manages vehicles' },
-    { value: 'driver_user', label: 'Driver User', description: 'Manages drivers' },
-    { value: 'vehicle_user', label: 'Vehicle User', description: 'Vehicle management' },
-    { value: 'finance_user', label: 'Finance User', description: 'Financial data access' },
-    { value: 'reports_user', label: 'Reports User', description: 'Report generation' },
-  ];
 
   const permissionTemplates = {
     admin: {
@@ -468,7 +453,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
           name: newUser.first_name,
           surname: newUser.surname,
           title: newUser.title,
-          user_type: newUser.user_type,
           phone_office: newUser.phone_office || null,
           phone_mobile: newUser.phone_mobile || null,
           can_add_vehicles: newUser.can_add_vehicles,
@@ -511,7 +495,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
         first_name: '',
         surname: '',
         title: 'User',
-        user_type: '',
         phone_office: '',
         phone_mobile: '',
         can_add_vehicles: false,
@@ -582,7 +565,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
             name: editingUser.first_name,
             surname: editingUser.surname,
             title: editingUser.title,
-            user_type: editingUser.user_type || 'standard_user',
             phone_office: editingUser.phone_office || null,
             phone_mobile: editingUser.phone_mobile || null,
             can_add_vehicles: editingUser.can_add_vehicles,
@@ -768,7 +750,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
       setDemotingUserId(userId);
       setDemoteForm({
         title: 'User',
-        user_type: 'standard_user',
         can_add_vehicles: false,
         can_edit_vehicles: false,
         can_delete_vehicles: false,
@@ -1133,25 +1114,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                   <option value="Vehicle User">Vehicle User</option>
                   <option value="User">User</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                  User Type <span className="text-xs text-gray-500">(Optional - for reporting)</span>
-                </label>
-                <select
-                  value={newUser.user_type || ''}
-                  onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value || null })}
-                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  {userTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label} - {type.description}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  Supplementary classification for reporting and analytics
-                </p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-0.5">
@@ -1530,24 +1492,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
               <p className="text-xs text-gray-600 mt-0.5">Select the role that best describes this user's responsibilities</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                User Type <span className="text-xs text-gray-500">(Optional - for reporting)</span>
-              </label>
-              <select
-                value={editingUser.user_type || ''}
-                onChange={(e) => setEditingUser({ ...editingUser, user_type: e.target.value || null })}
-                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-              >
-                {userTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label} - {type.description}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-0.5">Supplementary classification for reporting and analytics</p>
-            </div>
-
             <div className="grid md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Office Number</label>
@@ -1890,14 +1834,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                     onClick={() => setViewingUserId(viewingUserId === user.id ? null : user.id)}
                     className="flex items-center gap-3 flex-1 hover:bg-gray-50 transition-colors -mx-4 -my-3 px-4 py-3"
                   >
-                    <div className="flex flex-col gap-1">
-                      <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300 rounded">{user.title}</span>
-                      {user.user_type && user.user_type !== 'standard_user' && (
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded">
-                          {userTypes.find(t => t.value === user.user_type)?.label || user.user_type}
-                        </span>
-                      )}
-                    </div>
+                    <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300 rounded">{user.title}</span>
                     <span className="text-sm font-medium text-gray-900">{user.first_name} {user.surname}</span>
                     {user.is_active ? (
                       <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Active</span>
@@ -2138,26 +2075,6 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                   <option value="Vehicle User">Vehicle User</option>
                   <option value="Driver User">Driver User</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  User Type <span className="text-xs text-gray-500">(Optional - for reporting)</span>
-                </label>
-                <select
-                  value={demoteForm.user_type || ''}
-                  onChange={(e) => setDemoteForm({ ...demoteForm, user_type: e.target.value || null })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {userTypes.map(type => (
-                    <option key={type.value} value={type.value}>
-                      {type.label} - {type.description}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  Supplementary classification for reporting and analytics
-                </p>
               </div>
 
               <div>

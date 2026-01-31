@@ -12,7 +12,6 @@ interface CreateUserRequest {
   name: string;
   surname: string;
   title: string;
-  user_type?: string; // Client org user classification
   phone_office?: string;
   phone_mobile?: string;
   can_add_vehicles: boolean;
@@ -149,7 +148,6 @@ Deno.serve(async (req: Request) => {
           first_name: userData.name,
           surname: userData.surname,
           title: userData.title,
-          user_type: userData.user_type || null,
           password: userData.password,
           phone_office: userData.phone_office || null,
           phone_mobile: userData.phone_mobile || null,
@@ -186,7 +184,6 @@ Deno.serve(async (req: Request) => {
           first_name: userData.name,
           surname: userData.surname,
           title: userData.title,
-          user_type: userData.user_type || null,
           password: userData.password,
           phone_office: userData.phone_office || null,
           phone_mobile: userData.phone_mobile || null,

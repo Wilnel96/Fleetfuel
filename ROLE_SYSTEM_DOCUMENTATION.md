@@ -47,7 +47,7 @@ Fuel Empowerment Systems Fleet (Client Org) - Separate organization
 ### Purpose
 Organizations that use the system to manage their fleet, drivers, and fuel transactions.
 
-### User Classification (Primary - stored in `title` field and boolean flags)
+### User Classification (stored in `title` field and boolean flags)
 
 | Title | Boolean Flag | Description | Permissions |
 |-------|--------------|-------------|-------------|
@@ -64,24 +64,6 @@ Organizations that use the system to manage their fleet, drivers, and fuel trans
 - Main User has full control over the organization
 - Main User manages organizational integrity and information
 - Cannot be deleted or demoted without transferring status to another user
-
-### Optional: User Type (Supplementary classification)
-The `user_type` field is **OPTIONAL** and used for:
-- Reporting and analytics
-- Additional categorization
-- Internal classification
-
-Available user types:
-- `billing_user` - For reporting on billing personnel
-- `fleet_user` - For reporting on fleet managers
-- `driver_user` - For reporting on driver managers
-- `vehicle_user` - For reporting on vehicle managers
-- `finance_user` - For reporting on finance personnel
-- `reports_user` - For reporting on report users
-- `standard_user` - Basic classification
-- Can be null/empty - no supplementary classification needed
-
-**Important:** The `user_type` field does NOT replace or override the `title` field. It's purely supplementary.
 
 ### Granular Permissions
 Each user has specific permission flags:
@@ -135,7 +117,6 @@ John's Personal Fleet (Client Organization)
 - first_name, surname, title (text)
 - is_main_user (boolean) - PRIMARY CLASSIFICATION: Main account holder
 - is_secondary_main_user (boolean) - PRIMARY CLASSIFICATION: Secondary main user
-- user_type (text, nullable) - OPTIONAL: Supplementary classification
 - [permission flags...]
 - Used for: Client organization users
 ```
@@ -166,9 +147,8 @@ John's Personal Fleet (Client Organization)
 ### Creating Client Organization Users
 1. Use the `create-user` edge function
 2. Set appropriate `title`: 'Secondary Main User', 'Billing User', 'Driver User', 'Vehicle User', 'User'
-3. Optionally set `user_type` for reporting purposes
-4. Configure granular permissions based on their role
-5. User gets entry in both `auth.users` and `organization_users`
+3. Configure granular permissions based on their role
+4. User gets entry in both `auth.users` and `organization_users`
 
 ### Creating Drivers
 1. Create entry in `drivers` table
@@ -190,7 +170,6 @@ await supabase.from('drivers').insert({
 await createUser({
   email: 'john@example.com',
   title: 'User',
-  user_type: 'driver_user', // Optional - for reporting
   can_view_reports: true,
   // ... permissions
 });
@@ -218,7 +197,6 @@ await createUser({
 
 ### For Client Organization Users
 - Show title dropdown: 'Main User', 'Secondary Main User', 'Billing User', 'Driver User', 'Vehicle User', 'User'
-- Show optional user_type dropdown (for reporting classification)
 - Show granular permission checkboxes
 - Use `organization_users` table
 - Access: ClientDashboard component
@@ -261,6 +239,6 @@ This ensures:
 | **Available Roles** | super_admin, admin, manager, user | Main User, Secondary Main User, Billing User, Driver User, Vehicle User, User |
 | **Driver Role** | NOT allowed | Separate `drivers` table |
 | **Main User** | Not applicable | REQUIRED - exactly one |
-| **User Type** | Not used | Optional supplementary classification |
 | **Purpose** | System management | Fleet management |
 | **Access Scope** | All organizations | Own organization only |
+| **Reporting/Filtering** | Use role field | Use title field |

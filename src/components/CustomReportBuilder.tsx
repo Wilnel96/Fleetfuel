@@ -505,15 +505,27 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         .eq('id', user.id)
         .single();
 
-      // Get all accessible organization IDs (own + children)
-      const { data: childOrgs } = await supabase
+      // Check if user is in management organization
+      const { data: userOrg } = await supabase
         .from('organizations')
-        .select('id')
-        .eq('parent_org_id', profile?.organization_id);
+        .select('is_management_org, organization_type')
+        .eq('id', profile?.organization_id)
+        .maybeSingle();
 
-      const accessibleOrgIds = [profile?.organization_id];
-      if (childOrgs && childOrgs.length > 0) {
-        accessibleOrgIds.push(...childOrgs.map(org => org.id));
+      const isManagementUser = userOrg?.is_management_org === true && userOrg?.organization_type === 'management';
+
+      let accessibleOrgIds = [profile?.organization_id];
+
+      if (isManagementUser) {
+        // Management users can access all client organizations
+        const { data: allClientOrgs } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('organization_type', 'client');
+
+        if (allClientOrgs && allClientOrgs.length > 0) {
+          accessibleOrgIds = allClientOrgs.map(org => org.id);
+        }
       }
 
       let selectQuery = buildSelectQuery(selectedColumns);

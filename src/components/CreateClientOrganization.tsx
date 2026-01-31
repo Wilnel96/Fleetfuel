@@ -201,8 +201,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         .from('organizations')
         .insert({
           ...sanitizedFormData,
-          parent_org_id: parentOrg.id,
           organization_type: 'client',
+          is_management_org: false,
           status: 'active',
           billing_contact_email: billingContact.email,
           billing_contact_name: billingContact.name,

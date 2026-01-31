@@ -496,7 +496,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     {editForm.payment_option === 'Card Payment' && (
                       <div className="bg-blue-50 border border-blue-200 rounded p-2">
                         <p className="text-xs text-blue-900 font-medium">
-                          MyFuelApp funds garage payments upfront. Client repays MyFuelApp for fuel costs plus management fees.
+                          Client uses their own debit/credit card to pay for fuel purchases directly.
                         </p>
                       </div>
                     )}

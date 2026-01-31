@@ -263,7 +263,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             phone_office: billingContact.phone_office || null,
             phone_mobile: billingContact.phone_mobile || null,
             is_main_user: false,
-            role: 'billing',
+            role: 'user',
             can_add_vehicles: billingContact.can_add_vehicles,
             can_edit_vehicles: billingContact.can_edit_vehicles,
             can_delete_vehicles: billingContact.can_delete_vehicles,

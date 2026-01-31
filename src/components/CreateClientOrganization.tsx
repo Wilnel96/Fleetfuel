@@ -57,8 +57,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     year_end_day: 28,
     daily_spending_limit: null as number | null,
     monthly_spending_limit: null as number | null,
-    payment_option: '' as 'Card Payment' | 'Local Account' | 'EFT Payment' | '',
-    fuel_payment_terms: '' as 'Same Day' | 'Next Day' | '30-Days' | '',
+    payment_option: null as 'Card Payment' | 'Local Account' | 'EFT Payment' | null,
+    fuel_payment_terms: null as 'Same Day' | 'Next Day' | '30-Days' | null,
     fuel_payment_interest_rate: null as number | null,
   });
 
@@ -185,18 +185,30 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         throw new Error('Only management organization can create client organizations');
       }
 
+      // Sanitize formData - convert empty strings to null for optional fields
+      const sanitizedFormData = {
+        ...formData,
+        payment_option: formData.payment_option || null,
+        fuel_payment_terms: formData.fuel_payment_terms || null,
+        fuel_payment_interest_rate: formData.fuel_payment_interest_rate || null,
+        daily_spending_limit: formData.daily_spending_limit || null,
+        monthly_spending_limit: formData.monthly_spending_limit || null,
+        website: formData.website || null,
+        address_line2: formData.address_line2 || null,
+      };
+
       const { data: newOrg, error: insertError } = await supabase
         .from('organizations')
         .insert({
-          ...formData,
+          ...sanitizedFormData,
           parent_org_id: parentOrg.id,
           organization_type: 'client',
           status: 'active',
           billing_contact_email: billingContact.email,
           billing_contact_name: billingContact.name,
           billing_contact_surname: billingContact.surname,
-          billing_contact_phone_office: billingContact.phone_office,
-          billing_contact_phone_mobile: billingContact.phone_mobile,
+          billing_contact_phone_office: billingContact.phone_office || null,
+          billing_contact_phone_mobile: billingContact.phone_mobile || null,
         })
         .select()
         .single();
@@ -480,11 +492,11 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               </label>
               <select
                 required
-                value={formData.payment_option}
+                value={formData.payment_option || ''}
                 onChange={(e) => safeSetFormData({
                   ...formData,
-                  payment_option: e.target.value as any,
-                  fuel_payment_terms: e.target.value !== 'EFT Payment' ? '' : formData.fuel_payment_terms,
+                  payment_option: e.target.value || null as any,
+                  fuel_payment_terms: e.target.value !== 'EFT Payment' ? null : formData.fuel_payment_terms,
                   fuel_payment_interest_rate: e.target.value !== 'EFT Payment' ? null : formData.fuel_payment_interest_rate,
                 })}
                 className={`w-full px-2.5 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
@@ -528,10 +540,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                   </label>
                   <select
                     required={formData.payment_option === 'EFT Payment'}
-                    value={formData.fuel_payment_terms}
+                    value={formData.fuel_payment_terms || ''}
                     onChange={(e) => safeSetFormData({
                       ...formData,
-                      fuel_payment_terms: e.target.value as any,
+                      fuel_payment_terms: e.target.value || null as any,
                       fuel_payment_interest_rate: e.target.value === 'Same Day' ? null : formData.fuel_payment_interest_rate,
                     })}
                     className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"

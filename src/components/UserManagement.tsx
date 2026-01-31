@@ -14,7 +14,7 @@ interface OrganizationUser {
   first_name: string;
   surname: string;
   title: string;
-  user_type: string;
+  user_type: string | null;
   phone_office: string | null;
   phone_mobile: string | null;
   is_main_user: boolean;
@@ -65,7 +65,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
   const [clientOrganizations, setClientOrganizations] = useState<Organization[]>([]);
   const [demoteForm, setDemoteForm] = useState({
     title: 'User',
-    user_type: 'standard_user',
+    user_type: '',
     can_add_vehicles: false,
     can_edit_vehicles: false,
     can_delete_vehicles: false,
@@ -86,7 +86,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
     first_name: '',
     surname: '',
     title: 'User',
-    user_type: 'standard_user',
+    user_type: '',
     phone_office: '',
     phone_mobile: '',
     can_add_vehicles: false,
@@ -104,8 +104,9 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
     can_view_financial_data: false,
   });
 
-  // User type options for client organizations
+  // User type options for client organizations (OPTIONAL supplementary classification)
   const userTypes = [
+    { value: '', label: 'None', description: 'No additional classification' },
     { value: 'standard_user', label: 'Standard User', description: 'Basic access user' },
     { value: 'billing_user', label: 'Billing User', description: 'Handles invoices and payments' },
     { value: 'fleet_user', label: 'Fleet User', description: 'Manages vehicles' },
@@ -510,7 +511,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
         first_name: '',
         surname: '',
         title: 'User',
-        user_type: 'standard_user',
+        user_type: '',
         phone_office: '',
         phone_mobile: '',
         can_add_vehicles: false,
@@ -1135,13 +1136,12 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                  User Type <span className="text-red-500">*</span>
+                  User Type <span className="text-xs text-gray-500">(Optional - for reporting)</span>
                 </label>
                 <select
-                  value={newUser.user_type}
-                  onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value })}
+                  value={newUser.user_type || ''}
+                  onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value || null })}
                   className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
                 >
                   {userTypes.map(type => (
                     <option key={type.value} value={type.value}>
@@ -1150,7 +1150,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                   ))}
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Classifies user for reporting and permissions
+                  Supplementary classification for reporting and analytics
                 </p>
               </div>
               <div>
@@ -1531,12 +1531,13 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">User Type *</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                User Type <span className="text-xs text-gray-500">(Optional - for reporting)</span>
+              </label>
               <select
-                value={editingUser.user_type || 'standard_user'}
-                onChange={(e) => setEditingUser({ ...editingUser, user_type: e.target.value })}
+                value={editingUser.user_type || ''}
+                onChange={(e) => setEditingUser({ ...editingUser, user_type: e.target.value || null })}
                 className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-                required
               >
                 {userTypes.map(type => (
                   <option key={type.value} value={type.value}>
@@ -1544,7 +1545,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-0.5">Classifies user for reporting and permissions</p>
+              <p className="text-xs text-gray-500 mt-0.5">Supplementary classification for reporting and analytics</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-3">
@@ -2141,11 +2142,11 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  User Type <span className="text-red-500">*</span>
+                  User Type <span className="text-xs text-gray-500">(Optional - for reporting)</span>
                 </label>
                 <select
-                  value={demoteForm.user_type}
-                  onChange={(e) => setDemoteForm({ ...demoteForm, user_type: e.target.value })}
+                  value={demoteForm.user_type || ''}
+                  onChange={(e) => setDemoteForm({ ...demoteForm, user_type: e.target.value || null })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   {userTypes.map(type => (
@@ -2155,7 +2156,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                   ))}
                 </select>
                 <p className="mt-1 text-xs text-gray-500">
-                  Classifies user for reporting and permissions
+                  Supplementary classification for reporting and analytics
                 </p>
               </div>
 

@@ -96,6 +96,25 @@ Deno.serve(async (req: Request) => {
       throw new Error('No organization found');
     }
 
+    // Verify the target organization exists and get its type
+    const { data: targetOrg, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, name, organization_type, is_management_org')
+      .eq('id', userOrgId)
+      .maybeSingle();
+
+    if (orgError || !targetOrg) {
+      throw new Error('Target organization not found');
+    }
+
+    // Log for debugging
+    console.log('Creating user for organization:', {
+      id: targetOrg.id,
+      name: targetOrg.name,
+      type: targetOrg.organization_type,
+      is_management: targetOrg.is_management_org
+    });
+
     if (!userData.email || !userData.password || !userData.name || !userData.surname) {
       throw new Error('Email, password, name, and surname are required');
     }

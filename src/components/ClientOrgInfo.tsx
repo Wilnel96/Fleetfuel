@@ -504,7 +504,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     {editForm.payment_option === 'Local Account' && (
                       <div className="bg-amber-50 border border-amber-200 rounded p-2">
                         <p className="text-xs text-amber-900 font-medium">
-                          MyFuelApp funds garage payments using client's local account arrangements. Client repays MyFuelApp for fuel costs plus management fees.
+                          Client makes their own arrangements with the garage and pays the garage directly as agreed between client and garage.
                         </p>
                       </div>
                     )}

@@ -27,6 +27,9 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     year_end_day: 28,
     daily_spending_limit: null as number | null,
     monthly_spending_limit: null as number | null,
+    payment_option: '' as 'Card Payment' | 'Local Account' | 'EFT Payment' | '',
+    fuel_payment_terms: '' as 'Same Day' | 'Next Day' | '30-Days' | '',
+    fuel_payment_interest_rate: null as number | null,
   });
 
   const [mainUser, setMainUser] = useState({
@@ -96,7 +99,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           parent_org_id: parentOrg.id,
           organization_type: 'client',
           status: 'active',
-          billing_email: billingContact.email,
+          billing_contact_email: billingContact.email,
           billing_contact_name: billingContact.name,
           billing_contact_surname: billingContact.surname,
           billing_contact_phone_office: billingContact.phone_office,
@@ -316,12 +319,22 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Province</label>
-              <input
-                type="text"
+              <select
                 value={formData.province}
                 onChange={(e) => setFormData({ ...formData, province: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+              >
+                <option value="">-- Select Province --</option>
+                <option value="Eastern Cape">Eastern Cape</option>
+                <option value="Free State">Free State</option>
+                <option value="Gauteng">Gauteng</option>
+                <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                <option value="Limpopo">Limpopo</option>
+                <option value="Mpumalanga">Mpumalanga</option>
+                <option value="Northern Cape">Northern Cape</option>
+                <option value="North West">North West</option>
+                <option value="Western Cape">Western Cape</option>
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Postal Code</label>

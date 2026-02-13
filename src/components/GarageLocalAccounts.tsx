@@ -77,6 +77,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
             phone_number, company_registration_number,
             monthly_spending_limit, daily_spending_limit
           `)
+          .neq('organization_type', 'garage')
           .order('name'),
         supabase
           .from('organization_garage_accounts')

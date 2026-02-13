@@ -16,6 +16,7 @@ interface Organization {
   company_registration_number: string | null;
   monthly_spending_limit: number | null;
   daily_spending_limit: number | null;
+  parent_organization_id: string | null;
 }
 
 interface OrgUser {
@@ -75,9 +76,11 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
             id, name, vat_number, city, province,
             address_line1, address_line2, postal_code, country,
             phone_number, company_registration_number,
-            monthly_spending_limit, daily_spending_limit
+            monthly_spending_limit, daily_spending_limit,
+            parent_organization_id
           `)
           .neq('organization_type', 'garage')
+          .not('parent_organization_id', 'is', null)
           .order('name'),
         supabase
           .from('organization_garage_accounts')

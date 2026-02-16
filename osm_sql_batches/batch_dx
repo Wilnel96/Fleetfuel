@@ -1,0 +1,100 @@
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', 'N3 Highway', '', 'Villiers', '', '', 'South Africa', -27.0077253, 28.6006527, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 58 821 0709","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '87 Murchinson Street', '', 'Ladysmith', 'KwaZulu-Natal', '3370', 'South Africa', -28.561996, 29.7785474, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 36 631 2755","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (95 ULP)","Petrol (98 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', 'Allen Street', '', 'Newcastle', '', '', 'South Africa', -27.7441561, 29.9347672, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 34 312 1977","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (95 ULP)","Petrol (98 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', '68 Allen Street', '', 'Newcastle', '', '', 'South Africa', -27.7583036, 29.9367044, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 34 312 5487","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', '', '', 'Bloemfontein', '', '', 'South Africa', -29.1079798, 26.1989024, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 51 444 2993","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'TotalEnergies', '', '', 'Bloemfontein', '', '', 'South Africa', -29.108258, 26.2022053, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 51 444 6461","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'TotalEnergies', '0000000000', '000000', '', 0.5, 'Total Energies', '{"Diesel","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '', '', 'Unknown', '', '', 'South Africa', -27.872502, 26.6932738, NULL, '[]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', 'N18', '', 'Hartswater', '', '', 'South Africa', -27.7761203, 24.7924602, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 53 474 0444","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '', '', 'Unknown', '', '', 'South Africa', -27.0331763, 28.6042829, NULL, '[]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'TotalEnergies', '', '', 'Heilbron', '', '9650', 'South Africa', -27.2802835, 27.9689878, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 58 852 3597","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'TotalEnergies', '0000000000', '000000', '', 0.5, 'Total Energies', '{"Diesel","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '45 Hardwick Street', '', 'Newcastle', 'KwaZulu-Natal', '2940', 'South Africa', -27.7603987, 29.9457847, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 34 315 1570","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (95 ULP)","Petrol (98 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Puma', 'Thabong Link', '', 'Maseru', '', '', 'South Africa', -29.3150731, 27.5106857, NULL, '[]'::jsonb, 'Unknown Bank', 'Puma', '0000000000', '000000', '', 0.5, 'Puma Energy', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Puma', 'Principal Highway', '', 'Maseru', '', '', 'South Africa', -29.3687621, 27.5377439, NULL, '[]'::jsonb, 'Unknown Bank', 'Puma', '0000000000', '000000', '', 0.5, 'Puma Energy', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Ha Mots''oeneng Filling station', '', '', 'Unknown', '', '', 'South Africa', -29.3475657, 27.5184829, NULL, '[]'::jsonb, 'Unknown Bank', 'Ha Mots''oeneng Filling station', '0000000000', '000000', '', 0.5, 'Ha Mots''oeneng Filling station', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Lake Site Filling Station', '', '', 'Unknown', '', '', 'South Africa', -29.3127952, 27.5100366, NULL, '[]'::jsonb, 'Unknown Bank', 'Lake Site Filling Station', '0000000000', '000000', '', 0.5, 'Lake Site Filling Station', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Fair Deal Filling Station', 'Main North 1', '', 'Unknown', '', '200', 'South Africa', -29.1510342, 27.7458688, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+266 28500578","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Fair Deal Filling Station', '0000000000', '000000', '', 0.5, 'Makau', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Mochaochele', '', '', 'Unknown', '', '', 'South Africa', -29.4113716, 27.6194745, NULL, '[]'::jsonb, 'Unknown Bank', 'Mochaochele', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '', '', 'Estcourt', 'KwaZulu-Natal', '3310', 'South Africa', -28.9218508, 29.7812373, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 87 997 1152","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (98 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '', '', 'Estcourt', 'KwaZulu-Natal', '3310', 'South Africa', -28.9261711, 29.7801917, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 36 352 9007","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (95 ULP)","Petrol (98 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', 'N3 Highway', '', 'Ladysmith', '', '', 'South Africa', -28.4885235, 29.5759586, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 36 635 7984","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Engen', 'N3 Highway', '', 'Ladysmith', '', '', 'South Africa', -28.4908953, 29.5737075, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 36 635 7984","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Engen', '0000000000', '000000', '', 0.5, 'Engen', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '', '', 'Unknown', 'Free State', '9660', 'South Africa', -27.3927645, 26.6218562, NULL, '[{"name":"Manager","surname":"","email":"","phone":"+27 56 515 4757","mobile_phone":"","is_primary":true}]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (95 ULP)","Petrol (98 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Exel', '', '', 'Unknown', '', '', 'South Africa', -27.3938808, 26.620105, NULL, '[]'::jsonb, 'Unknown Bank', 'Exel', '0000000000', '000000', '', 0.5, 'Exel', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Caltex', '', '', 'Unknown', '', '', 'South Africa', -27.394468, 26.6197536, NULL, '[]'::jsonb, 'Unknown Bank', 'Caltex', '0000000000', '000000', '', 0.5, 'Caltex', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO garages (organization_id, name, address_line_1, address_line_2, city, province, postal_code, country, latitude, longitude, email_address, contact_persons, bank_name, account_holder, account_number, branch_code, vat_number, commission_rate, fuel_brand, fuel_types, fuel_prices, price_zone, other_offerings, status)
+VALUES ('00000000-0000-0000-0000-000000000000', 'Shell', '', '', 'Unknown', '', '', 'South Africa', -27.8350331, 25.9039951, NULL, '[]'::jsonb, 'Unknown Bank', 'Shell', '0000000000', '000000', '', 0.5, 'Shell', '{"Diesel","Petrol (93 ULP)","Petrol (95 ULP)"}'::text[], '{}'::jsonb, '', '{}'::jsonb, 'active')
+ON CONFLICT DO NOTHING;
+

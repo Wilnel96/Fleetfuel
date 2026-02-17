@@ -1,0 +1,27 @@
+[dotenv@17.3.1] injecting env (4) from .env -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+
+========================================
+  Importing 2,925 OSM Garages
+========================================
+
+Current garages: null
+
+Total INSERT statements: 2925
+
+Progress: 500/2925 | Total in DB: null
+Progress: 1000/2925 | Total in DB: null
+Progress: 1500/2925 | Total in DB: null
+Progress: 2000/2925 | Total in DB: null
+Progress: 2500/2925 | Total in DB: null
+Progress: 3000/2925 | Total in DB: null
+
+========================================
+  Import Complete!
+========================================
+Initial: null
+Final: null
+Added: 0
+Processed: 2925
+Failed: 0
+========================================
+

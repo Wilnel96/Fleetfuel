@@ -453,6 +453,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
           name: newUser.first_name,
           surname: newUser.surname,
           title: newUser.title,
+          organization_id: isSuperAdmin && selectedOrgId ? selectedOrgId : undefined,
           phone_office: newUser.phone_office || null,
           phone_mobile: newUser.phone_mobile || null,
           can_add_vehicles: newUser.can_add_vehicles,
@@ -492,7 +493,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
       setNewUser({
         email: '',
         password: '',
-        name: '',
+        first_name: '',
         surname: '',
         title: 'User',
         phone_office: '',

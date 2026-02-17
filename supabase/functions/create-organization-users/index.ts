@@ -171,7 +171,7 @@ Deno.serve(async (req: Request) => {
           .insert({
             id: authData.user.id,
             organization_id: organization_id,
-            full_name: `${userData.first_name} ${userData.surname}`,
+            full_name: `${userData.name} ${userData.surname}`,
             role: userData.role,
           });
 

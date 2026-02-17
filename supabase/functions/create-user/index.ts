@@ -12,6 +12,7 @@ interface CreateUserRequest {
   name: string;
   surname: string;
   title: string;
+  organization_id?: string; // Optional: allows super admins to create users for specific organizations
   phone_office?: string;
   phone_mobile?: string;
   can_add_vehicles: boolean;
@@ -65,9 +66,18 @@ Deno.serve(async (req: Request) => {
     }
 
     const isSuperAdmin = profile.role === 'super_admin';
-    let userOrgId = profile.organization_id;
+    const userData: CreateUserRequest = await req.json();
 
-    if (!isSuperAdmin) {
+    let userOrgId: string;
+
+    // If super admin specifies an organization_id, use that
+    if (isSuperAdmin && userData.organization_id) {
+      userOrgId = userData.organization_id;
+    } else if (isSuperAdmin) {
+      // Super admin without specified org - use their org
+      userOrgId = profile.organization_id;
+    } else {
+      // Regular users - must be main user or have manage_users permission
       const { data: orgUser } = await supabase
         .from('organization_users')
         .select('is_main_user, can_manage_users, organization_id')
@@ -86,7 +96,24 @@ Deno.serve(async (req: Request) => {
       throw new Error('No organization found');
     }
 
-    const userData: CreateUserRequest = await req.json();
+    // Verify the target organization exists and get its type
+    const { data: targetOrg, error: orgError } = await supabase
+      .from('organizations')
+      .select('id, name, organization_type, is_management_org')
+      .eq('id', userOrgId)
+      .maybeSingle();
+
+    if (orgError || !targetOrg) {
+      throw new Error('Target organization not found');
+    }
+
+    // Log for debugging
+    console.log('Creating user for organization:', {
+      id: targetOrg.id,
+      name: targetOrg.name,
+      type: targetOrg.organization_type,
+      is_management: targetOrg.is_management_org
+    });
 
     if (!userData.email || !userData.password || !userData.name || !userData.surname) {
       throw new Error('Email, password, name, and surname are required');

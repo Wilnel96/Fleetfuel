@@ -226,10 +226,10 @@ export default function ClientOrganizations() {
       if (profile) {
         setManagementOrgId(profile.organization_id);
 
+        // Management users see ALL client organizations (no parent link needed)
         const { data, error } = await supabase
           .from('organizations')
           .select('*')
-          .eq('parent_org_id', profile.organization_id)
           .eq('organization_type', 'client')
           .order('name');
 
@@ -283,7 +283,7 @@ export default function ClientOrganizations() {
         bank_account_number_2: formData.bank_account_number_2 || null,
         bank_branch_code_2: formData.bank_branch_code_2 || null,
         bank_account_type_2: formData.bank_account_type_2 || null,
-        parent_org_id: managementOrgId,
+        organization_type: 'client',
         is_management_org: false
       };
 

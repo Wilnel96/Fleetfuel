@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Building2, Save, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -10,6 +10,36 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [componentError, setComponentError] = useState<string | null>(null);
+
+  // Wrap all state updates in try-catch
+  const safeSetFormData = (updater: any) => {
+    try {
+      setFormData(updater);
+    } catch (err: any) {
+      console.error('Error updating form data:', err);
+      setError('An error occurred while updating the form');
+    }
+  };
+
+  const safeSetBillingContact = (updater: any) => {
+    try {
+      setBillingContact(updater);
+    } catch (err: any) {
+      console.error('Error updating billing contact:', err);
+      setError('An error occurred while updating billing contact');
+    }
+  };
+
+  const safeSetMainUser = (updater: any) => {
+    try {
+      setMainUser(updater);
+    } catch (err: any) {
+      console.error('Error updating main user:', err);
+      setError('An error occurred while updating main user');
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     company_registration_number: '',
@@ -27,6 +57,9 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     year_end_day: 28,
     daily_spending_limit: null as number | null,
     monthly_spending_limit: null as number | null,
+    payment_option: null as 'Card Payment' | 'Local Account' | 'EFT Payment' | null,
+    fuel_payment_terms: null as 'Same Day' | 'Next Day' | '30-Days' | null,
+    fuel_payment_interest_rate: null as number | null,
   });
 
   const [mainUser, setMainUser] = useState({
@@ -60,6 +93,69 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     can_view_financial_data: true,
   });
 
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        console.log('[CreateClient] Checking permissions...');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          console.error('[CreateClient] Not authenticated');
+          setComponentError('Not authenticated');
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (!profile?.organization_id) {
+          console.error('[CreateClient] No organization found');
+          setComponentError('No organization found');
+          return;
+        }
+
+        const { data: parentOrg } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .eq('id', profile.organization_id)
+          .maybeSingle();
+
+        if (!parentOrg) {
+          console.error('[CreateClient] Parent organization not found');
+          setComponentError('Parent organization not found');
+          return;
+        }
+
+        if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
+          console.error('[CreateClient] Not management organization');
+          setComponentError('Only management organization can create client organizations');
+          return;
+        }
+
+        console.log('[CreateClient] Permissions check passed');
+      } catch (err: any) {
+        console.error('[CreateClient] Error checking permissions:', err);
+        setComponentError(err.message || 'Failed to verify permissions');
+      }
+    };
+
+    checkPermissions();
+  }, []);
+
+  // Global error boundary
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('[CreateClient] Global error caught:', event.error);
+      event.preventDefault();
+      setComponentError('An unexpected error occurred. Please try refreshing the page.');
+    };
+
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -89,18 +185,30 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         throw new Error('Only management organization can create client organizations');
       }
 
+      // Sanitize formData - convert empty strings to null for optional fields
+      const sanitizedFormData = {
+        ...formData,
+        payment_option: formData.payment_option || null,
+        fuel_payment_terms: formData.fuel_payment_terms || null,
+        fuel_payment_interest_rate: formData.fuel_payment_interest_rate || null,
+        daily_spending_limit: formData.daily_spending_limit || null,
+        monthly_spending_limit: formData.monthly_spending_limit || null,
+        website: formData.website || null,
+        address_line2: formData.address_line2 || null,
+      };
+
       const { data: newOrg, error: insertError } = await supabase
         .from('organizations')
         .insert({
-          ...formData,
-          parent_org_id: parentOrg.id,
+          ...sanitizedFormData,
           organization_type: 'client',
+          is_management_org: false,
           status: 'active',
-          billing_email: billingContact.email,
+          billing_contact_email: billingContact.email,
           billing_contact_name: billingContact.name,
           billing_contact_surname: billingContact.surname,
-          billing_contact_phone_office: billingContact.phone_office,
-          billing_contact_phone_mobile: billingContact.phone_mobile,
+          billing_contact_phone_office: billingContact.phone_office || null,
+          billing_contact_phone_mobile: billingContact.phone_mobile || null,
         })
         .select()
         .single();
@@ -155,7 +263,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             phone_office: billingContact.phone_office || null,
             phone_mobile: billingContact.phone_mobile || null,
             is_main_user: false,
-            role: 'billing',
+            role: 'user',
             can_add_vehicles: billingContact.can_add_vehicles,
             can_edit_vehicles: billingContact.can_edit_vehicles,
             can_delete_vehicles: billingContact.can_delete_vehicles,
@@ -191,8 +299,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     }
   };
 
-  return (
-    <div className="h-full flex flex-col">
+  // Wrap entire render in try-catch
+  try {
+    return (
+      <div className="h-full flex flex-col">
       <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -222,6 +332,24 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-4xl mx-auto">
+        {componentError && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-red-800 font-semibold mb-1">Access Denied</h3>
+                <p className="text-red-700 text-sm">{componentError}</p>
+                <button
+                  onClick={() => onNavigate && onNavigate('client-organizations-menu')}
+                  className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
+                >
+                  Go Back
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-2.5 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
@@ -236,6 +364,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           </div>
         )}
 
+        {!componentError && (
         <form id="create-client-form" onSubmit={handleSubmit} className="space-y-3">
         <div>
           <h3 className="text-base font-semibold text-gray-900 mb-2">Organization Details</h3>
@@ -248,7 +377,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, name: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -259,7 +388,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.company_registration_number}
-                onChange={(e) => setFormData({ ...formData, company_registration_number: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, company_registration_number: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -268,7 +397,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.vat_number}
-                onChange={(e) => setFormData({ ...formData, vat_number: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, vat_number: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -277,7 +406,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.website}
-                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, website: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -292,7 +421,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.address_line1}
-                onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, address_line1: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -301,7 +430,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.address_line2}
-                onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, address_line2: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -310,25 +439,35 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, city: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Province</label>
-              <input
-                type="text"
+              <select
                 value={formData.province}
-                onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, province: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+              >
+                <option value="">-- Select Province --</option>
+                <option value="Eastern Cape">Eastern Cape</option>
+                <option value="Free State">Free State</option>
+                <option value="Gauteng">Gauteng</option>
+                <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                <option value="Limpopo">Limpopo</option>
+                <option value="Mpumalanga">Mpumalanga</option>
+                <option value="Northern Cape">Northern Cape</option>
+                <option value="North West">North West</option>
+                <option value="Western Cape">Western Cape</option>
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Postal Code</label>
               <input
                 type="text"
                 value={formData.postal_code}
-                onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, postal_code: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -337,7 +476,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={formData.country}
-                onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                onChange={(e) => safeSetFormData({ ...formData, country: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -353,11 +492,11 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               </label>
               <select
                 required
-                value={formData.payment_option}
-                onChange={(e) => setFormData({
+                value={formData.payment_option || ''}
+                onChange={(e) => safeSetFormData({
                   ...formData,
-                  payment_option: e.target.value as any,
-                  fuel_payment_terms: e.target.value !== 'EFT Payment' ? '' : formData.fuel_payment_terms,
+                  payment_option: e.target.value || null as any,
+                  fuel_payment_terms: e.target.value !== 'EFT Payment' ? null : formData.fuel_payment_terms,
                   fuel_payment_interest_rate: e.target.value !== 'EFT Payment' ? null : formData.fuel_payment_interest_rate,
                 })}
                 className={`w-full px-2.5 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
@@ -401,10 +540,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                   </label>
                   <select
                     required={formData.payment_option === 'EFT Payment'}
-                    value={formData.fuel_payment_terms}
-                    onChange={(e) => setFormData({
+                    value={formData.fuel_payment_terms || ''}
+                    onChange={(e) => safeSetFormData({
                       ...formData,
-                      fuel_payment_terms: e.target.value as any,
+                      fuel_payment_terms: e.target.value || null as any,
                       fuel_payment_interest_rate: e.target.value === 'Same Day' ? null : formData.fuel_payment_interest_rate,
                     })}
                     className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -426,7 +565,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       min="0"
                       required={formData.fuel_payment_terms !== 'Same Day'}
                       value={formData.fuel_payment_interest_rate || ''}
-                      onChange={(e) => setFormData({ ...formData, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
+                      onChange={(e) => safeSetFormData({ ...formData, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
                       className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="e.g. 1.5"
                     />
@@ -466,7 +605,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="text"
                 required
                 value={mainUser.name}
-                onChange={(e) => setMainUser({ ...mainUser, name: e.target.value })}
+                onChange={(e) => safeSetMainUser({ ...mainUser, name: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -478,7 +617,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="text"
                 required
                 value={mainUser.surname}
-                onChange={(e) => setMainUser({ ...mainUser, surname: e.target.value })}
+                onChange={(e) => safeSetMainUser({ ...mainUser, surname: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -490,7 +629,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="email"
                 required
                 value={mainUser.email}
-                onChange={(e) => setMainUser({ ...mainUser, email: e.target.value })}
+                onChange={(e) => safeSetMainUser({ ...mainUser, email: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -502,7 +641,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="password"
                 required
                 value={mainUser.password}
-                onChange={(e) => setMainUser({ ...mainUser, password: e.target.value })}
+                onChange={(e) => safeSetMainUser({ ...mainUser, password: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -511,7 +650,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={mainUser.phone_office}
-                onChange={(e) => setMainUser({ ...mainUser, phone_office: e.target.value })}
+                onChange={(e) => safeSetMainUser({ ...mainUser, phone_office: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -520,7 +659,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={mainUser.phone_mobile}
-                onChange={(e) => setMainUser({ ...mainUser, phone_mobile: e.target.value })}
+                onChange={(e) => safeSetMainUser({ ...mainUser, phone_mobile: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -543,7 +682,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="text"
                 required
                 value={billingContact.name}
-                onChange={(e) => setBillingContact({ ...billingContact, name: e.target.value })}
+                onChange={(e) => {
+                  console.log('[CreateClient] Billing name changed');
+                  safeSetBillingContact({ ...billingContact, name: e.target.value });
+                }}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -555,7 +697,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="text"
                 required
                 value={billingContact.surname}
-                onChange={(e) => setBillingContact({ ...billingContact, surname: e.target.value })}
+                onChange={(e) => {
+                  console.log('[CreateClient] Billing surname changed');
+                  safeSetBillingContact({ ...billingContact, surname: e.target.value });
+                }}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -567,7 +712,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="email"
                 required
                 value={billingContact.email}
-                onChange={(e) => setBillingContact({ ...billingContact, email: e.target.value })}
+                onChange={(e) => {
+                  console.log('[CreateClient] Billing email changed');
+                  safeSetBillingContact({ ...billingContact, email: e.target.value });
+                }}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -579,7 +727,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="password"
                 required
                 value={billingContact.password}
-                onChange={(e) => setBillingContact({ ...billingContact, password: e.target.value })}
+                onChange={(e) => {
+                  console.log('[CreateClient] Billing password changed');
+                  safeSetBillingContact({ ...billingContact, password: e.target.value });
+                }}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -588,7 +739,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={billingContact.phone_office}
-                onChange={(e) => setBillingContact({ ...billingContact, phone_office: e.target.value })}
+                onChange={(e) => {
+                  console.log('[CreateClient] Billing office phone changed');
+                  safeSetBillingContact({ ...billingContact, phone_office: e.target.value });
+                }}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -597,7 +751,15 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <input
                 type="text"
                 value={billingContact.phone_mobile}
-                onChange={(e) => setBillingContact({ ...billingContact, phone_mobile: e.target.value })}
+                onChange={(e) => {
+                  try {
+                    console.log('[CreateClient] Billing mobile number changed:', e.target.value);
+                    safeSetBillingContact({ ...billingContact, phone_mobile: e.target.value });
+                  } catch (err: any) {
+                    console.error('[CreateClient] Error in billing mobile onChange:', err);
+                    setError('Error updating mobile number');
+                  }
+                }}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -612,7 +774,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_edit_organization_info}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_edit_organization_info: e.target.checked })}
+                        onChange={(e) => {
+                          console.log('[CreateClient] Permission changed: can_edit_organization_info');
+                          safeSetBillingContact({ ...billingContact, can_edit_organization_info: e.target.checked });
+                        }}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Edit Organization Info</span>
@@ -621,7 +786,10 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_manage_users}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_manage_users: e.target.checked })}
+                        onChange={(e) => {
+                          console.log('[CreateClient] Permission changed: can_manage_users');
+                          safeSetBillingContact({ ...billingContact, can_manage_users: e.target.checked });
+                        }}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Manage Users</span>
@@ -636,7 +804,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_add_vehicles}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_add_vehicles: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_add_vehicles: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Add Vehicles</span>
@@ -645,7 +813,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_edit_vehicles}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_edit_vehicles: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_edit_vehicles: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Edit Vehicles</span>
@@ -654,7 +822,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_delete_vehicles}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_delete_vehicles: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_delete_vehicles: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Delete Vehicles</span>
@@ -669,7 +837,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_add_drivers}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_add_drivers: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_add_drivers: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Add Drivers</span>
@@ -678,7 +846,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_edit_drivers}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_edit_drivers: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_edit_drivers: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Edit Drivers</span>
@@ -687,7 +855,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_delete_drivers}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_delete_drivers: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_delete_drivers: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Delete Drivers</span>
@@ -702,7 +870,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_view_fuel_transactions}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_view_fuel_transactions: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_view_fuel_transactions: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can View Fuel Transactions</span>
@@ -718,7 +886,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_view_reports}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_view_reports: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_view_reports: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can View Reports</span>
@@ -727,7 +895,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_create_reports}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_create_reports: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_create_reports: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can Create Reports</span>
@@ -736,7 +904,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_view_custom_reports}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_view_custom_reports: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_view_custom_reports: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can View Custom Reports</span>
@@ -745,7 +913,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                       <input
                         type="checkbox"
                         checked={billingContact.can_view_financial_data}
-                        onChange={(e) => setBillingContact({ ...billingContact, can_view_financial_data: e.target.checked })}
+                        onChange={(e) => safeSetBillingContact({ ...billingContact, can_view_financial_data: e.target.checked })}
                         className="rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
                       <span className="text-xs text-gray-700">Can View Financial Data</span>
@@ -768,7 +936,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="number"
                 step="0.01"
                 value={formData.monthly_fee_per_vehicle}
-                onChange={(e) => setFormData({ ...formData, monthly_fee_per_vehicle: parseFloat(e.target.value) })}
+                onChange={(e) => safeSetFormData({ ...formData, monthly_fee_per_vehicle: parseFloat(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -781,7 +949,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 step="0.01"
                 placeholder="No limit"
                 value={formData.daily_spending_limit ?? ''}
-                onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value ? parseFloat(e.target.value) : null })}
+                onChange={(e) => safeSetFormData({ ...formData, daily_spending_limit: e.target.value ? parseFloat(e.target.value) : null })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -794,7 +962,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 step="0.01"
                 placeholder="No limit"
                 value={formData.monthly_spending_limit ?? ''}
-                onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value ? parseFloat(e.target.value) : null })}
+                onChange={(e) => safeSetFormData({ ...formData, monthly_spending_limit: e.target.value ? parseFloat(e.target.value) : null })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -807,7 +975,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 min="1"
                 max="31"
                 value={formData.month_end_day}
-                onChange={(e) => setFormData({ ...formData, month_end_day: parseInt(e.target.value) })}
+                onChange={(e) => safeSetFormData({ ...formData, month_end_day: parseInt(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -815,7 +983,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Year End Month</label>
               <select
                 value={formData.year_end_month}
-                onChange={(e) => setFormData({ ...formData, year_end_month: parseInt(e.target.value) })}
+                onChange={(e) => safeSetFormData({ ...formData, year_end_month: parseInt(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               >
                 <option value="1">January</option>
@@ -841,15 +1009,43 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 min="1"
                 max="31"
                 value={formData.year_end_day}
-                onChange={(e) => setFormData({ ...formData, year_end_day: parseInt(e.target.value) })}
+                onChange={(e) => safeSetFormData({ ...formData, year_end_day: parseInt(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
           </div>
         </div>
         </form>
+        )}
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (renderError: any) {
+    console.error('[CreateClient] Render error:', renderError);
+    return (
+      <div className="h-full flex items-center justify-center p-6">
+        <div className="max-w-md bg-red-50 border border-red-200 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+            <div>
+              <h3 className="text-red-800 font-semibold mb-2">Component Error</h3>
+              <p className="text-red-700 text-sm mb-4">
+                An unexpected error occurred while rendering this page: {renderError.message}
+              </p>
+              <button
+                onClick={() => {
+                  console.log('[CreateClient] Navigating back after render error');
+                  if (onNavigate) onNavigate('client-organizations-menu');
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
+              >
+                Go Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

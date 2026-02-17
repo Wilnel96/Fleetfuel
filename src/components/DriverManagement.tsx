@@ -194,39 +194,39 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
       if (profile) {
         setUserRole(profile.role);
 
-        if (profile.role === 'super_admin') {
+        // Check if user is in management organization
+        const { data: userOrg } = await supabase
+          .from('organizations')
+          .select('is_management_org, organization_type')
+          .eq('id', profile.organization_id)
+          .maybeSingle();
+
+        const isManagementUser = userOrg?.is_management_org === true && userOrg?.organization_type === 'management';
+
+        if (isManagementUser) {
+          // Management users see ALL client organizations
           const { data } = await supabase
             .from('organizations')
             .select('id, name, is_management_org')
-            .neq('is_management_org', true)
+            .eq('organization_type', 'client')
             .order('name');
 
           if (data) setOrganizations(data);
         } else {
-          const { data: childOrgs } = await supabase
-            .from('organizations')
-            .select('id, name, is_management_org')
-            .eq('parent_org_id', profile.organization_id)
-            .neq('is_management_org', true);
-
+          // Client users only see their own organization
           const { data: ownOrg } = await supabase
             .from('organizations')
             .select('id, name, is_management_org')
             .eq('id', profile.organization_id)
             .maybeSingle();
 
-          const allOrgs = [];
-          if (ownOrg) allOrgs.push(ownOrg);
-          if (childOrgs) allOrgs.push(...childOrgs);
-
+          const allOrgs = ownOrg ? [ownOrg] : [];
           setOrganizations(allOrgs);
 
-          // If user only has their own organization (no child orgs), auto-select and hide selector
+          // Client user only has their own organization, auto-select and hide selector
           if (allOrgs.length === 1) {
             setSelectedOrgId(allOrgs[0].id);
             setShowOrgSelector(false);
-          } else if (allOrgs.length > 0) {
-            setShowOrgSelector(true);
           }
         }
       }
@@ -278,15 +278,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
           setFilteredDrivers(data || []);
           if (count !== null) setTotalCount(count);
         } else {
-          const { data: childOrgs } = await supabase
-            .from('organizations')
-            .select('id')
-            .eq('parent_org_id', profile.organization_id);
-
-          if (childOrgs) {
-            orgIds.push(...childOrgs.map(org => org.id));
-          }
-
+          // Client users only see drivers from their own organization
           let query = supabase
             .from('drivers')
             .select('*, organizations(name)', { count: 'exact' })

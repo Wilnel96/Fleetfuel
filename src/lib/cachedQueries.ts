@@ -15,7 +15,7 @@ export async function getCachedOrganizations(userId: string, options: CachedQuer
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('organization_id, role')
+    .select('organization_id, organizations(is_management_org, organization_type)')
     .eq('id', userId)
     .maybeSingle();
 
@@ -23,34 +23,30 @@ export async function getCachedOrganizations(userId: string, options: CachedQuer
 
   let organizations = [];
 
-  if (profile.role === 'super_admin') {
+  // Check if user is in a management organization
+  const isManagementUser = profile.organizations &&
+    typeof profile.organizations === 'object' &&
+    'is_management_org' in profile.organizations &&
+    (profile.organizations as any).is_management_org === true;
+
+  if (isManagementUser) {
+    // Management users see ALL client organizations (no parent_org_id link needed)
     const { data } = await supabase
       .from('organizations')
       .select('id, name, is_management_org, organization_type')
-      .neq('is_management_org', true)
       .eq('organization_type', 'client')
       .order('name');
 
     organizations = data || [];
   } else {
-    const { data: childOrgs } = await supabase
-      .from('organizations')
-      .select('id, name, is_management_org, organization_type')
-      .eq('parent_org_id', profile.organization_id)
-      .eq('organization_type', 'client')
-      .neq('is_management_org', true);
-
+    // Client users only see their own organization
     const { data: ownOrg } = await supabase
       .from('organizations')
       .select('id, name, is_management_org, organization_type')
       .eq('id', profile.organization_id)
       .maybeSingle();
 
-    const allOrgs = [];
-    if (ownOrg) allOrgs.push(ownOrg);
-    if (childOrgs) allOrgs.push(...childOrgs);
-
-    organizations = allOrgs;
+    organizations = ownOrg ? [ownOrg] : [];
   }
 
   cache.set(cacheKey, organizations, options.ttl || 10 * 60 * 1000);

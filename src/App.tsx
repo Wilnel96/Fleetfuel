@@ -109,7 +109,7 @@ function App() {
 
         supabase
           .from('profiles')
-          .select('role, organization_id, organizations(payment_option)')
+          .select('role, organization_id, organizations(payment_option, is_management_org, organization_type)')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data: profile, error: profileError }) => {
@@ -127,7 +127,19 @@ function App() {
             console.log('Auth state - Profile loaded:', profile);
 
             if (profile) {
-              setUserRole(profile.role);
+              // Check if user is in management organization
+              const isManagementUser = profile.organizations &&
+                typeof profile.organizations === 'object' &&
+                'is_management_org' in profile.organizations &&
+                (profile.organizations as any).is_management_org === true;
+
+              // If user is in management org, treat them as super_admin for routing purposes
+              // Otherwise use their actual role
+              const effectiveRole = isManagementUser ? 'super_admin' : profile.role;
+
+              console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
+
+              setUserRole(effectiveRole);
               setCurrentView(null);
 
               // Set payment option if organization data is available

@@ -443,8 +443,8 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
   }
 
   return (
-    <div>
-      <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200 pt-6 pb-4">
+    <div className="min-h-screen">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pt-6 pb-4 -mx-6 px-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">Garages Directory</h2>
           {onNavigate && (
@@ -464,12 +464,12 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
             placeholder="Search garages by name, location, or contact person..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
           />
         </div>
       </div>
 
-      <div className="pt-6 space-y-6">
+      <div className="pt-6 pb-6 space-y-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />

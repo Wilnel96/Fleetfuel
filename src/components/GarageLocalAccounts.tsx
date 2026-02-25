@@ -102,7 +102,10 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
           .in('organization_id', allOrgIds)
           .eq('is_active', true);
 
-        if (usersResult.data) {
+        if (usersResult.error) {
+          console.error('Error loading organization users:', usersResult.error);
+          setError(`Failed to load contact information: ${usersResult.error.message}`);
+        } else if (usersResult.data) {
           const usersByOrg: Record<string, OrgUser[]> = {};
           usersResult.data.forEach(user => {
             if (!usersByOrg[user.organization_id]) {
@@ -111,6 +114,7 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
             usersByOrg[user.organization_id].push(user);
           });
           setOrganizationUsers(usersByOrg);
+          console.log('Loaded organization users:', usersByOrg);
         }
       }
     } catch (err: any) {

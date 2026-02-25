@@ -213,8 +213,8 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
 
   if (selectedGarage) {
     return (
-      <div className="space-y-6 -my-6">
-        <div className="sticky top-0 z-20 bg-white -mx-4 px-4 py-6 pb-4 border-b border-gray-200 mb-6">
+      <div className="space-y-6">
+        <div className="sticky top-0 z-20 bg-white -mx-4 px-4 py-6 border-b border-gray-200 mb-6">
           <button
             onClick={() => setSelectedGarage(null)}
             className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
@@ -443,8 +443,8 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pt-6 pb-4 shadow-sm -mx-4 px-4 mb-6">
+    <div className="min-h-screen py-6">
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 pb-4 shadow-sm -mx-4 px-4 mb-6 -mt-6 pt-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">Garages Directory</h2>
           {onNavigate && (

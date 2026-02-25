@@ -874,7 +874,6 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       'daily_spending_limit': 'Daily Spending Limit',
       'monthly_spending_limit': 'Monthly Spending Limit',
       'parent_org_id': 'Parent Organization ID',
-      'parent_organization_id': 'Parent Organization',
       'payment_method': 'Payment Method',
       'payment_date': 'Payment Date',
       'payment_terms': 'Payment Terms',

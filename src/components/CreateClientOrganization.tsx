@@ -197,10 +197,22 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         address_line2: formData.address_line2 || null,
       };
 
+      // Check if organization name already exists
+      const { data: existingOrg } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .eq('name', formData.name.toUpperCase().trim())
+        .maybeSingle();
+
+      if (existingOrg) {
+        throw new Error(`An organization with the name "${formData.name}" already exists. Please use a different name.`);
+      }
+
       const { data: newOrg, error: insertError } = await supabase
         .from('organizations')
         .insert({
           ...sanitizedFormData,
+          name: formData.name.toUpperCase().trim(),
           organization_type: 'client',
           is_management_org: false,
           status: 'active',
@@ -213,7 +225,12 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (insertError.code === '23505' && insertError.message.includes('organizations_name_key')) {
+          throw new Error(`An organization with the name "${formData.name}" already exists. Please use a different name.`);
+        }
+        throw insertError;
+      }
       if (!newOrg) throw new Error('Failed to create organization');
 
       const { data: { session } } = await supabase.auth.getSession();
@@ -377,8 +394,9 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="text"
                 required
                 value={formData.name}
-                onChange={(e) => safeSetFormData({ ...formData, name: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => safeSetFormData({ ...formData, name: e.target.value.toUpperCase().trim() })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                placeholder="e.g., ACME TRANSPORT LTD"
               />
             </div>
             <div>
@@ -936,6 +954,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 type="number"
                 step="0.01"
                 value={formData.monthly_fee_per_vehicle}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => safeSetFormData({ ...formData, monthly_fee_per_vehicle: parseFloat(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
@@ -975,6 +994,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 min="1"
                 max="31"
                 value={formData.month_end_day}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => safeSetFormData({ ...formData, month_end_day: parseInt(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
@@ -1009,6 +1029,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 min="1"
                 max="31"
                 value={formData.year_end_day}
+                onFocus={(e) => e.target.select()}
                 onChange={(e) => safeSetFormData({ ...formData, year_end_day: parseInt(e.target.value) })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />

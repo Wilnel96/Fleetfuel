@@ -237,73 +237,112 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
       if (!session) throw new Error('No session found');
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization-users`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          organization_id: newOrg.id,
-          users: [{
-            email: mainUser.email,
-            password: mainUser.password,
-            name: mainUser.name,
-            surname: mainUser.surname,
-            phone_office: mainUser.phone_office || null,
-            phone_mobile: mainUser.phone_mobile || null,
-            is_main_user: true,
-            role: 'admin',
-          }],
-        }),
-      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create main user');
+      // Check if main user and billing user are the same
+      const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
+
+      if (isSameUser) {
+        // Create only one user with combined permissions (main user gets all permissions)
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            organization_id: newOrg.id,
+            users: [{
+              email: mainUser.email,
+              password: mainUser.password,
+              name: mainUser.name,
+              surname: mainUser.surname,
+              phone_office: mainUser.phone_office || null,
+              phone_mobile: mainUser.phone_mobile || null,
+              is_main_user: true,
+              role: 'admin',
+            }],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create user');
+        }
+      } else {
+        // Create main user
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            organization_id: newOrg.id,
+            users: [{
+              email: mainUser.email,
+              password: mainUser.password,
+              name: mainUser.name,
+              surname: mainUser.surname,
+              phone_office: mainUser.phone_office || null,
+              phone_mobile: mainUser.phone_mobile || null,
+              is_main_user: true,
+              role: 'admin',
+            }],
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create main user');
+        }
+
+        // Create billing user (separate person)
+        const billingResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            organization_id: newOrg.id,
+            users: [{
+              email: billingContact.email,
+              password: billingContact.password,
+              name: billingContact.name,
+              surname: billingContact.surname,
+              title: 'Billing User',
+              phone_office: billingContact.phone_office || null,
+              phone_mobile: billingContact.phone_mobile || null,
+              is_main_user: false,
+              role: 'user',
+              can_add_vehicles: billingContact.can_add_vehicles,
+              can_edit_vehicles: billingContact.can_edit_vehicles,
+              can_delete_vehicles: billingContact.can_delete_vehicles,
+              can_add_drivers: billingContact.can_add_drivers,
+              can_edit_drivers: billingContact.can_edit_drivers,
+              can_delete_drivers: billingContact.can_delete_drivers,
+              can_view_reports: billingContact.can_view_reports,
+              can_edit_organization_info: billingContact.can_edit_organization_info,
+              can_view_fuel_transactions: billingContact.can_view_fuel_transactions,
+              can_create_reports: billingContact.can_create_reports,
+              can_view_custom_reports: billingContact.can_view_custom_reports,
+              can_manage_users: billingContact.can_manage_users,
+              can_view_financial_data: billingContact.can_view_financial_data,
+            }],
+          }),
+        });
+
+        if (!billingResponse.ok) {
+          const errorData = await billingResponse.json();
+          throw new Error(errorData.error || 'Failed to create billing user');
+        }
       }
 
-      const billingResponse = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          organization_id: newOrg.id,
-          users: [{
-            email: billingContact.email,
-            password: billingContact.password,
-            name: billingContact.name,
-            surname: billingContact.surname,
-            title: 'Billing User',
-            phone_office: billingContact.phone_office || null,
-            phone_mobile: billingContact.phone_mobile || null,
-            is_main_user: false,
-            role: 'user',
-            can_add_vehicles: billingContact.can_add_vehicles,
-            can_edit_vehicles: billingContact.can_edit_vehicles,
-            can_delete_vehicles: billingContact.can_delete_vehicles,
-            can_add_drivers: billingContact.can_add_drivers,
-            can_edit_drivers: billingContact.can_edit_drivers,
-            can_delete_drivers: billingContact.can_delete_drivers,
-            can_view_reports: billingContact.can_view_reports,
-            can_edit_organization_info: billingContact.can_edit_organization_info,
-            can_view_fuel_transactions: billingContact.can_view_fuel_transactions,
-            can_create_reports: billingContact.can_create_reports,
-            can_view_custom_reports: billingContact.can_view_custom_reports,
-            can_manage_users: billingContact.can_manage_users,
-            can_view_financial_data: billingContact.can_view_financial_data,
-          }],
-        }),
-      });
-
-      if (!billingResponse.ok) {
-        const errorData = await billingResponse.json();
-        throw new Error(errorData.error || 'Failed to create billing user');
+      if (isSameUser) {
+        setSuccess('Client organization and main user created successfully!');
+      } else {
+        setSuccess('Client organization, main user, and billing user created successfully!');
       }
-
-      setSuccess('Client organization, main user, and billing user created successfully!');
       setTimeout(() => {
         if (onNavigate) {
           onNavigate('client-organizations-menu');
@@ -691,6 +730,11 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
         <div className="border-t pt-3">
           <h3 className="text-base font-semibold text-gray-900 mb-2">Billing User</h3>
+          <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs text-blue-900">
+              You can use the same person for Main User and Billing User. If you enter the same email address, only one user will be created with full access permissions.
+            </p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">

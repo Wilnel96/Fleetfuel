@@ -24,6 +24,11 @@ interface ClientOrganization {
   billing_contact_phone_mobile: string | null;
   billing_contact_phone_office: string | null;
   phone_number: string | null;
+  main_user_name?: string | null;
+  main_user_surname?: string | null;
+  main_user_email?: string | null;
+  main_user_phone_office?: string | null;
+  main_user_phone_mobile?: string | null;
 }
 
 interface ClientOrgInfoProps {
@@ -74,8 +79,28 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
         .order('name');
 
       if (orgsError) throw orgsError;
-      setOrganizations(orgs || []);
-      setFilteredOrganizations(orgs || []);
+
+      // Fetch main user info for each organization
+      const orgsWithMainUser = await Promise.all((orgs || []).map(async (org) => {
+        const { data: mainUser } = await supabase
+          .from('organization_users')
+          .select('first_name, surname, email, phone_office, phone_mobile')
+          .eq('organization_id', org.id)
+          .eq('is_main_user', true)
+          .maybeSingle();
+
+        return {
+          ...org,
+          main_user_name: mainUser?.first_name || null,
+          main_user_surname: mainUser?.surname || null,
+          main_user_email: mainUser?.email || null,
+          main_user_phone_office: mainUser?.phone_office || null,
+          main_user_phone_mobile: mainUser?.phone_mobile || null,
+        };
+      }));
+
+      setOrganizations(orgsWithMainUser);
+      setFilteredOrganizations(orgsWithMainUser);
 
       // Check card configuration for organizations with Card Payment option
       if (orgs) {
@@ -623,11 +648,27 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     </div>
 
                     <div className="col-span-2 border-t pt-3 mt-3">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Contact Information</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Main User / Contact Person</h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Company Phone Number</label>
-                          <p className="text-gray-900">{org.phone_number || 'N/A'}</p>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">First Name</label>
+                          <p className="text-gray-900">{org.main_user_name || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Surname</label>
+                          <p className="text-gray-900">{org.main_user_surname || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Email Address</label>
+                          <p className="text-gray-900">{org.main_user_email || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Mobile Phone</label>
+                          <p className="text-gray-900">{org.main_user_phone_mobile || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">Office Phone</label>
+                          <p className="text-gray-900">{org.main_user_phone_office || 'N/A'}</p>
                         </div>
                       </div>
                     </div>

@@ -152,6 +152,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
 
     try {
       setError('');
+
+      // Update organization details
       const { error: updateError } = await supabase
         .from('organizations')
         .update({
@@ -180,7 +182,21 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
 
       if (updateError) throw updateError;
 
-      setSuccess('Organization updated successfully');
+      // Update main user information in organization_users table
+      const { error: mainUserError } = await supabase
+        .from('organization_users')
+        .update({
+          first_name: editForm.main_user_name,
+          surname: editForm.main_user_surname,
+          phone_office: editForm.main_user_phone_office || null,
+          phone_mobile: editForm.main_user_phone_mobile || null,
+        })
+        .eq('organization_id', editingId)
+        .eq('is_main_user', true);
+
+      if (mainUserError) throw mainUserError;
+
+      setSuccess('Organization and main user updated successfully');
       setTimeout(() => setSuccess(''), 3000);
       const savedId = editingId;
       setEditingId(null);
@@ -387,16 +403,54 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                 </div>
 
                 <div className="border-t pt-2 mt-2">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Contact Information</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Main User / Contact Person</h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Company Phone Number</label>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">First Name</label>
                       <input
                         type="text"
-                        value={editForm.phone_number || ''}
-                        onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
+                        value={editForm.main_user_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, main_user_name: e.target.value })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                        placeholder="Company main number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Surname</label>
+                      <input
+                        type="text"
+                        value={editForm.main_user_surname || ''}
+                        onChange={(e) => setEditForm({ ...editForm, main_user_surname: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Email Address</label>
+                      <input
+                        type="email"
+                        value={editForm.main_user_email || ''}
+                        onChange={(e) => setEditForm({ ...editForm, main_user_email: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="main@example.com"
+                        disabled
+                      />
+                      <p className="text-xs text-gray-500 mt-0.5">Email cannot be changed</p>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Mobile Phone</label>
+                      <input
+                        type="text"
+                        value={editForm.main_user_phone_mobile || ''}
+                        onChange={(e) => setEditForm({ ...editForm, main_user_phone_mobile: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Office Phone</label>
+                      <input
+                        type="text"
+                        value={editForm.main_user_phone_office || ''}
+                        onChange={(e) => setEditForm({ ...editForm, main_user_phone_office: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       />
                     </div>
                   </div>

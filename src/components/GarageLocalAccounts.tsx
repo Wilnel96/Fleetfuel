@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -42,9 +42,11 @@ interface LocalAccount {
 interface GarageLocalAccountsProps {
   garageId: string;
   garageName: string;
+  garageEmail: string;
+  garagePassword: string;
 }
 
-export default function GarageLocalAccounts({ garageId, garageName }: GarageLocalAccountsProps) {
+export default function GarageLocalAccounts({ garageId, garageName, garageEmail, garagePassword }: GarageLocalAccountsProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
   const [organizationUsers, setOrganizationUsers] = useState<Record<string, OrgUser[]>>({});
@@ -69,29 +71,45 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setLoading(true);
       setError('');
 
-      const [orgsResult, accountsResult] = await Promise.all([
-        supabase
-          .from('organizations')
-          .select(`
-            id, name, vat_number, city, province,
-            address_line1, address_line2, postal_code, country,
-            phone_number, company_registration_number,
-            monthly_spending_limit, daily_spending_limit,
-            parent_org_id
-          `)
-          .eq('organization_type', 'client')
-          .order('name'),
-        supabase
-          .from('organization_garage_accounts')
-          .select('id, organization_id, is_active, notes, account_number, monthly_spend_limit')
-          .eq('garage_id', garageId),
-      ]);
+      // Fetch organizations via regular query (public data)
+      const orgsResult = await supabase
+        .from('organizations')
+        .select(`
+          id, name, vat_number, city, province,
+          address_line1, address_line2, postal_code, country,
+          phone_number, company_registration_number,
+          monthly_spending_limit, daily_spending_limit,
+          parent_org_id
+        `)
+        .eq('organization_type', 'client')
+        .order('name');
 
       if (orgsResult.error) throw orgsResult.error;
-      if (accountsResult.error) throw accountsResult.error;
+
+      // Fetch garage accounts via secure Edge Function
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
+      const accountsResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'list',
+          garageEmail,
+          garagePassword,
+        }),
+      });
+
+      if (!accountsResponse.ok) {
+        const error = await accountsResponse.json();
+        throw new Error(error.error || 'Failed to load accounts');
+      }
+
+      const accountsData = await accountsResponse.json();
 
       setOrganizations(orgsResult.data || []);
-      setLocalAccounts(accountsResult.data || []);
+      setLocalAccounts(accountsData.data || []);
 
       const allOrgIds = (orgsResult.data || []).map(o => o.id);
 
@@ -129,12 +147,26 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
       setSaving(account.id);
       setError('');
 
-      const { error: updateError } = await supabase
-        .from('organization_garage_accounts')
-        .update({ is_active: newStatus })
-        .eq('id', account.id);
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'update',
+          garageEmail,
+          garagePassword,
+          accountId: account.id,
+          accountData: { is_active: newStatus },
+        }),
+      });
 
-      if (updateError) throw updateError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update account');
+      }
 
       await loadData();
     } catch (err: any) {
@@ -164,18 +196,31 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
 
       const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
-      const { error: insertError } = await supabase
-        .from('organization_garage_accounts')
-        .insert({
-          organization_id: selectedOrganization.id,
-          garage_id: garageId,
-          is_active: true,
-          account_number: accountNumberInput.trim(),
-          monthly_spend_limit: monthlySpendLimit,
-          notes: notesInput.trim() || null,
-        });
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'create',
+          garageEmail,
+          garagePassword,
+          accountData: {
+            organization_id: selectedOrganization.id,
+            is_active: true,
+            account_number: accountNumberInput.trim(),
+            monthly_spend_limit: monthlySpendLimit,
+            notes: notesInput.trim() || null,
+          },
+        }),
+      });
 
-      if (insertError) throw insertError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create account');
+      }
 
       await loadData();
       setShowAddModal(false);
@@ -221,15 +266,29 @@ export default function GarageLocalAccounts({ garageId, garageName }: GarageLoca
 
       const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
-      const { error: updateError } = await supabase
-        .from('organization_garage_accounts')
-        .update({
-          account_number: accountNumberInput || null,
-          monthly_spend_limit: monthlySpendLimit
-        })
-        .eq('id', accountId);
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          action: 'update',
+          garageEmail,
+          garagePassword,
+          accountId,
+          accountData: {
+            account_number: accountNumberInput || null,
+            monthly_spend_limit: monthlySpendLimit,
+          },
+        }),
+      });
 
-      if (updateError) throw updateError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update account');
+      }
 
       await loadData();
       setEditingAccountId(null);

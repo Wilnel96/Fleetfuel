@@ -29,7 +29,7 @@ import BackupManagement from './components/BackupManagement';
 import ClientInvoices from './components/ClientInvoices';
 import InvoiceManagement from './components/InvoiceManagement';
 import ClientFuelInvoices from './components/ClientFuelInvoices';
-import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, Edit3, ArrowLeft } from 'lucide-react';
+import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, CreditCard as Edit3, ArrowLeft } from 'lucide-react';
 import { DriverData } from './components/DriverAuth';
 
 type UserMode = 'admin' | 'driver' | 'garage' | null;
@@ -39,6 +39,8 @@ function App() {
   const [driverData, setDriverData] = useState<DriverData | null>(null);
   const [garageId, setGarageId] = useState<string | null>(null);
   const [garageName, setGarageName] = useState<string | null>(null);
+  const [garageEmail, setGarageEmail] = useState<string | null>(null);
+  const [garagePassword, setGaragePassword] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<UserMode>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
@@ -306,9 +308,11 @@ function App() {
     console.log('Driver logout complete, state reset');
   };
 
-  const handleGarageLogin = (id: string, name: string) => {
+  const handleGarageLogin = (id: string, name: string, email: string, password: string) => {
     setGarageId(id);
     setGarageName(name);
+    setGarageEmail(email);
+    setGaragePassword(password);
     setUserMode('garage');
     setShowModeSelection(false);
   };
@@ -322,6 +326,8 @@ function App() {
 
     setGarageId(null);
     setGarageName(null);
+    setGarageEmail(null);
+    setGaragePassword(null);
     setSession(null);
     setDriverData(null);
     setUserMode(null);
@@ -457,8 +463,8 @@ function App() {
     }} />;
   }
 
-  if (userMode === 'garage' && garageId && garageName) {
-    return <GaragePortal garageId={garageId} garageName={garageName} onLogout={handleGarageLogout} />;
+  if (userMode === 'garage' && garageId && garageName && garageEmail && garagePassword) {
+    return <GaragePortal garageId={garageId} garageName={garageName} garageEmail={garageEmail} garagePassword={garagePassword} onLogout={handleGarageLogout} />;
   }
 
   if (userMode === 'admin' && !session) {

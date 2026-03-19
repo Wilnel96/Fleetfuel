@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { Store, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface GarageAuthProps {
-  onLogin: (garageId: string, garageName: string) => void;
+  onLogin: (garageId: string, garageName: string, garageEmail: string, garagePassword: string) => void;
   onBack?: () => void;
 }
 
@@ -60,7 +60,7 @@ export default function GarageAuth({ onLogin, onBack }: GarageAuthProps) {
         return;
       }
 
-      onLogin(matchedGarage.id, matchedGarage.name);
+      onLogin(matchedGarage.id, matchedGarage.name, contactEmail.trim(), password);
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'An error occurred during login');

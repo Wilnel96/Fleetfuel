@@ -8,6 +8,8 @@ import GarageLocalAccounts from './GarageLocalAccounts';
 interface GaragePortalProps {
   garageId: string;
   garageName: string;
+  garageEmail: string;
+  garagePassword: string;
   onLogout: () => void;
 }
 
@@ -47,7 +49,7 @@ interface GarageData {
   other_offerings?: OtherOfferings;
 }
 
-export default function GaragePortal({ garageId, garageName, onLogout }: GaragePortalProps) {
+export default function GaragePortal({ garageId, garageName, garageEmail, garagePassword, onLogout }: GaragePortalProps) {
   const [garage, setGarage] = useState<GarageData | null>(null);
   const [fuelTypes, setFuelTypes] = useState<string[]>([]);
   const [fuelPrices, setFuelPrices] = useState<Record<string, number>>({});
@@ -101,17 +103,30 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
     setSuccess('');
 
     try {
-      const { error: updateError } = await supabase
-        .from('garages')
-        .update({
-          fuel_types: fuelTypes,
-          fuel_prices: fuelPrices,
-          other_offerings: otherOfferings,
-          contact_persons: contactPersons
-        })
-        .eq('id', garageId);
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          garageEmail,
+          garagePassword,
+          garageId,
+          updateData: {
+            fuel_types: fuelTypes,
+            fuel_prices: fuelPrices,
+            other_offerings: otherOfferings,
+            contact_persons: contactPersons,
+          },
+        }),
+      });
 
-      if (updateError) throw updateError;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update garage information');
+      }
 
       setSuccess('Changes saved successfully!');
       setTimeout(() => setSuccess(''), 3000);
@@ -360,6 +375,8 @@ export default function GaragePortal({ garageId, garageName, onLogout }: GarageP
           <GarageLocalAccounts
             garageId={garageId}
             garageName={garageName}
+            garageEmail={garageEmail}
+            garagePassword={garagePassword}
           />
 
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">

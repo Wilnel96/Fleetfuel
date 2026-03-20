@@ -63,6 +63,8 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [fuelTypeFilter, setFuelTypeFilter] = useState('');
+  const [serviceFilter, setServiceFilter] = useState('');
 
   const formatOfferingName = (key: string): string => {
     const nameMap: Record<string, string> = {
@@ -114,8 +116,10 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
   }, []);
 
   useEffect(() => {
+    let filtered = garages;
+
     if (searchTerm) {
-      const filtered = garages.filter((garage) => {
+      filtered = filtered.filter((garage) => {
         const term = searchTerm.toLowerCase();
         const contactMatch = garage.contact_person?.toLowerCase().includes(term) ||
           garage.contact_persons?.some(contact =>
@@ -134,11 +138,33 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
           contactMatch
         );
       });
-      setFilteredGarages(filtered);
-    } else {
-      setFilteredGarages(garages);
     }
-  }, [searchTerm, garages]);
+
+    if (fuelTypeFilter) {
+      filtered = filtered.filter((garage) => {
+        return garage.fuel_types?.includes(fuelTypeFilter);
+      });
+    }
+
+    if (serviceFilter) {
+      filtered = filtered.filter((garage) => {
+        if (!garage.other_offerings) return false;
+
+        const offerings = garage.other_offerings;
+        const value = offerings[serviceFilter as keyof OtherOfferings];
+
+        if (typeof value === 'boolean') {
+          return value === true;
+        }
+        if (typeof value === 'object' && value !== null) {
+          return value.enabled === true;
+        }
+        return false;
+      });
+    }
+
+    setFilteredGarages(filtered);
+  }, [searchTerm, fuelTypeFilter, serviceFilter, garages]);
 
   const loadGarages = async () => {
     try {
@@ -455,15 +481,70 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
         )}
       </div>
 
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
-          type="text"
-          placeholder="Search garages by name, location, or contact person..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-        />
+      <div className="mb-6 space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search garages by name, location, or contact person..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Fuel Type</label>
+            <select
+              value={fuelTypeFilter}
+              onChange={(e) => setFuelTypeFilter(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="">All Fuel Types</option>
+              <option value="ULP-93">Unleaded Petrol 93 (ULP-93)</option>
+              <option value="ULP-95">Unleaded Petrol 95 (ULP-95)</option>
+              <option value="Diesel-10">Diesel 10 ppm Sulphur</option>
+              <option value="Diesel-50">Diesel 50 ppm Sulphur</option>
+              <option value="Diesel-500">Diesel 500 ppm Sulphur</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Service</label>
+            <select
+              value={serviceFilter}
+              onChange={(e) => setServiceFilter(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+            >
+              <option value="">All Services</option>
+              <option value="convenience_shop">Convenience Shop</option>
+              <option value="branded_convenience_store">Branded Convenience Store</option>
+              <option value="takeaways">Takeaways</option>
+              <option value="branded_takeaways">Branded Takeaways</option>
+              <option value="specialty_offering">Specialty Offering</option>
+              <option value="lpg_gas">LPG Gas</option>
+              <option value="paraffin">Paraffin</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        {(searchTerm || fuelTypeFilter || serviceFilter) && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span>Showing {filteredGarages.length} of {garages.length} garages</span>
+            <button
+              onClick={() => {
+                setSearchTerm('');
+                setFuelTypeFilter('');
+                setServiceFilter('');
+              }}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">

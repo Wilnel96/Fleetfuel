@@ -472,7 +472,7 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
             <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-blue-900">
               <p className="font-medium mb-1">All Registered Garages</p>
-              <p>All garages registered in the system are shown below. Garages marked as "Active Account" are available for your drivers to use. Click on any garage to view details or set up an account.</p>
+              <p>All garages registered in the system are shown below and are available for your drivers to use.</p>
             </div>
           </div>
         </div>

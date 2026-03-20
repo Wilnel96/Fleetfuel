@@ -119,15 +119,15 @@ export default function ClientGaragesView({ onNavigate }: ClientGaragesViewProps
         const term = searchTerm.toLowerCase();
         const contactMatch = garage.contact_person?.toLowerCase().includes(term) ||
           garage.contact_persons?.some(contact =>
-            contact.name.toLowerCase().includes(term) ||
-            contact.surname.toLowerCase().includes(term) ||
-            contact.email.toLowerCase().includes(term) ||
-            contact.mobile_phone.includes(term)
+            contact.name?.toLowerCase().includes(term) ||
+            contact.surname?.toLowerCase().includes(term) ||
+            contact.email?.toLowerCase().includes(term) ||
+            contact.mobile_phone?.includes(term)
           );
 
         return (
-          garage.name.toLowerCase().includes(term) ||
-          garage.address_line_1.toLowerCase().includes(term) ||
+          garage.name?.toLowerCase().includes(term) ||
+          garage.address_line_1?.toLowerCase().includes(term) ||
           (garage.address_line_2 && garage.address_line_2.toLowerCase().includes(term)) ||
           (garage.city && garage.city.toLowerCase().includes(term)) ||
           (garage.province && garage.province.toLowerCase().includes(term)) ||

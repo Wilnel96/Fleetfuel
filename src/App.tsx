@@ -521,7 +521,7 @@ function App() {
       )}
 
       <main className="flex-1 overflow-auto">
-        <div className={`max-w-7xl mx-auto h-full ${(currentView === 'garages' && userRole !== 'super_admin') || (currentView === 'reports' && userRole !== 'super_admin') ? 'px-4' : 'px-4 py-6'}`}>
+        <div className={`max-w-7xl mx-auto ${(currentView === 'garages' && userRole !== 'super_admin') || (currentView === 'reports' && userRole !== 'super_admin') ? 'px-4' : 'px-4 py-6'}`}>
         {!showNavigation && (
           <div className="flex items-center justify-between mb-6 no-print">
             <div className="flex items-center gap-2">

@@ -44,8 +44,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     name: '',
     company_registration_number: '',
     vat_number: '',
-    address_line1: '',
-    address_line2: '',
+    address_line_1: '',
+    address_line_2: '',
     city: '',
     province: '',
     postal_code: '',
@@ -194,7 +194,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         daily_spending_limit: formData.daily_spending_limit || null,
         monthly_spending_limit: formData.monthly_spending_limit || null,
         website: formData.website || null,
-        address_line2: formData.address_line2 || null,
+        address_line_2: formData.address_line_2 || null,
       };
 
       // Check if organization name already exists
@@ -477,8 +477,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Address Line 1</label>
               <input
                 type="text"
-                value={formData.address_line1}
-                onChange={(e) => safeSetFormData({ ...formData, address_line1: e.target.value })}
+                value={formData.address_line_1}
+                onChange={(e) => safeSetFormData({ ...formData, address_line_1: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>
@@ -486,8 +486,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Address Line 2</label>
               <input
                 type="text"
-                value={formData.address_line2}
-                onChange={(e) => safeSetFormData({ ...formData, address_line2: e.target.value })}
+                value={formData.address_line_2}
+                onChange={(e) => safeSetFormData({ ...formData, address_line_2: e.target.value })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
               />
             </div>

@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Edit2, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
+import { Building2, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle } from 'lucide-react';
 
 interface Organization {
   id: string;
   name: string;
   billing_contact_email: string;
   phone_number: string;
-  address_line1: string;
-  address_line2: string;
+  address_line_1: string;
+  address_line_2: string;
   city: string;
   province: string;
   postal_code: string;
@@ -91,8 +91,8 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
         .update({
           billing_contact_email: editForm.billing_contact_email,
           phone_number: editForm.phone_number,
-          address_line1: editForm.address_line1,
-          address_line2: editForm.address_line2,
+          address_line_1: editForm.address_line_1,
+          address_line_2: editForm.address_line_2,
           city: editForm.city,
           province: editForm.province,
           postal_code: editForm.postal_code,
@@ -241,8 +241,8 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
                 <input
                   type="text"
-                  value={editForm.address_line1 || ''}
-                  onChange={(e) => setEditForm({ ...editForm, address_line1: e.target.value })}
+                  value={editForm.address_line_1 || ''}
+                  onChange={(e) => setEditForm({ ...editForm, address_line_1: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
@@ -250,8 +250,8 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
                 <input
                   type="text"
-                  value={editForm.address_line2 || ''}
-                  onChange={(e) => setEditForm({ ...editForm, address_line2: e.target.value })}
+                  value={editForm.address_line_2 || ''}
+                  onChange={(e) => setEditForm({ ...editForm, address_line_2: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
               </div>
@@ -335,11 +335,11 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Address Line 1</p>
-                <p className="text-gray-900">{organization.address_line1 || '-'}</p>
+                <p className="text-gray-900">{organization.address_line_1 || '-'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Address Line 2</p>
-                <p className="text-gray-900">{organization.address_line2 || '-'}</p>
+                <p className="text-gray-900">{organization.address_line_2 || '-'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">City</p>

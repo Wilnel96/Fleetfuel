@@ -23,8 +23,8 @@ interface Invoice {
   organization?: {
     name: string;
     vat_number?: string;
-    address_line1?: string;
-    address_line2?: string;
+    address_line_1?: string;
+    address_line_2?: string;
     city?: string;
     province?: string;
     postal_code?: string;
@@ -45,8 +45,8 @@ interface InvoiceLineItem {
 interface ManagementOrganization {
   name: string;
   vat_number: string;
-  address_line1: string;
-  address_line2: string;
+  address_line_1: string;
+  address_line_2: string;
   city: string;
   province: string;
   postal_code: string;
@@ -94,8 +94,8 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
           organization:organizations(
             name,
             vat_number,
-            address_line1,
-            address_line2,
+            address_line_1,
+            address_line_2,
             city,
             province,
             postal_code,
@@ -127,7 +127,7 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
           .eq('invoice_id', invoice.id),
         supabase
           .from('organizations')
-          .select('name, vat_number, address_line1, address_line2, city, province, postal_code, country, phone_number, company_registration_number')
+          .select('name, vat_number, address_line_1, address_line_2, city, province, postal_code, country, phone_number, company_registration_number')
           .eq('is_management_org', true)
           .single()
       ]);
@@ -182,7 +182,7 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
 
     if (managementOrg) {
       csv += `${managementOrg.name}\n`;
-      csv += `${managementOrg.address_line1}${managementOrg.address_line2 ? ', ' + managementOrg.address_line2 : ''}\n`;
+      csv += `${managementOrg.address_line_1}${managementOrg.address_line_2 ? ', ' + managementOrg.address_line_2 : ''}\n`;
       csv += `${managementOrg.city}, ${managementOrg.province} ${managementOrg.postal_code}\n`;
       if (managementOrg.phone_number) csv += `Phone: ${managementOrg.phone_number}\n`;
       if (managementOrg.vat_number) csv += `VAT No: ${managementOrg.vat_number}`;
@@ -340,7 +340,7 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900 mb-1">{managementOrg.name}</h1>
                   <div className="text-sm text-gray-600 space-y-0.5">
-                    <p>{managementOrg.address_line1}{managementOrg.address_line2 && `, ${managementOrg.address_line2}`}</p>
+                    <p>{managementOrg.address_line_1}{managementOrg.address_line_2 && `, ${managementOrg.address_line_2}`}</p>
                     <p>{managementOrg.city}, {managementOrg.province} {managementOrg.postal_code}</p>
                     {managementOrg.country && <p>{managementOrg.country}</p>}
                     {managementOrg.phone_number && <p>Phone: {managementOrg.phone_number}</p>}
@@ -399,8 +399,8 @@ export default function ClientInvoices({ onNavigate }: ClientInvoicesProps = {})
               <h3 className="font-semibold text-gray-900 mb-2">Bill To:</h3>
               <div className="text-sm text-gray-700 space-y-0.5">
                 <p className="font-medium text-gray-900">{selectedInvoice.organization?.name}</p>
-                {selectedInvoice.organization?.address_line1 && (
-                  <p>{selectedInvoice.organization.address_line1}{selectedInvoice.organization.address_line2 && `, ${selectedInvoice.organization.address_line2}`}</p>
+                {selectedInvoice.organization?.address_line_1 && (
+                  <p>{selectedInvoice.organization.address_line_1}{selectedInvoice.organization.address_line_2 && `, ${selectedInvoice.organization.address_line_2}`}</p>
                 )}
                 {selectedInvoice.organization?.city && (
                   <p>{selectedInvoice.organization.city}, {selectedInvoice.organization.province} {selectedInvoice.organization.postal_code}</p>

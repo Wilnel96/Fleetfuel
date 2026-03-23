@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Plus, Edit2, Save, X, AlertCircle, CheckCircle, Search, Trash2 } from 'lucide-react';
+import { Building2, Plus, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, Trash2 } from 'lucide-react';
 
 interface ClientOrganization {
   id: string;
@@ -12,8 +12,8 @@ interface ClientOrganization {
   phone: string | null;
   phone_number: string | null;
   address: string | null;
-  address_line1: string | null;
-  address_line2: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
   city: string | null;
   province: string | null;
   postal_code: string | null;
@@ -45,8 +45,8 @@ interface FormData {
   contact_person: string;
   email: string;
   phone_number: string;
-  address_line1: string;
-  address_line2: string;
+  address_line_1: string;
+  address_line_2: string;
   city: string;
   province: string;
   postal_code: string;
@@ -135,8 +135,8 @@ export default function ClientOrganizations() {
     contact_person: '',
     email: '',
     phone_number: '',
-    address_line1: '',
-    address_line2: '',
+    address_line_1: '',
+    address_line_2: '',
     city: '',
     province: '',
     postal_code: '',
@@ -261,8 +261,8 @@ export default function ClientOrganizations() {
         name: formData.name,
         company_registration_number: formData.company_registration_number || null,
         vat_number: formData.vat_number || null,
-        address_line1: formData.address_line1 || null,
-        address_line2: formData.address_line2 || null,
+        address_line_1: formData.address_line_1 || null,
+        address_line_2: formData.address_line_2 || null,
         city: formData.city || null,
         province: formData.province || null,
         postal_code: formData.postal_code || null,
@@ -531,8 +531,8 @@ export default function ClientOrganizations() {
         contact_person: orgToUse.contact_person || '',
         email: orgToUse.email || '',
         phone_number: orgToUse.phone_number || '',
-        address_line1: orgToUse.address_line1 || '',
-        address_line2: orgToUse.address_line2 || '',
+        address_line_1: orgToUse.address_line_1 || '',
+        address_line_2: orgToUse.address_line_2 || '',
         city: orgToUse.city || '',
         province: orgToUse.province || '',
         postal_code: orgToUse.postal_code || '',
@@ -657,8 +657,8 @@ export default function ClientOrganizations() {
       contact_person: '',
       email: '',
       phone_number: '',
-      address_line1: '',
-      address_line2: '',
+      address_line_1: '',
+      address_line_2: '',
       city: '',
       province: '',
       postal_code: '',
@@ -860,8 +860,8 @@ export default function ClientOrganizations() {
                   </label>
                   <input
                     type="text"
-                    value={formData.address_line1}
-                    onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
+                    value={formData.address_line_1}
+                    onChange={(e) => setFormData({ ...formData, address_line_1: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -872,8 +872,8 @@ export default function ClientOrganizations() {
                   </label>
                   <input
                     type="text"
-                    value={formData.address_line2}
-                    onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
+                    value={formData.address_line_2}
+                    onChange={(e) => setFormData({ ...formData, address_line_2: e.target.value })}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   />
                 </div>

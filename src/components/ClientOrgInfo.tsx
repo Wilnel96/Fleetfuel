@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft } from 'lucide-react';
+import { Building2, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft } from 'lucide-react';
 
 interface ClientOrganization {
   id: string;
   name: string;
   company_registration_number: string | null;
   vat_number: string | null;
-  address_line1: string | null;
-  address_line2: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
   city: string | null;
   province: string | null;
   postal_code: string | null;
@@ -160,8 +160,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
           name: editForm.name,
           company_registration_number: editForm.company_registration_number,
           vat_number: editForm.vat_number,
-          address_line1: editForm.address_line1,
-          address_line2: editForm.address_line2,
+          address_line_1: editForm.address_line_1,
+          address_line_2: editForm.address_line_2,
           city: editForm.city,
           province: editForm.province,
           postal_code: editForm.postal_code,
@@ -328,8 +328,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">Address Line 1</label>
                     <input
                       type="text"
-                      value={editForm.address_line1 || ''}
-                      onChange={(e) => setEditForm({ ...editForm, address_line1: e.target.value })}
+                      value={editForm.address_line_1 || ''}
+                      onChange={(e) => setEditForm({ ...editForm, address_line_1: e.target.value })}
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                     />
                   </div>
@@ -337,8 +337,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">Address Line 2</label>
                     <input
                       type="text"
-                      value={editForm.address_line2 || ''}
-                      onChange={(e) => setEditForm({ ...editForm, address_line2: e.target.value })}
+                      value={editForm.address_line_2 || ''}
+                      onChange={(e) => setEditForm({ ...editForm, address_line_2: e.target.value })}
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                     />
                   </div>
@@ -667,11 +667,11 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">Address Line 1</label>
-                        <p className="text-gray-900">{org.address_line1 || 'N/A'}</p>
+                        <p className="text-gray-900">{org.address_line_1 || 'N/A'}</p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">Address Line 2</label>
-                        <p className="text-gray-900">{org.address_line2 || 'N/A'}</p>
+                        <p className="text-gray-900">{org.address_line_2 || 'N/A'}</p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">City</label>

@@ -8,8 +8,8 @@ interface Organization {
   vat_number: string | null;
   city: string | null;
   province: string | null;
-  address_line1: string | null;
-  address_line2: string | null;
+  address_line_1: string | null;
+  address_line_2: string | null;
   postal_code: string | null;
   country: string | null;
   phone_number: string | null;
@@ -76,7 +76,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         .from('organizations')
         .select(`
           id, name, vat_number, city, province,
-          address_line1, address_line2, postal_code, country,
+          address_line_1, address_line_2, postal_code, country,
           phone_number, company_registration_number,
           monthly_spending_limit, daily_spending_limit,
           parent_org_id
@@ -409,15 +409,15 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   Physical Address
                 </h4>
                 <div className="text-sm text-gray-900">
-                  {viewingOrg.address_line1 && <div>{viewingOrg.address_line1}</div>}
-                  {viewingOrg.address_line2 && <div>{viewingOrg.address_line2}</div>}
+                  {viewingOrg.address_line_1 && <div>{viewingOrg.address_line_1}</div>}
+                  {viewingOrg.address_line_2 && <div>{viewingOrg.address_line_2}</div>}
                   {(viewingOrg.city || viewingOrg.province || viewingOrg.postal_code) && (
                     <div>
                       {[viewingOrg.city, viewingOrg.province, viewingOrg.postal_code].filter(Boolean).join(', ')}
                     </div>
                   )}
                   {viewingOrg.country && <div>{viewingOrg.country}</div>}
-                  {!viewingOrg.address_line1 && !viewingOrg.city && (
+                  {!viewingOrg.address_line_1 && !viewingOrg.city && (
                     <div className="text-gray-500 italic">No address on file</div>
                   )}
                 </div>

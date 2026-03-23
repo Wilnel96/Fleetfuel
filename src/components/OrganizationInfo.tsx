@@ -7,8 +7,8 @@ interface Organization {
   name: string;
   company_registration_number: string;
   vat_number: string;
-  address_line1: string;
-  address_line2: string;
+  address_line_1: string;
+  address_line_2: string;
   city: string;
   province: string;
   postal_code: string;
@@ -116,8 +116,8 @@ export default function OrganizationInfo() {
         .update({
           company_registration_number: organization.company_registration_number,
           vat_number: organization.vat_number,
-          address_line1: organization.address_line1,
-          address_line2: organization.address_line2,
+          address_line_1: organization.address_line_1,
+          address_line_2: organization.address_line_2,
           city: organization.city,
           province: organization.province,
           postal_code: organization.postal_code,
@@ -201,15 +201,15 @@ export default function OrganizationInfo() {
             <div className="col-span-2">
               <span className="font-medium text-gray-700">Address:</span>
               <div className="text-gray-900">
-                {organization.address_line1 && <p>{organization.address_line1}</p>}
-                {organization.address_line2 && <p>{organization.address_line2}</p>}
+                {organization.address_line_1 && <p>{organization.address_line_1}</p>}
+                {organization.address_line_2 && <p>{organization.address_line_2}</p>}
                 {(organization.city || organization.province || organization.postal_code) && (
                   <p>
                     {organization.city}{organization.city && organization.province ? ', ' : ''}{organization.province} {organization.postal_code}
                   </p>
                 )}
                 {organization.country && <p>{organization.country}</p>}
-                {!organization.address_line1 && 'Not set'}
+                {!organization.address_line_1 && 'Not set'}
               </div>
             </div>
           </div>
@@ -390,8 +390,8 @@ export default function OrganizationInfo() {
               </label>
               <input
                 type="text"
-                value={organization.address_line1}
-                onChange={(e) => setOrganization({ ...organization, address_line1: e.target.value })}
+                value={organization.address_line_1}
+                onChange={(e) => setOrganization({ ...organization, address_line_1: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -402,8 +402,8 @@ export default function OrganizationInfo() {
               </label>
               <input
                 type="text"
-                value={organization.address_line2}
-                onChange={(e) => setOrganization({ ...organization, address_line2: e.target.value })}
+                value={organization.address_line_2}
+                onChange={(e) => setOrganization({ ...organization, address_line_2: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
               />
             </div>

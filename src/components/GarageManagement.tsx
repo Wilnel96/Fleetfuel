@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Store, Plus, Edit2, Trash2, X, Search, MapPin, Phone, Mail, Smartphone, ArrowLeft } from 'lucide-react';
+import { Store, Plus, CreditCard as Edit2, Trash2, X, Search, MapPin, Phone, Mail, Smartphone, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import GarageContactManagement from './GarageContactManagement';
 import { getFuelTypeDisplayName, AVAILABLE_FUEL_TYPES } from '../lib/fuelTypes';
@@ -158,21 +158,12 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
 
         if (error) throw error;
       } else {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('id', user.id)
-          .single();
-
-        if (!profile?.organization_id) {
-          throw new Error('Organization not found');
-        }
-
+        // Insert new garage (organization_id is always NULL - garages are standalone)
         const { error } = await supabase
           .from('garages')
           .insert({
             ...formData,
-            organization_id: profile.organization_id
+            organization_id: null
           });
 
         if (error) throw error;

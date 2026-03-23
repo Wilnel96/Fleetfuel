@@ -23,6 +23,7 @@ import ClientDashboard from './components/ClientDashboard';
 import ClientCardDashboard from './components/ClientCardDashboard';
 import ClientAccountDashboard from './components/ClientAccountDashboard';
 import ClientPortalSelection from './components/ClientPortalSelection';
+import ClientSignup from './components/ClientSignup';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import GaragesDirectory from './components/GaragesDirectory';
 import ClientGaragesView from './components/ClientGaragesView';
@@ -52,6 +53,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [showPortalSelection, setShowPortalSelection] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
   const [userRole, setUserRole] = useState<string>('admin');
   const [paymentOption, setPaymentOption] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string>('');
@@ -286,6 +288,7 @@ function App() {
       setCurrentView(null);
       setShowModeSelection(true);
       setShowPortalSelection(false);
+      setShowSignup(false);
     } catch (error) {
       console.error('Error signing out:', error);
       setSession(null);
@@ -298,6 +301,7 @@ function App() {
       setCurrentView(null);
       setShowModeSelection(true);
       setShowPortalSelection(false);
+      setShowSignup(false);
     }
   };
 
@@ -497,6 +501,22 @@ function App() {
     return <GaragePortal garageId={garageId} garageName={garageName} garageEmail={garageEmail} garagePassword={garagePassword} onLogout={handleGarageLogout} />;
   }
 
+  if (userMode === 'admin' && showSignup && clientPortalType) {
+    return (
+      <ClientSignup
+        portalType={clientPortalType}
+        onBack={() => {
+          setShowSignup(false);
+          setShowPortalSelection(true);
+        }}
+        onSignupSuccess={() => {
+          setShowSignup(false);
+          window.location.reload();
+        }}
+      />
+    );
+  }
+
   if (userMode === 'admin' && showPortalSelection && !session) {
     return (
       <ClientPortalSelection
@@ -513,12 +533,14 @@ function App() {
     );
   }
 
-  if (userMode === 'admin' && !session && !showPortalSelection) {
+  if (userMode === 'admin' && !session && !showPortalSelection && !showSignup) {
     return <Auth onBack={() => {
       setUserMode(null);
       setClientPortalType(null);
       setShowModeSelection(true);
       setShowPortalSelection(false);
+    }} onSignup={() => {
+      setShowSignup(true);
     }} />;
   }
 

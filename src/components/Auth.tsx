@@ -4,9 +4,10 @@ import { Fuel, AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface AuthProps {
   onBack?: () => void;
+  onSignup?: () => void;
 }
 
-export default function Auth({ onBack }: AuthProps = {}) {
+export default function Auth({ onBack, onSignup }: AuthProps = {}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -144,10 +145,27 @@ export default function Auth({ onBack }: AuthProps = {}) {
             {loading ? 'Please wait...' : 'Sign In'}
           </button>
 
-          <div className="text-center text-sm text-gray-600 mt-4">
-            <p>Need access?</p>
-            <p className="text-xs text-gray-500 mt-1">Contact your management company to set up an account</p>
-          </div>
+          {onSignup && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-center text-sm text-gray-600 mb-3">
+                Don't have an account?
+              </p>
+              <button
+                type="button"
+                onClick={onSignup}
+                className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              >
+                Create New Organization
+              </button>
+            </div>
+          )}
+
+          {!onSignup && (
+            <div className="text-center text-sm text-gray-600 mt-4">
+              <p>Need access?</p>
+              <p className="text-xs text-gray-500 mt-1">Contact your management company to set up an account</p>
+            </div>
+          )}
         </form>
       </div>
     </div>

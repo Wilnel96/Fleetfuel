@@ -20,8 +20,8 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
     vat_number: '',
     email: '',
     phone_number: '',
-    address_line_1: '',
-    address_line_2: '',
+    address_line1: '',
+    address_line2: '',
     city: '',
     province: '',
     postal_code: '',
@@ -113,8 +113,8 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
           vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
           email: accountType === 'individual' ? userData.email : orgData.email,
           phone_number: accountType === 'individual' ? (userData.phone_number || null) : (orgData.phone_number || null),
-          address_line_1: accountType === 'individual' ? null : (orgData.address_line_1 || null),
-          address_line_2: accountType === 'individual' ? null : (orgData.address_line_2 || null),
+          address_line1: accountType === 'individual' ? null : (orgData.address_line1 || null),
+          address_line2: accountType === 'individual' ? null : (orgData.address_line2 || null),
           city: accountType === 'individual' ? null : (orgData.city || null),
           province: accountType === 'individual' ? null : (orgData.province || null),
           postal_code: accountType === 'individual' ? null : (orgData.postal_code || null),
@@ -365,8 +365,8 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
-                    value={orgData.address_line_1}
-                    onChange={(e) => setOrgData({ ...orgData, address_line_1: e.target.value })}
+                    value={orgData.address_line1}
+                    onChange={(e) => setOrgData({ ...orgData, address_line1: e.target.value })}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
@@ -378,8 +378,8 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                 </label>
                 <input
                   type="text"
-                  value={orgData.address_line_2}
-                  onChange={(e) => setOrgData({ ...orgData, address_line_2: e.target.value })}
+                  value={orgData.address_line2}
+                  onChange={(e) => setOrgData({ ...orgData, address_line2: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>

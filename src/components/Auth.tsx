@@ -155,7 +155,7 @@ export default function Auth({ onBack, onSignup }: AuthProps = {}) {
                 onClick={onSignup}
                 className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
               >
-                Create New Organization
+                Create your Account
               </button>
             </div>
           )}

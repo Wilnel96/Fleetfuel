@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Fuel, AlertCircle, ArrowLeft, Building2, User, Mail, Lock, Phone, MapPin } from 'lucide-react';
+import { Fuel, AlertCircle, ArrowLeft, Building2, User, Mail, Lock, Phone, MapPin, Users, CreditCard } from 'lucide-react';
 
 interface ClientSignupProps {
   portalType: 'card' | 'account';
@@ -9,7 +9,8 @@ interface ClientSignupProps {
 }
 
 export default function ClientSignup({ portalType, onBack, onSignupSuccess }: ClientSignupProps) {
-  const [step, setStep] = useState<'org' | 'user'>('org');
+  const [step, setStep] = useState<'type' | 'org' | 'user'>('type');
+  const [accountType, setAccountType] = useState<'individual' | 'organization' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,9 +32,19 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
     last_name: '',
     email: '',
     phone_number: '',
+    id_number: '',
     password: '',
     confirmPassword: '',
   });
+
+  const handleTypeSelection = (type: 'individual' | 'organization') => {
+    setAccountType(type);
+    if (type === 'individual') {
+      setStep('user');
+    } else {
+      setStep('org');
+    }
+  };
 
   const handleOrgSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +76,10 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         throw new Error('Password must be at least 8 characters');
       }
 
+      if (accountType === 'individual' && !userData.id_number) {
+        throw new Error('ID number is required for individual accounts');
+      }
+
       console.log('[Signup] Creating user account...');
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
@@ -73,6 +88,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
           data: {
             first_name: userData.first_name,
             last_name: userData.last_name,
+            id_number: accountType === 'individual' ? userData.id_number : null,
           },
         },
       });
@@ -85,19 +101,23 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
       const paymentOption = portalType === 'card' ? 'Card Payment' : 'Local Account';
 
       console.log('[Signup] Creating organization...');
+      const orgName = accountType === 'individual'
+        ? `${userData.first_name} ${userData.last_name}`
+        : orgData.name;
+
       const { data: org, error: orgError } = await supabase
         .from('organizations')
         .insert({
-          name: orgData.name,
-          registration_number: orgData.registration_number || null,
-          vat_number: orgData.vat_number || null,
-          email: orgData.email,
-          phone_number: orgData.phone_number || null,
-          address_line_1: orgData.address_line_1 || null,
-          address_line_2: orgData.address_line_2 || null,
-          city: orgData.city || null,
-          province: orgData.province || null,
-          postal_code: orgData.postal_code || null,
+          name: orgName,
+          registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
+          vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
+          email: accountType === 'individual' ? userData.email : orgData.email,
+          phone_number: accountType === 'individual' ? (userData.phone_number || null) : (orgData.phone_number || null),
+          address_line_1: accountType === 'individual' ? null : (orgData.address_line_1 || null),
+          address_line_2: accountType === 'individual' ? null : (orgData.address_line_2 || null),
+          city: accountType === 'individual' ? null : (orgData.city || null),
+          province: accountType === 'individual' ? null : (orgData.province || null),
+          postal_code: accountType === 'individual' ? null : (orgData.postal_code || null),
           payment_option: paymentOption,
           is_management_org: false,
           organization_type: 'client',
@@ -118,6 +138,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         .update({
           organization_id: org.id,
           role: 'admin',
+          id_number: accountType === 'individual' ? userData.id_number : null,
         })
         .eq('id', authData.user.id);
 
@@ -136,6 +157,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
           surname: userData.last_name,
           email: userData.email,
           mobile_phone: userData.phone_number || null,
+          id_number: accountType === 'individual' ? userData.id_number : null,
           title: 'Main User',
           is_main_user: true,
           is_secondary_main_user: false,
@@ -175,7 +197,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
             <Fuel className="w-10 h-10" />
             <h1 className="text-2xl font-bold">{portalTitle}</h1>
           </div>
-          <p className={`text-${portalColor}-100 text-sm text-center`}>Create Your Organization Account</p>
+          <p className={`text-${portalColor}-100 text-sm text-center`}>Create Your Account</p>
         </div>
 
         <div className="p-6">
@@ -187,28 +209,72 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
             Back to Login
           </button>
 
-          <div className="mb-6">
-            <div className="flex items-center gap-4">
-              <div className={`flex items-center gap-2 ${step === 'org' ? 'text-' + portalColor + '-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'org' ? 'bg-' + portalColor + '-100' : 'bg-gray-100'}`}>
-                  <Building2 className="w-4 h-4" />
+          {step !== 'type' && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${step === 'org' || accountType === 'organization' ? 'text-' + portalColor + '-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'org' ? 'bg-' + portalColor + '-100' : 'bg-gray-100'}`}>
+                    {accountType === 'individual' ? <User className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
+                  </div>
+                  <span className="font-medium text-sm">
+                    {accountType === 'individual' ? 'Individual' : 'Organization'}
+                  </span>
                 </div>
-                <span className="font-medium">Organization</span>
-              </div>
-              <div className="flex-1 h-0.5 bg-gray-200"></div>
-              <div className={`flex items-center gap-2 ${step === 'user' ? 'text-' + portalColor + '-600' : 'text-gray-400'}`}>
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'user' ? 'bg-' + portalColor + '-100' : 'bg-gray-100'}`}>
-                  <User className="w-4 h-4" />
+                <div className="flex-1 h-0.5 bg-gray-200"></div>
+                <div className={`flex items-center gap-2 ${step === 'user' ? 'text-' + portalColor + '-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'user' ? 'bg-' + portalColor + '-100' : 'bg-gray-100'}`}>
+                    <User className="w-4 h-4" />
+                  </div>
+                  <span className="font-medium text-sm">Account</span>
                 </div>
-                <span className="font-medium">User Account</span>
               </div>
             </div>
-          </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
               <AlertCircle className="w-5 h-5 flex-shrink-0" />
               <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {step === 'type' && (
+            <div className="space-y-4">
+              <h3 className="font-semibold text-gray-900 text-center mb-6">Select Account Type</h3>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => handleTypeSelection('individual')}
+                  className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                >
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <User className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900">Individual</h4>
+                    <p className="text-sm text-gray-600">
+                      Personal account for individual use
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTypeSelection('organization')}
+                  className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                >
+                  <div className="flex flex-col items-center text-center space-y-3">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                      <Building2 className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-gray-900">Organization</h4>
+                    <p className="text-sm text-gray-600">
+                      Business or company account
+                    </p>
+                  </div>
+                </button>
+              </div>
             </div>
           )}
 
@@ -381,7 +447,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                 <h3 className="font-semibold text-gray-900">Your Account Information</h3>
                 <button
                   type="button"
-                  onClick={() => setStep('org')}
+                  onClick={() => accountType === 'organization' ? setStep('org') : setStep('type')}
                   className="text-sm text-gray-600 hover:text-gray-700"
                 >
                   ← Back
@@ -449,6 +515,27 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   />
                 </div>
               </div>
+
+              {accountType === 'individual' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ID Number <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="text"
+                      value={userData.id_number}
+                      onChange={(e) => setUserData({ ...userData, id_number: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required={accountType === 'individual'}
+                      maxLength={13}
+                      placeholder="13-digit ID number"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">South African ID number (13 digits)</p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

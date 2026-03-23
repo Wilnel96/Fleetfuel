@@ -473,7 +473,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name <span className="text-red-500">*</span>
+                    Surname <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"

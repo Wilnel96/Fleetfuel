@@ -80,15 +80,20 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         throw new Error('ID number is required for individual accounts');
       }
 
-      console.log('[Signup] Creating user account...');
+      const paymentOption = portalType === 'card' ? 'Card Payment' : 'Local Account';
+      const orgName = accountType === 'individual'
+        ? `${userData.first_name} ${userData.last_name}`
+        : orgData.name;
+
+      console.log('[Signup] Creating user account with organization data...');
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
           data: {
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            id_number: accountType === 'individual' ? userData.id_number : null,
+            name: userData.first_name,
+            surname: userData.last_name,
+            organization_name: orgName,
           },
         },
       });
@@ -98,17 +103,22 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
 
       console.log('[Signup] User created:', authData.user.id);
 
-      const paymentOption = portalType === 'card' ? 'Card Payment' : 'Local Account';
+      console.log('[Signup] Fetching created organization...');
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', authData.user.id)
+        .single();
 
-      console.log('[Signup] Creating organization...');
-      const orgName = accountType === 'individual'
-        ? `${userData.first_name} ${userData.last_name}`
-        : orgData.name;
+      if (profileError || !profile?.organization_id) {
+        console.error('[Signup] Profile fetch error:', profileError);
+        throw new Error('Failed to fetch user profile');
+      }
 
-      const { data: org, error: orgError } = await supabase
+      console.log('[Signup] Updating organization details...');
+      const { error: orgUpdateError } = await supabase
         .from('organizations')
-        .insert({
-          name: orgName,
+        .update({
           registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
           vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
           email: accountType === 'individual' ? userData.email : orgData.email,
@@ -122,58 +132,37 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
           is_management_org: false,
           organization_type: 'client',
         })
-        .select()
-        .single();
+        .eq('id', profile.organization_id);
 
-      if (orgError) {
-        console.error('[Signup] Organization creation error:', orgError);
-        throw new Error(`Failed to create organization: ${orgError.message}`);
+      if (orgUpdateError) {
+        console.error('[Signup] Organization update error:', orgUpdateError);
+        throw new Error(`Failed to update organization: ${orgUpdateError.message}`);
       }
 
-      console.log('[Signup] Organization created:', org.id);
+      console.log('[Signup] Updating organization user details...');
+      const { error: orgUserUpdateError } = await supabase
+        .from('organization_users')
+        .update({
+          mobile_phone: userData.phone_number || null,
+          id_number: accountType === 'individual' ? userData.id_number : null,
+        })
+        .eq('user_id', authData.user.id)
+        .eq('organization_id', profile.organization_id);
 
-      console.log('[Signup] Updating profile...');
-      const { error: profileError } = await supabase
+      if (orgUserUpdateError) {
+        console.error('[Signup] Organization user update error:', orgUserUpdateError);
+      }
+
+      console.log('[Signup] Updating profile details...');
+      const { error: profileUpdateError } = await supabase
         .from('profiles')
         .update({
-          organization_id: org.id,
-          role: 'admin',
           id_number: accountType === 'individual' ? userData.id_number : null,
         })
         .eq('id', authData.user.id);
 
-      if (profileError) {
-        console.error('[Signup] Profile update error:', profileError);
-        throw new Error(`Failed to update profile: ${profileError.message}`);
-      }
-
-      console.log('[Signup] Creating organization user...');
-      const { error: orgUserError } = await supabase
-        .from('organization_users')
-        .insert({
-          organization_id: org.id,
-          user_id: authData.user.id,
-          name: userData.first_name,
-          surname: userData.last_name,
-          email: userData.email,
-          mobile_phone: userData.phone_number || null,
-          id_number: accountType === 'individual' ? userData.id_number : null,
-          title: 'Main User',
-          is_main_user: true,
-          is_secondary_main_user: false,
-          active: true,
-          can_manage_vehicles: true,
-          can_manage_drivers: true,
-          can_view_reports: true,
-          can_manage_fuel_cards: true,
-          can_approve_transactions: true,
-          can_manage_garages: true,
-          can_view_invoices: true,
-          can_manage_users: true,
-        });
-
-      if (orgUserError) {
-        console.error('[Signup] Organization user creation error:', orgUserError);
+      if (profileUpdateError) {
+        console.error('[Signup] Profile update error:', profileUpdateError);
       }
 
       console.log('[Signup] Signup complete!');

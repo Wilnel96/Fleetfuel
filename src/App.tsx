@@ -20,9 +20,13 @@ import CreateClientOrganization from './components/CreateClientOrganization';
 import ConsolidatedReports from './components/ConsolidatedReports';
 import ReportsDashboard from './components/ReportsDashboard';
 import ClientDashboard from './components/ClientDashboard';
+import ClientCardDashboard from './components/ClientCardDashboard';
+import ClientAccountDashboard from './components/ClientAccountDashboard';
+import ClientPortalSelection from './components/ClientPortalSelection';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import GaragesDirectory from './components/GaragesDirectory';
 import ClientGaragesView from './components/ClientGaragesView';
+import ClientGarageAccounts from './components/ClientGarageAccounts';
 import BackOffice from './components/BackOffice';
 import CustomReportBuilder from './components/CustomReportBuilder';
 import BackupManagement from './components/BackupManagement';
@@ -33,6 +37,7 @@ import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3,
 import { DriverData } from './components/DriverAuth';
 
 type UserMode = 'admin' | 'driver' | 'garage' | null;
+type ClientPortalType = 'card' | 'account' | null;
 
 function App() {
   const [session, setSession] = useState<any>(null);
@@ -42,11 +47,15 @@ function App() {
   const [garageEmail, setGarageEmail] = useState<string | null>(null);
   const [garagePassword, setGaragePassword] = useState<string | null>(null);
   const [userMode, setUserMode] = useState<UserMode>(null);
+  const [clientPortalType, setClientPortalType] = useState<ClientPortalType>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<'dashboard' | 'clients' | 'client-organizations-menu' | 'create-client-org' | 'client-org-info' | 'client-user-info' | 'client-financial-info' | 'vehicles' | 'garages' | 'drivers' | 'invoices' | 'reports' | 'reports-menu' | 'backoffice' | 'organization' | 'custom-reports' | 'backup' | null>(null);
   const [showModeSelection, setShowModeSelection] = useState(true);
+  const [showPortalSelection, setShowPortalSelection] = useState(false);
   const [userRole, setUserRole] = useState<string>('admin');
   const [paymentOption, setPaymentOption] = useState<string | null>(null);
+  const [organizationId, setOrganizationId] = useState<string>('');
+  const [organizationName, setOrganizationName] = useState<string>('');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -111,7 +120,7 @@ function App() {
 
         supabase
           .from('profiles')
-          .select('role, organization_id, organizations(payment_option, is_management_org, organization_type)')
+          .select('role, organization_id, organizations(name, payment_option, is_management_org, organization_type)')
           .eq('id', session.user.id)
           .maybeSingle()
           .then(({ data: profile, error: profileError }) => {
@@ -147,6 +156,14 @@ function App() {
               // Set payment option if organization data is available
               if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
                 setPaymentOption((profile.organizations as any).payment_option);
+              }
+
+              // Set organization ID and name
+              if (profile.organization_id) {
+                setOrganizationId(profile.organization_id);
+              }
+              if (profile.organizations && typeof profile.organizations === 'object' && 'name' in profile.organizations) {
+                setOrganizationName((profile.organizations as any).name);
               }
             } else {
               console.warn('Auth state - No profile found, using defaults');
@@ -199,7 +216,7 @@ function App() {
 
         supabase
           .from('profiles')
-          .select('role, organization_id, organizations(payment_option)')
+          .select('role, organization_id, organizations(name, payment_option)')
           .eq('id', currentSession.user.id)
           .maybeSingle()
           .then(({ data: profile }) => {
@@ -212,6 +229,14 @@ function App() {
               // Set payment option if organization data is available
               if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
                 setPaymentOption((profile.organizations as any).payment_option);
+              }
+
+              // Set organization ID and name
+              if (profile.organization_id) {
+                setOrganizationId(profile.organization_id);
+              }
+              if (profile.organizations && typeof profile.organizations === 'object' && 'name' in profile.organizations) {
+                setOrganizationName((profile.organizations as any).name);
               }
             } else {
               console.warn('No profile on mount, using defaults');
@@ -256,9 +281,11 @@ function App() {
       setGarageId(null);
       setGarageName(null);
       setUserMode(null);
+      setClientPortalType(null);
       setUserRole('admin');
       setCurrentView(null);
       setShowModeSelection(true);
+      setShowPortalSelection(false);
     } catch (error) {
       console.error('Error signing out:', error);
       setSession(null);
@@ -266,9 +293,11 @@ function App() {
       setGarageId(null);
       setGarageName(null);
       setUserMode(null);
+      setClientPortalType(null);
       setUserRole('admin');
       setCurrentView(null);
       setShowModeSelection(true);
+      setShowPortalSelection(false);
     }
   };
 
@@ -386,6 +415,7 @@ function App() {
               onClick={() => {
                 setUserMode('admin');
                 setShowModeSelection(false);
+                setShowPortalSelection(true);
               }}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
             >
@@ -467,10 +497,28 @@ function App() {
     return <GaragePortal garageId={garageId} garageName={garageName} garageEmail={garageEmail} garagePassword={garagePassword} onLogout={handleGarageLogout} />;
   }
 
-  if (userMode === 'admin' && !session) {
+  if (userMode === 'admin' && showPortalSelection && !session) {
+    return (
+      <ClientPortalSelection
+        onSelectPortal={(portalType) => {
+          setClientPortalType(portalType);
+          setShowPortalSelection(false);
+        }}
+        onBack={() => {
+          setUserMode(null);
+          setShowModeSelection(true);
+          setShowPortalSelection(false);
+        }}
+      />
+    );
+  }
+
+  if (userMode === 'admin' && !session && !showPortalSelection) {
     return <Auth onBack={() => {
       setUserMode(null);
+      setClientPortalType(null);
       setShowModeSelection(true);
+      setShowPortalSelection(false);
     }} />;
   }
 
@@ -550,6 +598,10 @@ function App() {
         {!currentView ? (
           userRole === 'super_admin' ? (
             <SuperAdminDashboard key="dashboard-super" onNavigate={setCurrentView} />
+          ) : clientPortalType === 'card' ? (
+            <ClientCardDashboard key="dashboard-card" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} />
+          ) : clientPortalType === 'account' ? (
+            <ClientAccountDashboard key="dashboard-account" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} />
           ) : (
             <ClientDashboard key="dashboard-client" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} paymentOption={paymentOption} />
           )
@@ -588,19 +640,43 @@ function App() {
         ) : currentView === 'vehicles' ? (
           <VehicleManagement key="vehicles" onNavigate={setCurrentView} />
         ) : currentView === 'garages' ? (
-          userRole === 'super_admin' ? <GarageManagement key="garages" onNavigate={setCurrentView} /> : <ClientGaragesView key="garages" onNavigate={setCurrentView} />
+          userRole === 'super_admin' ? (
+            <GarageManagement key="garages" onNavigate={setCurrentView} />
+          ) : clientPortalType === 'account' ? (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Local Garage Accounts</h2>
+              <p className="text-gray-600">Manage your local accounts with garages where you can refuel</p>
+              {organizationId && organizationName && (
+                <ClientGarageAccounts organizationId={organizationId} organizationName={organizationName} />
+              )}
+            </div>
+          ) : (
+            <ClientGaragesView key="garages" onNavigate={setCurrentView} />
+          )
         ) : currentView === 'drivers' ? (
           <DriverManagement key="drivers" onNavigate={setCurrentView} />
         ) : currentView === 'invoices' ? (
           userRole === 'super_admin' ? <InvoiceManagement key="invoices" /> : <ClientInvoices key="invoices" />
         ) : currentView === 'invoices-menu' ? (
-          <ClientDashboard key="invoices-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" paymentOption={paymentOption} />
+          clientPortalType === 'card' ? (
+            <ClientCardDashboard key="invoices-menu-card" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" />
+          ) : clientPortalType === 'account' ? (
+            <ClientAccountDashboard key="invoices-menu-account" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" />
+          ) : (
+            <ClientDashboard key="invoices-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="invoices" paymentOption={paymentOption} />
+          )
         ) : currentView === 'fee-invoices' ? (
           <ClientInvoices key="fee-invoices" onNavigate={setCurrentView} />
         ) : currentView === 'fuel-invoices' ? (
           <ClientFuelInvoices key="fuel-invoices" onNavigate={setCurrentView} />
         ) : currentView === 'reports-menu' ? (
-          <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" paymentOption={paymentOption} />
+          clientPortalType === 'card' ? (
+            <ClientCardDashboard key="reports-menu-card" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" />
+          ) : clientPortalType === 'account' ? (
+            <ClientAccountDashboard key="reports-menu-account" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" />
+          ) : (
+            <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" paymentOption={paymentOption} />
+          )
         ) : currentView === 'reports' ? (
           userRole === 'super_admin' ? <ConsolidatedReports key="reports" onNavigate={setCurrentView} /> : <ReportsDashboard key="reports" onNavigate={setCurrentView} />
         ) : currentView === 'backoffice' ? (

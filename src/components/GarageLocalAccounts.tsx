@@ -19,7 +19,7 @@ interface Organization {
   parent_org_id: string | null;
   billing_contact_name: string | null;
   billing_contact_surname: string | null;
-  billing_email: string | null;
+  billing_contact_email: string | null;
   billing_contact_phone_mobile: string | null;
   billing_contact_phone_office: string | null;
 }
@@ -85,7 +85,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           phone_number, company_registration_number,
           monthly_spending_limit, daily_spending_limit,
           parent_org_id, billing_contact_name, billing_contact_surname,
-          billing_email, billing_contact_phone_mobile, billing_contact_phone_office
+          billing_contact_email, billing_contact_phone_mobile, billing_contact_phone_office
         `)
         .eq('organization_type', 'client')
         .order('name');
@@ -508,7 +508,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                       <Mail className="w-3 h-3 text-amber-600" />
                       <h5 className="text-xs font-semibold text-amber-900">Billing Contact Person</h5>
                     </div>
-                    {(viewingOrg.billing_contact_name || viewingOrg.billing_contact_surname || viewingOrg.billing_email) ? (
+                    {(viewingOrg.billing_contact_name || viewingOrg.billing_contact_surname || viewingOrg.billing_contact_email) ? (
                       <div className="space-y-1.5 text-xs">
                         {(viewingOrg.billing_contact_name || viewingOrg.billing_contact_surname) && (
                           <div>
@@ -518,10 +518,10 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                             </span>
                           </div>
                         )}
-                        {viewingOrg.billing_email && (
+                        {viewingOrg.billing_contact_email && (
                           <div>
                             <span className="text-gray-600">Email:</span>
-                            <span className="ml-2 font-medium text-gray-900">{viewingOrg.billing_email}</span>
+                            <span className="ml-2 font-medium text-gray-900">{viewingOrg.billing_contact_email}</span>
                           </div>
                         )}
                         {viewingOrg.billing_contact_phone_mobile && (

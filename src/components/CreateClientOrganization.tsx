@@ -208,6 +208,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         throw new Error(`An organization with the name "${formData.name}" already exists. Please use a different name.`);
       }
 
+      // Always use billing contact info for the billing_contact_* fields in organizations table
+      // This ensures consistency whether billing user is same as main user or different person
       const { data: newOrg, error: insertError } = await supabase
         .from('organizations')
         .insert({
@@ -238,11 +240,17 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization-users`;
 
-      // Check if main user and billing user are the same
+      // Check if main user and billing user are the same person (same email)
       const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
 
+      // NOTE: The billing contact info is ALWAYS stored in the organizations table (above)
+      // Now we create user(s) in organization_users table:
+      // - If same person: Create 1 user (main user) - they're both main AND billing contact
+      // - If different: Create 2 users (main user + separate billing user with title "Billing User")
+
       if (isSameUser) {
-        // Create only one user with combined permissions (main user gets all permissions)
+        // Create only one user (main user who is also the billing contact)
+        // The trigger will keep organizations.billing_contact_* in sync when this user is updated
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {

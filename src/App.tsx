@@ -74,6 +74,7 @@ function App() {
 
     const storedDriverToken = localStorage.getItem('driverToken');
     const storedDriverData = localStorage.getItem('driverData');
+    const storedGarageData = localStorage.getItem('garageData');
 
     if (storedDriverToken && storedDriverData) {
       try {
@@ -88,6 +89,24 @@ function App() {
         console.error('Failed to restore driver session:', e);
         localStorage.removeItem('driverToken');
         localStorage.removeItem('driverData');
+      }
+    }
+
+    if (storedGarageData) {
+      try {
+        const garage = JSON.parse(storedGarageData);
+        setGarageId(garage.id);
+        setGarageName(garage.name);
+        setGarageEmail(garage.email);
+        setGaragePassword(garage.password);
+        setUserMode('garage');
+        setShowModeSelection(false);
+        setLoading(false);
+        console.log('Garage session restored from localStorage');
+        return;
+      } catch (e) {
+        console.error('Failed to restore garage session:', e);
+        localStorage.removeItem('garageData');
       }
     }
 
@@ -278,10 +297,13 @@ function App() {
   const handleAdminSignOut = async () => {
     try {
       await supabase.auth.signOut();
+      localStorage.removeItem('garageData');
       setSession(null);
       setDriverData(null);
       setGarageId(null);
       setGarageName(null);
+      setGarageEmail(null);
+      setGaragePassword(null);
       setUserMode(null);
       setClientPortalType(null);
       setUserRole('admin');
@@ -291,10 +313,13 @@ function App() {
       setShowSignup(false);
     } catch (error) {
       console.error('Error signing out:', error);
+      localStorage.removeItem('garageData');
       setSession(null);
       setDriverData(null);
       setGarageId(null);
       setGarageName(null);
+      setGarageEmail(null);
+      setGaragePassword(null);
       setUserMode(null);
       setClientPortalType(null);
       setUserRole('admin');
@@ -342,15 +367,21 @@ function App() {
   };
 
   const handleGarageLogin = (id: string, name: string, email: string, password: string) => {
+    const garageData = { id, name, email, password };
+    localStorage.setItem('garageData', JSON.stringify(garageData));
     setGarageId(id);
     setGarageName(name);
     setGarageEmail(email);
     setGaragePassword(password);
     setUserMode('garage');
     setShowModeSelection(false);
+    console.log('Garage login complete, session saved to localStorage');
   };
 
   const handleGarageLogout = async () => {
+    console.log('Garage logout initiated');
+    localStorage.removeItem('garageData');
+
     try {
       await supabase.auth.signOut();
     } catch (error) {
@@ -365,6 +396,7 @@ function App() {
     setDriverData(null);
     setUserMode(null);
     setShowModeSelection(true);
+    console.log('Garage logout complete, state reset');
   };
 
   if (!loading && userMode && showModeSelection) {

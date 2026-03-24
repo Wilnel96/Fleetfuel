@@ -338,22 +338,22 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
     <>
       {viewingOrg && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setViewingOrgId(null);
             }
           }}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start justify-between mb-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-start justify-between p-4 border-b border-gray-200">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Building2 className="w-6 h-6 text-blue-600" />
+                <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{viewingOrg.name}</h3>
-                  <p className="text-sm text-gray-500">Client Organization Details</p>
+                  <h3 className="text-lg font-semibold text-gray-900">{viewingOrg.name}</h3>
+                  <p className="text-xs text-gray-500">Client Organization Details</p>
                 </div>
               </div>
               <button
@@ -364,22 +364,23 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-4">
               {/* Company Information */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Building2 className="w-4 h-4" />
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <Building2 className="w-3.5 h-3.5" />
                   Company Information
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {/* Organization Name */}
-                  <div className="pb-3 border-b border-gray-200">
-                    <span className="text-gray-600 text-sm">Organization Name:</span>
-                    <div className="mt-1 font-semibold text-gray-900 text-lg">{viewingOrg.name}</div>
+                  <div className="pb-2 border-b border-gray-200">
+                    <span className="text-gray-600 text-xs">Organization Name:</span>
+                    <div className="mt-0.5 font-semibold text-gray-900 text-base">{viewingOrg.name}</div>
                   </div>
 
                   {/* Registration and VAT */}
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     {viewingOrg.company_registration_number && (
                       <div>
                         <span className="text-gray-600">Registration:</span>
@@ -403,12 +404,12 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
               </div>
 
               {/* Address */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5" />
                   Physical Address
                 </h4>
-                <div className="text-sm text-gray-900">
+                <div className="text-xs text-gray-900">
                   {viewingOrg.address_line_1 && <div>{viewingOrg.address_line_1}</div>}
                   {viewingOrg.address_line_2 && <div>{viewingOrg.address_line_2}</div>}
                   {(viewingOrg.city || viewingOrg.province || viewingOrg.postal_code) && (
@@ -425,12 +426,12 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
               {/* Spending Limits */}
               {(viewingOrg.daily_spending_limit || viewingOrg.monthly_spending_limit) && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" />
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <CreditCard className="w-3.5 h-3.5" />
                     Organization Spending Limits
                   </h4>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     {viewingOrg.daily_spending_limit && (
                       <div>
                         <span className="text-gray-600">Daily Limit:</span>
@@ -448,20 +449,20 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
               )}
 
               {/* Contact Persons */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <User className="w-4 h-4" />
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <User className="w-3.5 h-3.5" />
                   Contact Persons
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* Main User */}
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-blue-100">
-                      <User className="w-3.5 h-3.5 text-blue-600" />
+                  <div className="bg-white rounded-lg p-2 border border-blue-200">
+                    <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-blue-100">
+                      <User className="w-3 h-3 text-blue-600" />
                       <h5 className="text-xs font-semibold text-blue-900">Main User / Account Owner</h5>
                     </div>
                     {mainUser ? (
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-1.5 text-xs">
                         <div>
                           <span className="text-gray-600">Name:</span>
                           <span className="ml-2 font-medium text-gray-900">
@@ -492,18 +493,18 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 italic">No main user information on file</div>
+                      <div className="text-xs text-gray-500 italic">No main user information on file</div>
                     )}
                   </div>
 
                   {/* Billing Contact */}
-                  <div className="bg-white rounded-lg p-3 border border-amber-200">
-                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-amber-100">
-                      <Mail className="w-3.5 h-3.5 text-amber-600" />
+                  <div className="bg-white rounded-lg p-2 border border-amber-200">
+                    <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-amber-100">
+                      <Mail className="w-3 h-3 text-amber-600" />
                       <h5 className="text-xs font-semibold text-amber-900">Billing Contact Person</h5>
                     </div>
                     {billingUser ? (
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-1.5 text-xs">
                         <div>
                           <span className="text-gray-600">Name:</span>
                           <span className="ml-2 font-medium text-gray-900">
@@ -534,17 +535,18 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                         )}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 italic">No billing contact information on file</div>
+                      <div className="text-xs text-gray-500 italic">No billing contact information on file</div>
                     )}
                   </div>
                 </div>
               </div>
             </div>
+            </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="p-4 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={() => setViewingOrgId(null)}
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300"
+                className="w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-lg text-sm font-medium hover:bg-gray-300"
               >
                 Close
               </button>
@@ -562,92 +564,94 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             }
           }}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-start gap-3 mb-4">
-              <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Plus className="w-5 h-5 text-blue-600" />
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] flex flex-col">
+            <div className="flex items-start gap-3 p-4 border-b border-gray-200">
+              <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <Plus className="w-4 h-4 text-blue-600" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-base font-semibold text-gray-900">
                   Add Local Account
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs text-gray-600 mt-0.5">
                   Adding <strong>{selectedOrganization.name}</strong> as a client
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Account Number <span className="text-red-600">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={accountNumberInput}
-                  onChange={(e) => setAccountNumberInput(e.target.value)}
-                  placeholder="Enter the account number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  autoFocus
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  The account number this client has in your system
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monthly Spend Limit (Optional)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R</span>
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Account Number <span className="text-red-600">*</span>
+                  </label>
                   <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={accountLimitInput}
-                    onChange={(e) => setAccountLimitInput(e.target.value)}
-                    placeholder="0.00"
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    type="text"
+                    value={accountNumberInput}
+                    onChange={(e) => setAccountNumberInput(e.target.value)}
+                    placeholder="Enter the account number"
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    autoFocus
+                  />
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    The account number this client has in your system
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Monthly Spend Limit (Optional)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">R</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={accountLimitInput}
+                      onChange={(e) => setAccountLimitInput(e.target.value)}
+                      placeholder="0.00"
+                      className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Maximum monthly spending for this client (resets each month)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Notes (Optional)
+                  </label>
+                  <textarea
+                    value={notesInput}
+                    onChange={(e) => setNotesInput(e.target.value)}
+                    placeholder="Add any notes about this account"
+                    rows={2}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm resize-none"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Maximum monthly spending for this client (resets each month)
-                </p>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  value={notesInput}
-                  onChange={(e) => setNotesInput(e.target.value)}
-                  placeholder="Add any notes about this account"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
+                {error && (
+                  <div className="bg-red-50 border border-red-200 rounded p-2">
+                    <p className="text-xs text-red-800">{error}</p>
+                  </div>
+                )}
               </div>
-
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded p-2">
-                  <p className="text-xs text-red-800">{error}</p>
-                </div>
-              )}
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 p-4 border-t border-gray-200 bg-gray-50">
               <button
                 onClick={handleCancelAddModal}
                 disabled={saving === selectedOrganization.id}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-white disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddAccount}
                 disabled={!accountNumberInput.trim() || saving === selectedOrganization.id}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {saving === selectedOrganization.id ? (
                   <>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, DollarSign } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, DollarSign, Download, Send, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -83,6 +83,10 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [viewingOrgId, setViewingOrgId] = useState<string | null>(null);
   const [orgInvoices, setOrgInvoices] = useState<FuelInvoice[]>([]);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [selectedFinancialOrgId, setSelectedFinancialOrgId] = useState<string | null>(null);
+  const [financialInvoices, setFinancialInvoices] = useState<FuelInvoice[]>([]);
+  const [loadingFinancialInvoices, setLoadingFinancialInvoices] = useState(false);
+  const [showFinancialSection, setShowFinancialSection] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -358,6 +362,41 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const handleViewOrganization = (orgId: string) => {
     setViewingOrgId(orgId);
     loadOrganizationInvoices(orgId);
+  };
+
+  const loadFinancialInvoices = async (organizationId: string) => {
+    try {
+      setLoadingFinancialInvoices(true);
+      const { data, error } = await supabase
+        .from('fuel_transaction_invoices')
+        .select('id, invoice_number, invoice_date, period_start, period_end, subtotal, vat_amount, total_amount, payment_status, payment_due_date')
+        .eq('organization_id', organizationId)
+        .eq('garage_id', garageId)
+        .order('invoice_date', { ascending: false });
+
+      if (error) throw error;
+      setFinancialInvoices(data || []);
+    } catch (err: any) {
+      console.error('Error loading financial invoices:', err.message);
+      setFinancialInvoices([]);
+    } finally {
+      setLoadingFinancialInvoices(false);
+    }
+  };
+
+  const handleSelectFinancialOrg = (orgId: string) => {
+    setSelectedFinancialOrgId(orgId);
+    loadFinancialInvoices(orgId);
+  };
+
+  const handleDownloadInvoice = async (invoice: FuelInvoice) => {
+    // TODO: Implement invoice download functionality
+    alert(`Download functionality for invoice ${invoice.invoice_number} will be implemented`);
+  };
+
+  const handleEmailInvoice = async (invoice: FuelInvoice) => {
+    // TODO: Implement invoice email functionality
+    alert(`Email functionality for invoice ${invoice.invoice_number} will be implemented`);
   };
 
   const getOrganizationName = (orgId: string): string => {
@@ -1110,6 +1149,160 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Financial Information Section */}
+          <div className="mt-6">
+            <button
+              onClick={() => setShowFinancialSection(!showFinancialSection)}
+              className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg hover:from-green-100 hover:to-emerald-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-green-700" />
+                <h3 className="text-sm font-semibold text-green-900">Financial Information</h3>
+              </div>
+              {showFinancialSection ? (
+                <ChevronDown className="w-5 h-5 text-green-700" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-green-700" />
+              )}
+            </button>
+
+            {showFinancialSection && (
+              <div className="mt-3 space-y-4">
+                {/* Client Selection */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-2">
+                    Select Client to View Invoices
+                  </label>
+                  <select
+                    value={selectedFinancialOrgId || ''}
+                    onChange={(e) => {
+                      const orgId = e.target.value;
+                      if (orgId) {
+                        handleSelectFinancialOrg(orgId);
+                      } else {
+                        setSelectedFinancialOrgId(null);
+                        setFinancialInvoices([]);
+                      }
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">-- Select a local account client --</option>
+                    {activeAccounts.map((account) => {
+                      const org = organizations.find(o => o.id === account.organization_id);
+                      if (!org) return null;
+                      return (
+                        <option key={account.id} value={org.id}>
+                          {org.name} {account.account_number ? `(Acc: ${account.account_number})` : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                {/* Invoices Display */}
+                {selectedFinancialOrgId && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-gray-900">
+                        Client Invoices
+                      </h4>
+                      {financialInvoices.length > 0 && (
+                        <span className="text-xs text-gray-600">
+                          {financialInvoices.length} invoice{financialInvoices.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    {loadingFinancialInvoices ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                        <span className="ml-2 text-sm text-gray-500">Loading invoices...</span>
+                      </div>
+                    ) : financialInvoices.length > 0 ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {financialInvoices.map((invoice) => (
+                          <div key={invoice.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-green-300 transition-colors">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <FileText className="w-4 h-4 text-gray-600" />
+                                  <span className="text-sm font-semibold text-gray-900">{invoice.invoice_number}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-600">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    {new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}
+                                  </div>
+                                  <div>
+                                    Period: {new Date(invoice.period_start).toLocaleDateString('en-ZA')} - {new Date(invoice.period_end).toLocaleDateString('en-ZA')}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="flex items-center gap-1 justify-end mb-1">
+                                  <DollarSign className="w-4 h-4 text-gray-600" />
+                                  <span className="text-sm font-bold text-gray-900">
+                                    R {invoice.total_amount.toFixed(2)}
+                                  </span>
+                                </div>
+                                <span className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
+                                  invoice.payment_status === 'paid'
+                                    ? 'bg-green-100 text-green-800'
+                                    : invoice.payment_status === 'overdue'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {invoice.payment_status.charAt(0).toUpperCase() + invoice.payment_status.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 mb-3 pt-2 border-t border-gray-200">
+                              <div className="text-xs">
+                                <span className="text-gray-500">Subtotal:</span>
+                                <div className="font-medium text-gray-900">R {invoice.subtotal.toFixed(2)}</div>
+                              </div>
+                              <div className="text-xs">
+                                <span className="text-gray-500">VAT:</span>
+                                <div className="font-medium text-gray-900">R {invoice.vat_amount.toFixed(2)}</div>
+                              </div>
+                              <div className="text-xs">
+                                <span className="text-gray-500">Due Date:</span>
+                                <div className="font-medium text-gray-900">{new Date(invoice.payment_due_date).toLocaleDateString('en-ZA')}</div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                              <button
+                                onClick={() => handleDownloadInvoice(invoice)}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                                Download
+                              </button>
+                              <button
+                                onClick={() => handleEmailInvoice(invoice)}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                              >
+                                <Send className="w-3.5 h-3.5" />
+                                Email
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                        <p className="text-sm text-gray-500">No invoices found for this client</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

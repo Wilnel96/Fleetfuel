@@ -474,12 +474,6 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                             {[mainUser.first_name, mainUser.surname].filter(Boolean).join(' ') || 'Not specified'}
                           </span>
                         </div>
-                        {mainUser.title && (
-                          <div>
-                            <span className="text-gray-600">Title:</span>
-                            <span className="ml-2 font-medium text-gray-900">{mainUser.title}</span>
-                          </div>
-                        )}
                         <div>
                           <span className="text-gray-600">Email:</span>
                           <span className="ml-2 font-medium text-gray-900">{mainUser.email}</span>

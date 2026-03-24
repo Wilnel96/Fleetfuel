@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
       case 'list': {
         const { data, error } = await supabase
           .from('organization_garage_accounts')
-          .select('id, organization_id, is_active, notes, account_number, monthly_spend_limit')
+          .select('id, organization_id, is_active, notes, account_number, monthly_spend_limit, deposit_amount')
           .eq('garage_id', authenticatedGarage.id);
 
         if (error) throw error;

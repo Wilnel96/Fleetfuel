@@ -42,6 +42,7 @@ interface LocalAccount {
   notes: string | null;
   account_number: string | null;
   monthly_spend_limit: number | null;
+  deposit_amount: number | null;
 }
 
 interface GarageLocalAccountsProps {
@@ -61,6 +62,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountNumberInput, setAccountNumberInput] = useState('');
   const [accountLimitInput, setAccountLimitInput] = useState('');
+  const [depositInput, setDepositInput] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -263,6 +265,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
     setEditingAccountId(account.id);
     setAccountNumberInput(account.account_number || '');
     setAccountLimitInput(account.monthly_spend_limit ? account.monthly_spend_limit.toString() : '');
+    setDepositInput(account.deposit_amount ? account.deposit_amount.toString() : '');
   };
 
   const handleSaveAccount = async (accountId: string) => {
@@ -271,6 +274,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setError('');
 
       const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
+      const depositAmount = depositInput.trim() ? parseFloat(depositInput) : null;
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
       const response = await fetch(apiUrl, {
@@ -287,6 +291,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           accountData: {
             account_number: accountNumberInput || null,
             monthly_spend_limit: monthlySpendLimit,
+            deposit_amount: depositAmount,
           },
         }),
       });
@@ -300,6 +305,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setEditingAccountId(null);
       setAccountNumberInput('');
       setAccountLimitInput('');
+      setDepositInput('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -311,6 +317,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
     setEditingAccountId(null);
     setAccountNumberInput('');
     setAccountLimitInput('');
+    setDepositInput('');
   };
 
   const getOrganizationName = (orgId: string): string => {
@@ -790,6 +797,22 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                                 />
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <label className="text-xs font-medium text-gray-700 w-28">Deposit:</label>
+                              <div className="flex-1 relative">
+                                <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">R</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={depositInput}
+                                  onChange={(e) => setDepositInput(e.target.value)}
+                                  placeholder="0.00"
+                                  className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  onClick={(e) => e.stopPropagation()}
+                                />
+                              </div>
+                            </div>
                             <div className="flex items-center gap-2 justify-end">
                               <button
                                 onClick={(e) => {
@@ -835,6 +858,14 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                                     <span className="text-gray-900 font-bold">R {account.monthly_spend_limit.toFixed(2)}</span>
                                   ) : (
                                     <span className="text-gray-500 italic">No limit set</span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-gray-700">
+                                  <span className="font-medium">Deposit: </span>
+                                  {account.deposit_amount ? (
+                                    <span className="text-gray-900 font-bold">R {account.deposit_amount.toFixed(2)}</span>
+                                  ) : (
+                                    <span className="text-gray-500 italic">No deposit</span>
                                   )}
                                 </p>
                                 {account.notes && (

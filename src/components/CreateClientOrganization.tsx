@@ -208,8 +208,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         throw new Error(`An organization with the name "${formData.name}" already exists. Please use a different name.`);
       }
 
-      // Always use billing contact info for the billing_contact_* fields in organizations table
-      // This ensures consistency whether billing user is same as main user or different person
+      // Create the organization (billing user will be stored in organization_users table)
       const { data: newOrg, error: insertError } = await supabase
         .from('organizations')
         .insert({
@@ -218,11 +217,6 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           organization_type: 'client',
           is_management_org: false,
           status: 'active',
-          billing_contact_email: billingContact.email,
-          billing_contact_name: billingContact.name,
-          billing_contact_surname: billingContact.surname,
-          billing_contact_phone_office: billingContact.phone_office || null,
-          billing_contact_phone_mobile: billingContact.phone_mobile || null,
         })
         .select()
         .single();
@@ -243,14 +237,14 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
       // Check if main user and billing user are the same person (same email)
       const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
 
-      // NOTE: The billing contact info is ALWAYS stored in the organizations table (above)
-      // Now we create user(s) in organization_users table:
-      // - If same person: Create 1 user (main user) - they're both main AND billing contact
+      // NOTE: Billing user info is stored ONLY in organization_users table
+      // - If same person: Create 1 user (main user with is_main_user=true)
+      //   They can also be given "Billing User" title if needed
       // - If different: Create 2 users (main user + separate billing user with title "Billing User")
 
       if (isSameUser) {
-        // Create only one user (main user who is also the billing contact)
-        // The trigger will keep organizations.billing_contact_* in sync when this user is updated
+        // Create only one user (main user who is also the billing user)
+        // Give them "Main User" title since they're the primary contact
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {

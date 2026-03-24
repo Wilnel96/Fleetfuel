@@ -17,11 +17,6 @@ interface Organization {
   monthly_spending_limit: number | null;
   daily_spending_limit: number | null;
   parent_org_id: string | null;
-  billing_contact_name: string | null;
-  billing_contact_surname: string | null;
-  billing_contact_email: string | null;
-  billing_contact_phone_mobile: string | null;
-  billing_contact_phone_office: string | null;
 }
 
 interface OrgUser {
@@ -105,8 +100,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           address_line_1, address_line_2, postal_code, country,
           phone_number, company_registration_number,
           monthly_spending_limit, daily_spending_limit,
-          parent_org_id, billing_contact_name, billing_contact_surname,
-          billing_contact_email, billing_contact_phone_mobile, billing_contact_phone_office
+          parent_org_id
         `)
         .eq('organization_type', 'client')
         .order('name');
@@ -586,40 +580,43 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   <div className="bg-white rounded-lg p-2 border border-amber-200">
                     <div className="flex items-center gap-1.5 mb-2 pb-1.5 border-b border-amber-100">
                       <Mail className="w-3 h-3 text-amber-600" />
-                      <h5 className="text-xs font-semibold text-amber-900">Billing Contact Person</h5>
+                      <h5 className="text-xs font-semibold text-amber-900">Billing User</h5>
                     </div>
-                    {(viewingOrg.billing_contact_name || viewingOrg.billing_contact_surname || viewingOrg.billing_contact_email) ? (
-                      <div className="space-y-1.5 text-xs">
-                        {(viewingOrg.billing_contact_name || viewingOrg.billing_contact_surname) && (
-                          <div>
-                            <span className="text-gray-600">Name:</span>
-                            <span className="ml-2 font-medium text-gray-900">
-                              {[viewingOrg.billing_contact_name, viewingOrg.billing_contact_surname].filter(Boolean).join(' ')}
-                            </span>
-                          </div>
-                        )}
-                        {viewingOrg.billing_contact_email && (
-                          <div>
-                            <span className="text-gray-600">Email:</span>
-                            <span className="ml-2 font-medium text-gray-900">{viewingOrg.billing_contact_email}</span>
-                          </div>
-                        )}
-                        {viewingOrg.billing_contact_phone_mobile && (
-                          <div>
-                            <span className="text-gray-600">Mobile:</span>
-                            <span className="ml-2 font-medium text-gray-900">{viewingOrg.billing_contact_phone_mobile}</span>
-                          </div>
-                        )}
-                        {viewingOrg.billing_contact_phone_office && (
-                          <div>
-                            <span className="text-gray-600">Office:</span>
-                            <span className="ml-2 font-medium text-gray-900">{viewingOrg.billing_contact_phone_office}</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-gray-500 italic">No billing contact information on file</div>
-                    )}
+                    {(() => {
+                      const billingUser = organizationUsers[viewingOrg.id]?.find(u => u.title === 'Billing User');
+                      return billingUser ? (
+                        <div className="space-y-1.5 text-xs">
+                          {(billingUser.first_name || billingUser.surname) && (
+                            <div>
+                              <span className="text-gray-600">Name:</span>
+                              <span className="ml-2 font-medium text-gray-900">
+                                {[billingUser.first_name, billingUser.surname].filter(Boolean).join(' ')}
+                              </span>
+                            </div>
+                          )}
+                          {billingUser.email && (
+                            <div>
+                              <span className="text-gray-600">Email:</span>
+                              <span className="ml-2 font-medium text-gray-900">{billingUser.email}</span>
+                            </div>
+                          )}
+                          {billingUser.phone_mobile && (
+                            <div>
+                              <span className="text-gray-600">Mobile:</span>
+                              <span className="ml-2 font-medium text-gray-900">{billingUser.phone_mobile}</span>
+                            </div>
+                          )}
+                          {billingUser.phone_office && (
+                            <div>
+                              <span className="text-gray-600">Office:</span>
+                              <span className="ml-2 font-medium text-gray-900">{billingUser.phone_office}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500 italic">No billing user on file</div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

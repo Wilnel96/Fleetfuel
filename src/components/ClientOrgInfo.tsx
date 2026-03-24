@@ -18,17 +18,17 @@ interface ClientOrganization {
   payment_option: string | null;
   fuel_payment_terms: string | null;
   fuel_payment_interest_rate: number | null;
-  billing_contact_name: string | null;
-  billing_contact_surname: string | null;
-  billing_contact_email: string | null;
-  billing_contact_phone_mobile: string | null;
-  billing_contact_phone_office: string | null;
   phone_number: string | null;
   main_user_name?: string | null;
   main_user_surname?: string | null;
   main_user_email?: string | null;
   main_user_phone_office?: string | null;
   main_user_phone_mobile?: string | null;
+  billing_user_name?: string | null;
+  billing_user_surname?: string | null;
+  billing_user_email?: string | null;
+  billing_user_phone_office?: string | null;
+  billing_user_phone_mobile?: string | null;
 }
 
 interface ClientOrgInfoProps {
@@ -59,9 +59,9 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
       const filtered = organizations.filter((org) =>
         org.name.toLowerCase().includes(term) ||
         (org.company_registration_number || '').toLowerCase().includes(term) ||
-        (org.billing_contact_email || '').toLowerCase().includes(term) ||
-        (org.billing_contact_name || '').toLowerCase().includes(term) ||
-        (org.billing_contact_surname || '').toLowerCase().includes(term)
+        (org.billing_user_email || '').toLowerCase().includes(term) ||
+        (org.billing_user_name || '').toLowerCase().includes(term) ||
+        (org.billing_user_surname || '').toLowerCase().includes(term)
       );
       setFilteredOrganizations(filtered);
     }
@@ -80,13 +80,20 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
 
       if (orgsError) throw orgsError;
 
-      // Fetch main user info for each organization
-      const orgsWithMainUser = await Promise.all((orgs || []).map(async (org) => {
+      // Fetch main user and billing user info for each organization
+      const orgsWithUsers = await Promise.all((orgs || []).map(async (org) => {
         const { data: mainUser } = await supabase
           .from('organization_users')
           .select('first_name, surname, email, phone_office, phone_mobile')
           .eq('organization_id', org.id)
           .eq('is_main_user', true)
+          .maybeSingle();
+
+        const { data: billingUser } = await supabase
+          .from('organization_users')
+          .select('first_name, surname, email, phone_office, phone_mobile')
+          .eq('organization_id', org.id)
+          .eq('title', 'Billing User')
           .maybeSingle();
 
         return {
@@ -96,11 +103,16 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
           main_user_email: mainUser?.email || null,
           main_user_phone_office: mainUser?.phone_office || null,
           main_user_phone_mobile: mainUser?.phone_mobile || null,
+          billing_user_name: billingUser?.first_name || null,
+          billing_user_surname: billingUser?.surname || null,
+          billing_user_email: billingUser?.email || null,
+          billing_user_phone_office: billingUser?.phone_office || null,
+          billing_user_phone_mobile: billingUser?.phone_mobile || null,
         };
       }));
 
-      setOrganizations(orgsWithMainUser);
-      setFilteredOrganizations(orgsWithMainUser);
+      setOrganizations(orgsWithUsers);
+      setFilteredOrganizations(orgsWithUsers);
 
       // Check card configuration for organizations with Card Payment option
       if (orgs) {
@@ -171,11 +183,6 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
           payment_option: editForm.payment_option || null,
           fuel_payment_terms: editForm.payment_option === 'EFT Payment' ? (editForm.fuel_payment_terms || null) : null,
           fuel_payment_interest_rate: editForm.payment_option === 'EFT Payment' && editForm.fuel_payment_terms !== 'Same Day' ? editForm.fuel_payment_interest_rate : null,
-          billing_contact_name: editForm.billing_contact_name,
-          billing_contact_surname: editForm.billing_contact_surname,
-          billing_contact_email: editForm.billing_contact_email,
-          billing_contact_phone_mobile: editForm.billing_contact_phone_mobile,
-          billing_contact_phone_office: editForm.billing_contact_phone_office,
           phone_number: editForm.phone_number,
         })
         .eq('id', editingId);
@@ -196,7 +203,21 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
 
       if (mainUserError) throw mainUserError;
 
-      setSuccess('Organization and main user updated successfully');
+      // Update billing user information in organization_users table
+      const { error: billingUserError } = await supabase
+        .from('organization_users')
+        .update({
+          first_name: editForm.billing_user_name,
+          surname: editForm.billing_user_surname,
+          phone_office: editForm.billing_user_phone_office || null,
+          phone_mobile: editForm.billing_user_phone_mobile || null,
+        })
+        .eq('organization_id', editingId)
+        .eq('title', 'Billing User');
+
+      if (billingUserError) throw billingUserError;
+
+      setSuccess('Organization, main user, and billing user updated successfully');
       setTimeout(() => setSuccess(''), 3000);
       const savedId = editingId;
       setEditingId(null);
@@ -457,14 +478,14 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                 </div>
 
                 <div className="border-t pt-2 mt-2">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing Contact Person</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing User</h4>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">First Name</label>
                       <input
                         type="text"
-                        value={editForm.billing_contact_name || ''}
-                        onChange={(e) => setEditForm({ ...editForm, billing_contact_name: e.target.value })}
+                        value={editForm.billing_user_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_user_name: e.target.value })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       />
                     </div>
@@ -472,8 +493,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Surname</label>
                       <input
                         type="text"
-                        value={editForm.billing_contact_surname || ''}
-                        onChange={(e) => setEditForm({ ...editForm, billing_contact_surname: e.target.value })}
+                        value={editForm.billing_user_surname || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_user_surname: e.target.value })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       />
                     </div>
@@ -481,18 +502,20 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Email Address</label>
                       <input
                         type="email"
-                        value={editForm.billing_contact_email || ''}
-                        onChange={(e) => setEditForm({ ...editForm, billing_contact_email: e.target.value })}
+                        value={editForm.billing_user_email || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_user_email: e.target.value })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                         placeholder="billing@example.com"
+                        disabled
                       />
+                      <p className="text-xs text-gray-500 mt-0.5">Email cannot be changed</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Mobile Phone</label>
                       <input
                         type="text"
-                        value={editForm.billing_contact_phone_mobile || ''}
-                        onChange={(e) => setEditForm({ ...editForm, billing_contact_phone_mobile: e.target.value })}
+                        value={editForm.billing_user_phone_mobile || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_user_phone_mobile: e.target.value })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       />
                     </div>
@@ -500,8 +523,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Office Phone</label>
                       <input
                         type="text"
-                        value={editForm.billing_contact_phone_office || ''}
-                        onChange={(e) => setEditForm({ ...editForm, billing_contact_phone_office: e.target.value })}
+                        value={editForm.billing_user_phone_office || ''}
+                        onChange={(e) => setEditForm({ ...editForm, billing_user_phone_office: e.target.value })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       />
                     </div>
@@ -728,27 +751,27 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     </div>
 
                     <div className="col-span-2 border-t pt-3 mt-3">
-                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing Contact Person</h4>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing User</h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">First Name</label>
-                          <p className="text-gray-900">{org.billing_contact_name || 'N/A'}</p>
+                          <p className="text-gray-900">{org.billing_user_name || 'N/A'}</p>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">Surname</label>
-                          <p className="text-gray-900">{org.billing_contact_surname || 'N/A'}</p>
+                          <p className="text-gray-900">{org.billing_user_surname || 'N/A'}</p>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">Email Address</label>
-                          <p className="text-gray-900">{org.billing_contact_email || 'N/A'}</p>
+                          <p className="text-gray-900">{org.billing_user_email || 'N/A'}</p>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">Mobile Phone</label>
-                          <p className="text-gray-900">{org.billing_contact_phone_mobile || 'N/A'}</p>
+                          <p className="text-gray-900">{org.billing_user_phone_mobile || 'N/A'}</p>
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">Office Phone</label>
-                          <p className="text-gray-900">{org.billing_contact_phone_office || 'N/A'}</p>
+                          <p className="text-gray-900">{org.billing_user_phone_office || 'N/A'}</p>
                         </div>
                       </div>
                     </div>

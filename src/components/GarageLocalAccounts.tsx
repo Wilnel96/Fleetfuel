@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, DollarSign } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -45,6 +45,19 @@ interface LocalAccount {
   deposit_amount: number | null;
 }
 
+interface FuelInvoice {
+  id: string;
+  invoice_number: string;
+  invoice_date: string;
+  period_start: string;
+  period_end: string;
+  subtotal: number;
+  vat_amount: number;
+  total_amount: number;
+  payment_status: string;
+  payment_due_date: string;
+}
+
 interface GarageLocalAccountsProps {
   garageId: string;
   garageName: string;
@@ -68,6 +81,8 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [searchTerm, setSearchTerm] = useState('');
   const [notesInput, setNotesInput] = useState('');
   const [viewingOrgId, setViewingOrgId] = useState<string | null>(null);
+  const [orgInvoices, setOrgInvoices] = useState<FuelInvoice[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -320,6 +335,31 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
     setDepositInput('');
   };
 
+  const loadOrganizationInvoices = async (organizationId: string) => {
+    try {
+      setLoadingInvoices(true);
+      const { data, error } = await supabase
+        .from('fuel_transaction_invoices')
+        .select('id, invoice_number, invoice_date, period_start, period_end, subtotal, vat_amount, total_amount, payment_status, payment_due_date')
+        .eq('organization_id', organizationId)
+        .eq('garage_id', garageId)
+        .order('invoice_date', { ascending: false });
+
+      if (error) throw error;
+      setOrgInvoices(data || []);
+    } catch (err: any) {
+      console.error('Error loading invoices:', err.message);
+      setOrgInvoices([]);
+    } finally {
+      setLoadingInvoices(false);
+    }
+  };
+
+  const handleViewOrganization = (orgId: string) => {
+    setViewingOrgId(orgId);
+    loadOrganizationInvoices(orgId);
+  };
+
   const getOrganizationName = (orgId: string): string => {
     const org = organizations.find(o => o.id === orgId);
     return org ? org.name : 'Unknown Organization';
@@ -544,6 +584,86 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   </div>
                 </div>
               </div>
+
+              {/* Fuel Invoices */}
+              <div className="bg-gray-50 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <FileText className="w-3.5 h-3.5" />
+                  Fuel Transaction Invoices
+                </h4>
+                {loadingInvoices ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                    <span className="ml-2 text-xs text-gray-500">Loading invoices...</span>
+                  </div>
+                ) : orgInvoices.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {orgInvoices.map((invoice) => (
+                      <div key={invoice.id} className="bg-white rounded-lg p-2 border border-gray-200">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-3.5 h-3.5 text-gray-600" />
+                              <span className="text-xs font-semibold text-gray-900">{invoice.invoice_number}</span>
+                            </div>
+                            <div className="flex items-center gap-1 mt-1">
+                              <Calendar className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs text-gray-600">
+                                {new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 justify-end">
+                              <DollarSign className="w-3 h-3 text-gray-600" />
+                              <span className="text-xs font-bold text-gray-900">
+                                R {invoice.total_amount.toFixed(2)}
+                              </span>
+                            </div>
+                            <span className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
+                              invoice.payment_status === 'paid'
+                                ? 'bg-green-100 text-green-800'
+                                : invoice.payment_status === 'overdue'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {invoice.payment_status.charAt(0).toUpperCase() + invoice.payment_status.slice(1)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 space-y-0.5 pt-2 border-t border-gray-100">
+                          <div>
+                            <span className="text-gray-500">Period:</span>
+                            <span className="ml-1">
+                              {new Date(invoice.period_start).toLocaleDateString('en-ZA')} - {new Date(invoice.period_end).toLocaleDateString('en-ZA')}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Due Date:</span>
+                            <span className="ml-1">{new Date(invoice.payment_due_date).toLocaleDateString('en-ZA')}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 pt-1">
+                            <div>
+                              <span className="text-gray-500">Subtotal:</span>
+                              <span className="ml-1 font-medium">R {invoice.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">VAT:</span>
+                              <span className="ml-1 font-medium">R {invoice.vat_amount.toFixed(2)}</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Total:</span>
+                              <span className="ml-1 font-bold">R {invoice.total_amount.toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-500 italic py-2">No invoices found for this organization</div>
+                )}
+              </div>
             </div>
             </div>
 
@@ -739,7 +859,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setViewingOrgId(org.id);
+                                  handleViewOrganization(org.id);
                                 }}
                                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
                               >

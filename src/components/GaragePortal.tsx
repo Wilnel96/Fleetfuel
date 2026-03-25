@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName, sortFuelTypes, AVAILABLE_FUEL_TYPES } from '../lib/fuelTypes';
-import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2 } from 'lucide-react';
+import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2, Building2, Users, Fuel, ShoppingBag, Home, ArrowLeft } from 'lucide-react';
 import GarageContactManagement from './GarageContactManagement';
 import GarageLocalAccounts from './GarageLocalAccounts';
 
@@ -49,7 +49,10 @@ interface GarageData {
   other_offerings?: OtherOfferings;
 }
 
+type MenuView = 'menu' | 'garage-info' | 'fuel-prices' | 'contact-management' | 'local-accounts' | 'other-offerings';
+
 export default function GaragePortal({ garageId, garageName, garageEmail, garagePassword, onLogout }: GaragePortalProps) {
+  const [currentView, setCurrentView] = useState<MenuView>('menu');
   const [garage, setGarage] = useState<GarageData | null>(null);
   const [fuelTypes, setFuelTypes] = useState<string[]>([]);
   const [fuelPrices, setFuelPrices] = useState<Record<string, number>>({});
@@ -215,12 +218,28 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
+              {currentView !== 'menu' && (
+                <button
+                  onClick={() => setCurrentView('menu')}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Back to Menu"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+              )}
               <div className="bg-blue-600 p-2 rounded-lg">
                 <Store className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{garageName}</h1>
-                <p className="text-xs text-gray-600">Garage Portal</p>
+                <p className="text-xs text-gray-600">
+                  {currentView === 'menu' ? 'Garage Portal' :
+                   currentView === 'garage-info' ? 'Garage Organization Information' :
+                   currentView === 'fuel-prices' ? 'Fuel Prices' :
+                   currentView === 'contact-management' ? 'Contact Management' :
+                   currentView === 'local-accounts' ? 'Local Account Clients' :
+                   'Other Offerings'}
+                </p>
               </div>
             </div>
             <button
@@ -235,8 +254,95 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {currentView === 'menu' && (
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Your Garage Portal</h2>
+              <p className="text-gray-600">Select an option below to manage your garage</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <button
+                onClick={() => setCurrentView('garage-info')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                    <Building2 className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Garage Organization Information</h3>
+                    <p className="text-sm text-gray-600">View and update your garage location, contact details, and business information</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('fuel-prices')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-green-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-600 transition-colors">
+                    <Fuel className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Fuel Prices</h3>
+                    <p className="text-sm text-gray-600">Manage your fuel types and update pricing information</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('contact-management')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-purple-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-600 transition-colors">
+                    <Users className="w-6 h-6 text-purple-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Contact Management</h3>
+                    <p className="text-sm text-gray-600">Manage your garage contact persons and their information</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('local-accounts')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-amber-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-600 transition-colors">
+                    <Building2 className="w-6 h-6 text-amber-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Local Account Clients</h3>
+                    <p className="text-sm text-gray-600">Manage local account client organizations and their account settings</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('other-offerings')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-teal-500 hover:shadow-md transition-all text-left group md:col-span-2"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center group-hover:bg-teal-600 transition-colors">
+                    <ShoppingBag className="w-6 h-6 text-teal-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Other Offerings</h3>
+                    <p className="text-sm text-gray-600">Manage additional services like convenience stores, takeaways, and other offerings</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {currentView === 'garage-info' && (
+          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Garage Information</h2>
 
             <div className="space-y-4">
@@ -264,7 +370,11 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
               )}
             </div>
           </div>
+        </div>
+        )}
 
+        {currentView === 'fuel-prices' && (
+          <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Fuel Types & Prices Management</h2>
 
@@ -366,20 +476,30 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
               </div>
             </div>
           </div>
+          </div>
+        )}
 
+        {currentView === 'contact-management' && (
+          <div className="max-w-4xl mx-auto">
           <GarageContactManagement
             contacts={contactPersons}
             onUpdate={setContactPersons}
           />
+          </div>
+        )}
 
+        {currentView === 'local-accounts' && (
           <GarageLocalAccounts
             garageId={garageId}
             garageName={garageName}
             garageEmail={garageEmail}
             garagePassword={garagePassword}
           />
+        )}
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
+        {currentView === 'other-offerings' && (
+          <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Other Offerings</h2>
             <p className="text-sm text-gray-600 mb-4">
               Select the additional services and products offered at your location
@@ -601,9 +721,11 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
               </ul>
             </div>
           </div>
-        </div>
+          </div>
+        )}
       </div>
 
+      {currentView !== 'menu' && currentView !== 'local-accounts' && (
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5">
           <div className="flex items-center justify-between gap-4">
@@ -642,6 +764,7 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }

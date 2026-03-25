@@ -418,6 +418,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const viewingOrg = viewingOrgId ? organizations.find(o => o.id === viewingOrgId) : null;
   const viewingOrgUsers = viewingOrgId ? organizationUsers[viewingOrgId] || [] : [];
   const mainUser = viewingOrgUsers.find(u => u.is_main_user);
+  const viewingAccount = viewingOrgId ? localAccounts.find(a => a.organization_id === viewingOrgId) : null;
 
   return (
     <>
@@ -508,6 +509,54 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   )}
                 </div>
               </div>
+
+              {/* Local Account Details */}
+              {viewingAccount && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-200">
+                  <h4 className="text-xs font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                    <CreditCard className="w-3.5 h-3.5" />
+                    Local Account Details
+                  </h4>
+                  <div className="space-y-2 text-xs">
+                    <div className="bg-white rounded p-2">
+                      <span className="text-gray-600">Account Number:</span>
+                      <span className="ml-2 font-bold text-gray-900">
+                        {viewingAccount.account_number || <span className="text-red-600 italic">Not set - Required!</span>}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white rounded p-2">
+                        <span className="text-gray-600">Monthly Spend Limit:</span>
+                        <div className="font-medium text-gray-900 mt-0.5">
+                          {viewingAccount.monthly_spend_limit ? `R ${viewingAccount.monthly_spend_limit.toFixed(2)}` : (
+                            <span className="text-gray-500 italic">No limit</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="bg-white rounded p-2">
+                        <span className="text-gray-600">Deposit:</span>
+                        <div className="font-bold text-gray-900 mt-0.5">
+                          {viewingAccount.deposit_amount ? `R ${viewingAccount.deposit_amount.toFixed(2)}` : (
+                            <span className="text-gray-500 italic">No deposit</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {viewingAccount.notes && (
+                      <div className="bg-white rounded p-2">
+                        <span className="text-gray-600">Notes:</span>
+                        <div className="text-gray-900 mt-0.5">{viewingAccount.notes}</div>
+                      </div>
+                    )}
+                    <div className="bg-white rounded p-2">
+                      <span className="text-gray-600">Account Status:</span>
+                      <span className={`ml-2 font-medium ${viewingAccount.is_active ? 'text-green-700' : 'text-red-700'}`}>
+                        {viewingAccount.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Spending Limits */}
               {(viewingOrg.daily_spending_limit || viewingOrg.monthly_spending_limit) && (

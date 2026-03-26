@@ -834,7 +834,6 @@ export default function InvoiceManagement() {
           </div>
         )}
 
-      <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="p-4 border-b border-gray-200">
           <div className="flex flex-col md:flex-row gap-4">
@@ -1098,7 +1097,6 @@ export default function InvoiceManagement() {
           </div>
         </div>
       )}
-      </>
       </div>
     );
   }

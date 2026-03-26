@@ -34,6 +34,7 @@ import BackupManagement from './components/BackupManagement';
 import ClientInvoices from './components/ClientInvoices';
 import InvoiceManagement from './components/InvoiceManagement';
 import ClientFuelInvoices from './components/ClientFuelInvoices';
+import AdminPasswordReset from './components/AdminPasswordReset';
 import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, CreditCard as Edit3, ArrowLeft } from 'lucide-react';
 import { DriverData } from './components/DriverAuth';
 
@@ -54,6 +55,7 @@ function App() {
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [showPortalSelection, setShowPortalSelection] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [userRole, setUserRole] = useState<string>('admin');
   const [paymentOption, setPaymentOption] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string>('');
@@ -565,13 +567,20 @@ function App() {
     );
   }
 
+  if (showPasswordReset) {
+    return <AdminPasswordReset />;
+  }
+
   if (userMode === 'admin' && !session && !showPortalSelection && !showSignup) {
-    return <Auth onBack={() => {
-      setUserMode(null);
-      setClientPortalType(null);
-      setShowModeSelection(true);
-      setShowPortalSelection(false);
-    }} />;
+    return <Auth
+      onBack={() => {
+        setUserMode(null);
+        setClientPortalType(null);
+        setShowModeSelection(true);
+        setShowPortalSelection(false);
+      }}
+      onPasswordReset={() => setShowPasswordReset(true)}
+    />;
   }
 
   if (userMode === 'admin' && session) {

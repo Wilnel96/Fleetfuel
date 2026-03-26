@@ -7,8 +7,10 @@ const corsHeaders = {
 };
 
 interface UpdatePasswordRequest {
-  user_id: string;
+  user_id?: string;
+  email?: string;
   new_password: string;
+  newPassword?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -24,7 +26,66 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get the authenticated user
+    // Parse request body
+    const body: UpdatePasswordRequest = await req.json();
+    const new_password = body.new_password || body.newPassword;
+
+    if (!new_password) {
+      throw new Error('New password is required');
+    }
+
+    if (new_password.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
+
+    // If email is provided (public password reset without auth)
+    if (body.email) {
+      // Find user by email
+      const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+
+      if (listError) {
+        throw new Error('Failed to find user');
+      }
+
+      const targetUser = users.find(u => u.email === body.email);
+
+      if (!targetUser) {
+        throw new Error('User not found');
+      }
+
+      // Update the user's password
+      const { error: updateError } = await supabase.auth.admin.updateUserById(
+        targetUser.id,
+        { password: new_password }
+      );
+
+      if (updateError) {
+        console.error('Failed to update password:', updateError);
+        throw new Error(`Failed to update password: ${updateError.message}`);
+      }
+
+      // Also update the password in organization_users table
+      await supabase
+        .from('organization_users')
+        .update({ password: new_password })
+        .eq('user_id', targetUser.id);
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Password updated successfully'
+        }),
+        {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json',
+          },
+          status: 200,
+        }
+      );
+    }
+
+    // Otherwise, use authenticated flow with user_id
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
@@ -49,9 +110,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const isSuperAdmin = profile.role === 'super_admin';
-
-    // Parse request body ONCE
-    const { user_id, new_password }: UpdatePasswordRequest = await req.json();
+    const user_id = body.user_id;
 
     // If not super admin, check if they're a main user or have manage_users permission
     if (!isSuperAdmin) {
@@ -78,12 +137,8 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    if (!user_id || !new_password) {
-      throw new Error('User ID and new password are required');
-    }
-
-    if (new_password.length < 6) {
-      throw new Error('Password must be at least 6 characters long');
+    if (!user_id) {
+      throw new Error('User ID is required');
     }
 
     // Update the user's password
@@ -109,8 +164,8 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Password updated successfully'
       }),
       {
@@ -124,7 +179,10 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Error updating password:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({
+        success: false,
+        error: error.message
+      }),
       {
         headers: {
           ...corsHeaders,

@@ -5,9 +5,10 @@ import { Fuel, AlertCircle, ArrowLeft } from 'lucide-react';
 interface AuthProps {
   onBack?: () => void;
   onSignup?: () => void;
+  onPasswordReset?: () => void;
 }
 
-export default function Auth({ onBack, onSignup }: AuthProps = {}) {
+export default function Auth({ onBack, onSignup, onPasswordReset }: AuthProps = {}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -144,6 +145,18 @@ export default function Auth({ onBack, onSignup }: AuthProps = {}) {
           >
             {loading ? 'Please wait...' : 'Sign In'}
           </button>
+
+          {onPasswordReset && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={onPasswordReset}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Forgot Password?
+              </button>
+            </div>
+          )}
 
           {onSignup && (
             <div className="mt-4 pt-4 border-t border-gray-200">

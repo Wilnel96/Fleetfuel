@@ -162,8 +162,8 @@ export default function Auth({ onBack, onSignup }: AuthProps = {}) {
 
           {!onSignup && (
             <div className="text-center text-sm text-gray-600 mt-4">
-              <p>Need access?</p>
-              <p className="text-xs text-gray-500 mt-1">Contact your management company to set up an account</p>
+              <p>Need an Account?</p>
+              <p className="text-xs text-gray-500 mt-1">Go to Client Portal to create your account</p>
             </div>
           )}
         </form>

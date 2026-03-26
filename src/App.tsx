@@ -571,8 +571,6 @@ function App() {
       setClientPortalType(null);
       setShowModeSelection(true);
       setShowPortalSelection(false);
-    }} onSignup={() => {
-      setShowSignup(true);
     }} />;
   }
 

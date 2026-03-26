@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
 import { KeyRound, Mail, Lock, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function AdminPasswordReset() {
@@ -26,11 +25,25 @@ export default function AdminPasswordReset() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('update-user-password', {
-        body: { email, newPassword }
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user-password`;
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          email,
+          newPassword
+        })
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update password');
+      }
 
       if (data.success) {
         setMessage({ type: 'success', text: 'Password updated successfully! You can now log in with your new password.' });
@@ -41,6 +54,7 @@ export default function AdminPasswordReset() {
         setMessage({ type: 'error', text: data.error || 'Failed to update password' });
       }
     } catch (error: any) {
+      console.error('Password reset error:', error);
       setMessage({ type: 'error', text: error.message || 'An error occurred' });
     } finally {
       setLoading(false);

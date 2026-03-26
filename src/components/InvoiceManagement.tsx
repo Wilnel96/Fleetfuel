@@ -332,7 +332,14 @@ export default function InvoiceManagement() {
         }),
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Invoice generation failed:', errorText);
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
+      }
+
       const result = await response.json();
+      console.log('Invoice generation result:', result);
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to generate invoices');
@@ -341,6 +348,7 @@ export default function InvoiceManagement() {
       setGenerationResult(result);
       await loadInvoices();
     } catch (err: any) {
+      console.error('Invoice generation error:', err);
       setError('Failed to generate invoices: ' + err.message);
     } finally {
       setGenerating(false);
@@ -1030,6 +1038,15 @@ export default function InvoiceManagement() {
                 </div>
               ) : (
                 <>
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center gap-3 text-red-800">
+                        <AlertCircle className="w-5 h-5" />
+                        <span className="text-sm">{error}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Billing Period Start
@@ -1056,7 +1073,12 @@ export default function InvoiceManagement() {
 
                   <div className="flex gap-3">
                     <button
-                      onClick={() => setShowGenerateModal(false)}
+                      onClick={() => {
+                        setShowGenerateModal(false);
+                        setError('');
+                        setBillingPeriodStart('');
+                        setBillingPeriodEnd('');
+                      }}
                       className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                       disabled={generating}
                     >

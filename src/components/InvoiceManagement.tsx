@@ -745,12 +745,12 @@ export default function InvoiceManagement() {
   }
 
   if (currentView === 'menu') {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-gray-700" />
-          <h1 className="text-xl font-bold text-gray-900">Invoices</h1>
-        </div>
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <DollarSign className="w-6 h-6 text-gray-700" />
+            <h1 className="text-xl font-bold text-gray-900">Invoices</h1>
+          </div>
 
         <div className="space-y-2">
           <button

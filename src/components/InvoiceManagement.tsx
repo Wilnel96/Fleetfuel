@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft, Search } from 'lucide-react';
+import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft, Search, CreditCard } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import BulkInvoicePayment from './BulkInvoicePayment';
 
 interface Invoice {
   id: string;
@@ -53,7 +54,7 @@ interface ManagementOrganization {
 }
 
 export default function InvoiceManagement() {
-  const [currentView, setCurrentView] = useState<'menu' | 'fee' | 'fuel'>('menu');
+  const [currentView, setCurrentView] = useState<'menu' | 'fee' | 'fuel' | 'bulk-payment'>('menu');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -382,15 +383,9 @@ export default function InvoiceManagement() {
 
       if (updateError) throw updateError;
 
+      // Close the detail view and refresh the list
+      setSelectedInvoice(null);
       await loadInvoices();
-
-      // Refresh the selected invoice to show updated status
-      if (selectedInvoice) {
-        const updatedInvoice = invoices.find(inv => inv.id === invoiceId);
-        if (updatedInvoice) {
-          await viewInvoiceDetails(updatedInvoice);
-        }
-      }
     } catch (err: any) {
       setError('Failed to mark invoice as paid: ' + err.message);
     }
@@ -782,9 +777,28 @@ export default function InvoiceManagement() {
               </div>
             </div>
           </button>
+
+          <button
+            onClick={() => setCurrentView('bulk-payment')}
+            className="w-full bg-white hover:bg-gray-50 border border-green-200 rounded-lg p-4 text-left transition-colors border-2"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <CreditCard className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Bulk Invoice Payment</h3>
+                <p className="text-sm text-gray-600">Mark multiple invoices as paid at once</p>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
     );
+  }
+
+  if (currentView === 'bulk-payment') {
+    return <BulkInvoicePayment onBack={() => setCurrentView('menu')} />;
   }
 
   if (currentView === 'fee') {
@@ -806,10 +820,17 @@ export default function InvoiceManagement() {
               <ArrowLeft className="w-4 h-4" />
               Back
             </button>
+            <button
+              onClick={() => setCurrentView('bulk-payment')}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <CreditCard className="w-4 h-4" />
+              Bulk Payment
+            </button>
             {filteredInvoices.length > 0 && (
               <button
                 onClick={exportAllInvoicesToCSV}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                className="flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 Export All to CSV

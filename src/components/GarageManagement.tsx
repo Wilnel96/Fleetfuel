@@ -462,6 +462,18 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                   ))}
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Select fuel types and set their prices per liter</p>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price Zone</label>
+                  <input
+                    type="text"
+                    value={formData.price_zone}
+                    onChange={(e) => setFormData({ ...formData, price_zone: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
+                    placeholder="e.g., Zone 1, Zone 2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Specify the price zone for this garage location</p>
+                </div>
               </div>
 
               <div className="border-t pt-4">
@@ -946,17 +958,6 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                     onChange={(e) => setFormData({ ...formData, commission_rate: parseFloat(e.target.value) })}
                     className="w-full border border-gray-300 rounded-lg px-4 py-2"
                     placeholder="Optional"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price Zone</label>
-                  <input
-                    type="text"
-                    value={formData.price_zone}
-                    onChange={(e) => setFormData({ ...formData, price_zone: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2"
-                    placeholder="e.g., Zone 1, Zone 2"
                   />
                 </div>
 

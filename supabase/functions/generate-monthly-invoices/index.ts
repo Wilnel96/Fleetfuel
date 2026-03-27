@@ -55,12 +55,12 @@ Deno.serve(async (req: Request) => {
 
     const VAT_RATE = 0.15;
 
-    // Get all client organizations (not management org, not super admin org)
+    // Get all client organizations (not management org)
     const { data: organizations, error: orgError } = await supabase
       .from('organizations')
       .select('id, name, monthly_fee_per_vehicle, parent_org_id, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
       .eq('status', 'active')
-      .not('parent_org_id', 'is', null);
+      .eq('organization_type', 'client');
 
     if (orgError) throw orgError;
 

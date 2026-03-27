@@ -1099,6 +1099,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => setSelectedGarage(null)}
                     className="text-gray-400 hover:text-gray-600"
                   >
@@ -1108,6 +1109,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
 
                 <div className="flex gap-2 mb-6 pb-6 border-b border-gray-200">
                   <button
+                    type="button"
                     onClick={() => handleEdit(selectedGarage)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
@@ -1115,6 +1117,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                     Edit
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(selectedGarage.id)}
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                   >
@@ -1127,7 +1130,10 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                   <div>
                     <h3 className="text-sm font-semibold text-gray-700 mb-2">Location</h3>
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         const fullAddress = [
                           selectedGarage.address_line_1,
                           selectedGarage.address_line_2,

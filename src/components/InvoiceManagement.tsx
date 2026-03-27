@@ -1003,8 +1003,10 @@ export default function InvoiceManagement() {
                       Invoices Generated Successfully
                     </div>
                     <div className="text-sm text-green-700 space-y-1">
-                      <p>Billing Period: {formatDate(generationResult.billing_period.start)} - {formatDate(generationResult.billing_period.end)}</p>
-                      <p>Invoices Created: {generationResult.invoices_generated}</p>
+                      {generationResult.billing_period && (
+                        <p>Billing Period: {formatDate(generationResult.billing_period.start)} - {formatDate(generationResult.billing_period.end)}</p>
+                      )}
+                      <p>Invoices Created: {generationResult.invoices_generated || 0}</p>
                     </div>
                   </div>
 

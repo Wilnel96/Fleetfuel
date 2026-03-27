@@ -100,21 +100,21 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
       const term = searchTerm.toLowerCase();
       const filtered = garages.filter((garage) => {
         const contactMatch = garage.contact_persons?.some(contact =>
-          contact.name.toLowerCase().includes(term) ||
-          contact.surname.toLowerCase().includes(term) ||
-          contact.email.toLowerCase().includes(term) ||
-          contact.mobile_phone.toLowerCase().includes(term) ||
-          contact.phone.toLowerCase().includes(term)
+          contact.name?.toLowerCase().includes(term) ||
+          contact.surname?.toLowerCase().includes(term) ||
+          contact.email?.toLowerCase().includes(term) ||
+          contact.mobile_phone?.toLowerCase().includes(term) ||
+          contact.phone?.toLowerCase().includes(term)
         );
 
-        return garage.name.toLowerCase().includes(term) ||
-          garage.address_line_1.toLowerCase().includes(term) ||
-          (garage.address_line_2 && garage.address_line_2.toLowerCase().includes(term)) ||
-          garage.city.toLowerCase().includes(term) ||
-          (garage.province && garage.province.toLowerCase().includes(term)) ||
-          (garage.postal_code && garage.postal_code.toLowerCase().includes(term)) ||
-          garage.bank_name.toLowerCase().includes(term) ||
-          garage.account_number.toLowerCase().includes(term) ||
+        return garage.name?.toLowerCase().includes(term) ||
+          garage.address_line_1?.toLowerCase().includes(term) ||
+          garage.address_line_2?.toLowerCase().includes(term) ||
+          garage.city?.toLowerCase().includes(term) ||
+          garage.province?.toLowerCase().includes(term) ||
+          garage.postal_code?.toLowerCase().includes(term) ||
+          garage.bank_name?.toLowerCase().includes(term) ||
+          garage.account_number?.toLowerCase().includes(term) ||
           contactMatch;
       });
       setFilteredGarages(filtered);

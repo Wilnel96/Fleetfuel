@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, Edit2, Trash2, Star, X, Check, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, CreditCard as Edit2, Trash2, Star, X, Check, Eye, EyeOff } from 'lucide-react';
 
 interface ContactPerson {
   name: string;
@@ -116,7 +116,9 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-gray-900">Contact Persons</h2>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Contact Persons <span className="text-gray-400 text-sm font-normal">(optional)</span>
+        </h2>
         <button
           type="button"
           onClick={() => setAddingNew(true)}

@@ -141,12 +141,6 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
         return;
       }
 
-      if (!formData.contact_persons || formData.contact_persons.length === 0) {
-        alert('At least one contact person is required');
-        setLoading(false);
-        return;
-      }
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 

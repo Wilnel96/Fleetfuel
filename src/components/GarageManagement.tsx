@@ -315,6 +315,14 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
   };
 
   const openAddressInMaps = () => {
+    // If coordinates exist, use them for better accuracy
+    if (formData.latitude && formData.longitude) {
+      const coordsQuery = `${formData.latitude},${formData.longitude}`;
+      window.open(`https://www.google.com/maps/search/?api=1&query=${coordsQuery}`, '_blank');
+      return;
+    }
+
+    // Otherwise, use the address
     const addressParts = [
       formData.address_line_1,
       formData.address_line_2,
@@ -807,7 +815,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                         <button
                           type="button"
                           onClick={openAddressInMaps}
-                          disabled={!formData.address_line_1 || !formData.city}
+                          disabled={(!formData.address_line_1 && !formData.city) && (!formData.latitude || !formData.longitude)}
                           className="flex items-center gap-2 px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
                           <MapPin className="w-4 h-4" />
@@ -843,7 +851,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                     </div>
 
                     <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Click "Auto-fill Coordinates" to automatically get location coordinates from the address, or "View on Map" to verify the location.
+                      Click "Auto-fill Coordinates" to automatically get location coordinates from the address, or "View on Map" to verify the location. If coordinates are available but address is missing, "View on Map" will use the coordinates.
                     </div>
                   </div>
                 </div>

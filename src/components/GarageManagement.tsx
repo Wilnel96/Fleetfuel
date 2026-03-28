@@ -257,7 +257,12 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
     window.open(`https://www.google.com/maps/search/?api=1&query=${encodedLocation}`, '_blank');
   };
 
-  const autoFillCoordinates = async () => {
+  const autoFillCoordinates = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (!formData.address_line_1 || !formData.city) {
       alert('Please enter at least Address Line 1 and City before auto-filling coordinates');
       return;
@@ -308,7 +313,12 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
     }
   };
 
-  const openAddressInMaps = () => {
+  const openAddressInMaps = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     // If coordinates exist, use them for better accuracy
     if (formData.latitude && formData.longitude) {
       const coordsQuery = `${formData.latitude},${formData.longitude}`;
@@ -811,7 +821,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={autoFillCoordinates}
+                          onClick={(e) => autoFillCoordinates(e)}
                           disabled={geocoding || !formData.address_line_1 || !formData.city}
                           className="flex items-center gap-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >
@@ -820,7 +830,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                         </button>
                         <button
                           type="button"
-                          onClick={openAddressInMaps}
+                          onClick={(e) => openAddressInMaps(e)}
                           disabled={(!formData.address_line_1 && !formData.city) && (!formData.latitude || !formData.longitude)}
                           className="flex items-center gap-2 px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
                         >

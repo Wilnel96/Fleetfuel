@@ -91,6 +91,26 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
 
   useEffect(() => {
     loadGarages();
+
+    // Restore form state from session storage
+    const savedFormState = sessionStorage.getItem('garageManagementFormState');
+    if (savedFormState) {
+      try {
+        const { showForm: savedShowForm, editingGarage: savedEditingGarage, formData: savedFormData } = JSON.parse(savedFormState);
+        if (savedShowForm) {
+          setShowForm(true);
+          if (savedEditingGarage) {
+            setEditingGarage(savedEditingGarage);
+          }
+          if (savedFormData) {
+            setFormData(savedFormData);
+          }
+        }
+      } catch (e) {
+        console.error('Error restoring form state:', e);
+        sessionStorage.removeItem('garageManagementFormState');
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -120,6 +140,19 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
       setFilteredGarages(filtered);
     }
   }, [searchTerm, garages]);
+
+  // Save form state to session storage whenever it changes
+  useEffect(() => {
+    if (showForm) {
+      sessionStorage.setItem('garageManagementFormState', JSON.stringify({
+        showForm,
+        editingGarage,
+        formData
+      }));
+    } else {
+      sessionStorage.removeItem('garageManagementFormState');
+    }
+  }, [showForm, editingGarage, formData]);
 
   const loadGarages = async () => {
     const { data } = await supabase

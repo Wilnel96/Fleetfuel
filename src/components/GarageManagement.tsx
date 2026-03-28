@@ -252,9 +252,13 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
     setShowForm(false);
   };
 
-  const openInMaps = (location: string) => {
+  const openInMaps = (location: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const encodedLocation = encodeURIComponent(location);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedLocation}`, '_blank');
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodedLocation}`, '_blank', 'noopener,noreferrer');
   };
 
   const autoFillCoordinates = async (e?: React.MouseEvent) => {
@@ -322,7 +326,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
     // If coordinates exist, use them for better accuracy
     if (formData.latitude && formData.longitude) {
       const coordsQuery = `${formData.latitude},${formData.longitude}`;
-      window.open(`https://www.google.com/maps/search/?api=1&query=${coordsQuery}`, '_blank');
+      window.open(`https://www.google.com/maps/search/?api=1&query=${coordsQuery}`, '_blank', 'noopener,noreferrer');
       return;
     }
 
@@ -337,7 +341,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
     ].filter(Boolean);
 
     const fullAddress = addressParts.join(', ');
-    openInMaps(fullAddress);
+    openInMaps(fullAddress, e);
   };
 
   return (
@@ -1027,7 +1031,9 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                         <h3 className="font-semibold text-gray-900">{garage.name}</h3>
                         <div className="flex items-center gap-2 mt-1">
                           <button
+                            type="button"
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               const fullAddress = [
                                 garage.address_line_1,
@@ -1038,7 +1044,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                                 'South Africa'
                               ].filter(field => field && field.trim() !== '').join(', ');
                               console.log('Opening maps with address:', fullAddress);
-                              openInMaps(fullAddress);
+                              openInMaps(fullAddress, e);
                             }}
                             className="text-blue-600 hover:text-blue-800 transition-colors"
                             title="Open in Google Maps"
@@ -1160,7 +1166,7 @@ export default function GarageManagement({ onNavigate }: GarageManagementProps) 
                           'South Africa'
                         ].filter(field => field && field.trim() !== '').join(', ');
                         console.log('Opening maps with address:', fullAddress);
-                        openInMaps(fullAddress);
+                        openInMaps(fullAddress, e);
                       }}
                       className="flex items-start gap-2 text-blue-600 hover:text-blue-800 text-sm transition-colors text-left"
                       title="Open in Google Maps"

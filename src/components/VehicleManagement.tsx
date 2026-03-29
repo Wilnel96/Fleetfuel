@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, Plus, Edit2, Trash2, X, Search, RotateCcw, ArrowLeft, Info } from 'lucide-react';
+import { Truck, Plus, CreditCard as Edit2, Trash2, X, Search, RotateCcw, ArrowLeft, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Vehicle {
@@ -42,13 +42,13 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOrgId, setSelectedOrgId] = useState<string>('none');
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('all');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
-  const [showOrgSelector, setShowOrgSelector] = useState(false);
+  const [showOrgSelector, setShowOrgSelector] = useState(true);
   const [loadingOrganizations, setLoadingOrganizations] = useState(true);
   const [showLicenseExplanation, setShowLicenseExplanation] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,14 +84,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   }, []);
 
   useEffect(() => {
-    if (selectedOrgId !== 'none') {
-      setCurrentPage(1);
-      loadVehicles(1, searchTerm);
-    } else {
-      setVehicles([]);
-      setFilteredVehicles([]);
-      setTotalCount(0);
-    }
+    setCurrentPage(1);
+    loadVehicles(1, searchTerm);
   }, [selectedOrgId]);
 
   useEffect(() => {
@@ -174,8 +168,6 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   };
 
   const loadVehicles = async (page: number = currentPage, search: string = searchTerm) => {
-    if (selectedOrgId === 'none') return;
-
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -418,9 +410,9 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
               setFormData({ ...formData, organization_id: selectedOrgId });
               setShowForm(true);
             }}
-            disabled={selectedOrgId === 'all' || selectedOrgId === 'none'}
+            disabled={selectedOrgId === 'all'}
             className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-            title={selectedOrgId === 'all' || selectedOrgId === 'none' ? 'Please select a specific organization first' : ''}
+            title={selectedOrgId === 'all' ? 'Please select a specific organization first' : ''}
           >
             <Plus className="w-4 h-4" />
             Add Vehicle
@@ -847,7 +839,6 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={selectedOrgId === 'none'}
           />
         </div>
         {showOrgSelector && (
@@ -857,7 +848,6 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
               onChange={(e) => setSelectedOrgId(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="none">Select an Organization</option>
               <option value="all">All Organizations</option>
               {organizations.map((org) => (
                 <option key={org.id} value={org.id}>
@@ -904,12 +894,6 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
               <tr>
                 <td colSpan={userRole === 'super_admin' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
                   Loading vehicles...
-                </td>
-              </tr>
-            ) : selectedOrgId === 'none' ? (
-              <tr>
-                <td colSpan={userRole === 'super_admin' ? 7 : 6} className="px-6 py-8 text-center text-gray-500">
-                  Please select an organization to view vehicles.
                 </td>
               </tr>
             ) : filteredVehicles.length === 0 ? (

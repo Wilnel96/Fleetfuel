@@ -139,31 +139,25 @@ function App() {
         timeoutRef.current = null;
       }
 
-      if (session && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION' || _event === 'TOKEN_REFRESHED')) {
+      // For token refresh, just update session silently without changing UI
+      if (session && _event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed, updating session silently');
+        setSession(session);
+        return;
+      }
+
+      if (session && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION')) {
         console.log('Auth state - Session detected, loading profile...');
         setSession(session);
-
-        // Only reset UI state on actual sign-in, not on token refresh
-        if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-          setUserMode('admin');
-          setShowModeSelection(false);
-          setLoading(false);
-        }
-
-        // For token refresh, just update session silently without changing UI
-        if (_event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed, skipping UI updates');
-          return;
-        }
+        setUserMode('admin');
+        setShowModeSelection(false);
+        setLoading(false);
 
         const profileTimeout = setTimeout(() => {
           console.warn('Profile load timeout, using defaults');
           if (!mounted) return;
           setUserRole('admin');
-          // Only reset view on initial sign-in, not token refresh
-          if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-            setCurrentView(null);
-          }
+          setCurrentView(null);
         }, 3000);
 
         supabase
@@ -179,10 +173,7 @@ function App() {
             if (profileError) {
               console.error('Auth state - Profile error:', profileError);
               setUserRole('admin');
-              // Only reset view on initial sign-in, not token refresh
-              if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-                setCurrentView(null);
-              }
+              setCurrentView(null);
               return;
             }
 
@@ -202,10 +193,7 @@ function App() {
               console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
 
               setUserRole(effectiveRole);
-              // Only reset view on initial sign-in, not token refresh
-              if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-                setCurrentView(null);
-              }
+              setCurrentView(null);
 
               // Set payment option if organization data is available
               if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
@@ -222,10 +210,7 @@ function App() {
             } else {
               console.warn('Auth state - No profile found, using defaults');
               setUserRole('admin');
-              // Only reset view on initial sign-in, not token refresh
-              if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-                setCurrentView(null);
-              }
+              setCurrentView(null);
             }
           })
           .catch((err) => {
@@ -233,10 +218,7 @@ function App() {
             console.error('Auth state - Exception loading profile:', err);
             if (!mounted) return;
             setUserRole('admin');
-            // Only reset view on initial sign-in, not token refresh
-            if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-              setCurrentView(null);
-            }
+            setCurrentView(null);
           });
       } else if (_event === 'SIGNED_OUT') {
         console.log('User signed out event');

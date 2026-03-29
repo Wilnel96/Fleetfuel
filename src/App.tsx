@@ -150,6 +150,12 @@ function App() {
           setLoading(false);
         }
 
+        // For token refresh, just update session silently without changing UI
+        if (_event === 'TOKEN_REFRESHED') {
+          console.log('Token refreshed, skipping UI updates');
+          return;
+        }
+
         const profileTimeout = setTimeout(() => {
           console.warn('Profile load timeout, using defaults');
           if (!mounted) return;

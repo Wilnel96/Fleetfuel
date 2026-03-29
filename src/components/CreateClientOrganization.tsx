@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Building2, Save, AlertCircle, CheckCircle, Copy } from 'lucide-react';
 
 interface CreateClientOrganizationProps {
   onNavigate?: (view: string) => void;
@@ -155,6 +155,25 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     window.addEventListener('error', handleError);
     return () => window.removeEventListener('error', handleError);
   }, []);
+
+  const copyMainUserToBilling = () => {
+    try {
+      safeSetBillingContact({
+        ...billingContact,
+        name: mainUser.name,
+        surname: mainUser.surname,
+        email: mainUser.email,
+        password: mainUser.password,
+        phone_office: mainUser.phone_office,
+        phone_mobile: mainUser.phone_mobile,
+      });
+      setSuccess('Main User information copied to Billing User successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      console.error('[CreateClient] Error copying main user:', err);
+      setError('Failed to copy Main User information');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -731,7 +750,17 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         </div>
 
         <div className="border-t pt-3">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Billing User</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold text-gray-900">Billing User</h3>
+            <button
+              type="button"
+              onClick={copyMainUserToBilling}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Copy className="w-4 h-4" />
+              Same as Main User
+            </button>
+          </div>
           <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-xs text-blue-900">
               You can use the same person for Main User and Billing User. If you enter the same email address, only one user will be created with full access permissions.

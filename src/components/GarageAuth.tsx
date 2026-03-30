@@ -5,9 +5,10 @@ import { Store, AlertCircle, ArrowLeft } from 'lucide-react';
 interface GarageAuthProps {
   onLogin: (garageId: string, garageName: string, garageEmail: string, garagePassword: string) => void;
   onBack?: () => void;
+  onSignup?: () => void;
 }
 
-export default function GarageAuth({ onLogin, onBack }: GarageAuthProps) {
+export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProps) {
   const [contactEmail, setContactEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -138,7 +139,16 @@ export default function GarageAuth({ onLogin, onBack }: GarageAuthProps) {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
+          {onSignup && (
+            <button
+              type="button"
+              onClick={onSignup}
+              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+            >
+              Don't have an account? Register your garage
+            </button>
+          )}
           <p className="text-sm text-gray-600">
             Need help? Contact your system administrator
           </p>

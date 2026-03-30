@@ -24,6 +24,7 @@ import ClientCardDashboard from './components/ClientCardDashboard';
 import ClientAccountDashboard from './components/ClientAccountDashboard';
 import ClientPortalSelection from './components/ClientPortalSelection';
 import ClientSignup from './components/ClientSignup';
+import GarageSignup from './components/GarageSignup';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import GaragesDirectory from './components/GaragesDirectory';
 import ClientGaragesView from './components/ClientGaragesView';
@@ -67,6 +68,7 @@ function App() {
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [showPortalSelection, setShowPortalSelection] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showGarageSignup, setShowGarageSignup] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [userRole, setUserRole] = useState<string>('admin');
   const [paymentOption, setPaymentOption] = useState<string | null>(null);
@@ -559,11 +561,30 @@ function App() {
     return <DriverMobileApp driver={driverData} onLogout={handleDriverLogout} onDriverUpdate={handleDriverUpdate} />;
   }
 
+  if (userMode === 'garage' && showGarageSignup) {
+    return (
+      <GarageSignup
+        onBack={() => {
+          setShowGarageSignup(false);
+        }}
+        onSuccess={() => {
+          setShowGarageSignup(false);
+        }}
+      />
+    );
+  }
+
   if (userMode === 'garage' && !garageId) {
-    return <GarageAuth onLogin={handleGarageLogin} onBack={() => {
-      setUserMode(null);
-      setShowModeSelection(true);
-    }} />;
+    return <GarageAuth
+      onLogin={handleGarageLogin}
+      onBack={() => {
+        setUserMode(null);
+        setShowModeSelection(true);
+      }}
+      onSignup={() => {
+        setShowGarageSignup(true);
+      }}
+    />;
   }
 
   if (userMode === 'garage' && garageId && garageName && garageEmail && garagePassword) {

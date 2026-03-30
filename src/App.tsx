@@ -481,7 +481,7 @@ function App() {
                 <Building2 className="w-6 h-6" />
                 <div className="text-left flex-1">
                   <div className="font-bold">Client Portal</div>
-                  <div className="text-xs text-green-100">For organization administrators</div>
+                  <div className="text-xs text-green-100">For clients to review and manage their fleet</div>
                 </div>
               </div>
             </button>

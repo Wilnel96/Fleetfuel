@@ -438,8 +438,8 @@ function App() {
   if (showModeSelection && !session && !driverData && !garageId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-          <div className="bg-blue-600 text-white p-6 text-center">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col">
+          <div className="bg-blue-600 text-white p-6 text-center flex-shrink-0">
             <div className="flex items-center justify-center gap-3 mb-2">
               <Fuel className="w-10 h-10" />
               <h1 className="text-2xl font-bold">FleetFuel</h1>
@@ -447,7 +447,7 @@ function App() {
             <p className="text-blue-100 text-sm">Mobile Fuel Management</p>
           </div>
 
-          <div className="p-6 space-y-3">
+          <div className="p-6 space-y-3 overflow-y-auto flex-1">
             <h2 className="text-xl font-semibold text-gray-900 text-center mb-4">
               Select Login Type
             </h2>
@@ -472,7 +472,6 @@ function App() {
               onClick={() => {
                 setUserMode('admin');
                 setShowModeSelection(false);
-                setShowPortalSelection(true);
               }}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
             >
@@ -517,26 +516,24 @@ function App() {
               </div>
             </button>
 
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  setUserMode('admin');
-                  setShowModeSelection(false);
-                  setShowPortalSelection(true);
-                }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <UserPlus className="w-6 h-6" />
-                  <div className="text-left flex-1">
-                    <div className="font-bold">New Client Signup</div>
-                    <div className="text-xs text-blue-100">Create a new organization account</div>
-                  </div>
+            <button
+              onClick={() => {
+                setUserMode('admin');
+                setShowModeSelection(false);
+                setShowPortalSelection(true);
+              }}
+              className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-teal-700 hover:to-teal-800 transition-all shadow-md hover:shadow-lg"
+            >
+              <div className="flex items-center gap-3">
+                <UserPlus className="w-6 h-6" />
+                <div className="text-left flex-1">
+                  <div className="font-bold">New Client Signup</div>
+                  <div className="text-xs text-teal-100">Create a new organization account</div>
                 </div>
-              </button>
-            </div>
+              </div>
+            </button>
 
-            <div className="mt-4 pt-3 border-t border-gray-200">
+            <div className="pt-3 border-t border-gray-200 mt-4">
               <p className="text-xs text-gray-600 text-center leading-relaxed">
                 <strong>Drivers:</strong> First name and date of birth
                 <br />

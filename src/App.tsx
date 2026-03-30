@@ -637,7 +637,6 @@ function App() {
         setShowPortalSelection(false);
         setShowPortalSelection(false);
       }}
-      onSignup={() => setShowPortalSelection(true)}
       onPasswordReset={() => setShowPasswordReset(true)}
     />;
   }

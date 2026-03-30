@@ -35,7 +35,7 @@ import ClientInvoices from './components/ClientInvoices';
 import InvoiceManagement from './components/InvoiceManagement';
 import ClientFuelInvoices from './components/ClientFuelInvoices';
 import AdminPasswordReset from './components/AdminPasswordReset';
-import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, CreditCard as Edit3, ArrowLeft } from 'lucide-react';
+import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, CreditCard as Edit3, ArrowLeft, UserPlus } from 'lucide-react';
 import { DriverData } from './components/DriverAuth';
 
 type UserMode = 'admin' | 'driver' | 'garage' | null;
@@ -517,6 +517,25 @@ function App() {
               </div>
             </button>
 
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setUserMode('admin');
+                  setShowModeSelection(false);
+                  setShowPortalSelection(true);
+                }}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <UserPlus className="w-6 h-6" />
+                  <div className="text-left flex-1">
+                    <div className="font-bold">New Client Signup</div>
+                    <div className="text-xs text-blue-100">Create a new organization account</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+
             <div className="mt-4 pt-3 border-t border-gray-200">
               <p className="text-xs text-gray-600 text-center leading-relaxed">
                 <strong>Drivers:</strong> First name and date of birth
@@ -597,6 +616,7 @@ function App() {
         setUserMode(null);
         setClientPortalType(null);
         setShowModeSelection(true);
+        setShowPortalSelection(false);
         setShowPortalSelection(false);
       }}
       onSignup={() => setShowPortalSelection(true)}

@@ -7,6 +7,8 @@ interface CreateClientOrganizationProps {
 }
 
 export default function CreateClientOrganization({ onNavigate }: CreateClientOrganizationProps) {
+  const [step, setStep] = useState<'type-selection' | 'details'>('type-selection');
+  const [accountType, setAccountType] = useState<'organization' | 'individual' | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -378,15 +380,98 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
   // Wrap entire render in try-catch
   try {
+    // Step 1: Account Type Selection
+    if (step === 'type-selection') {
+      return (
+        <div className="h-full flex flex-col">
+          <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-6 py-4 flex-shrink-0">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-green-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Create New Client</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate('client-organizations-menu')}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-auto p-6">
+            <div className="max-w-2xl mx-auto">
+              <div className="text-center mb-8">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Select Account Type</h3>
+                <p className="text-sm text-gray-600">Choose whether this is an organization or individual account</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <button
+                  onClick={() => {
+                    setAccountType('organization');
+                    setStep('details');
+                  }}
+                  className="p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+                      <Building2 className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Organization</h4>
+                    <p className="text-sm text-gray-600">
+                      For companies, businesses, or entities with registration numbers and VAT
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setAccountType('individual');
+                    setStep('details');
+                  }}
+                  className="p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+                      <Building2 className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Individual</h4>
+                    <p className="text-sm text-gray-600">
+                      For personal accounts using an ID number instead of company registration
+                    </p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Step 2: Organization Details Form
     return (
       <div className="h-full flex flex-col">
       <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Create New Client</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Create New Client - {accountType === 'organization' ? 'Organization' : 'Individual'}
+            </h2>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setStep('type-selection');
+                setAccountType(null);
+              }}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
+            >
+              Back
+            </button>
             <button
               type="button"
               onClick={() => onNavigate && onNavigate('client-organizations-menu')}
@@ -444,11 +529,13 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         {!componentError && (
         <form id="create-client-form" onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Organization Details</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-2">
+            {accountType === 'organization' ? 'Organization Details' : 'Individual Details'}
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                Organization Name <span className="text-red-500">*</span>
+                {accountType === 'organization' ? 'Organization Name' : 'Account Name'} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -456,43 +543,64 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 value={formData.name}
                 onChange={(e) => safeSetFormData({ ...formData, name: e.target.value.toUpperCase().trim() })}
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
-                placeholder="e.g., ACME TRANSPORT LTD"
+                placeholder={accountType === 'organization' ? 'e.g., ACME TRANSPORT LTD' : 'e.g., JOHN SMITH'}
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                Registration Number
-              </label>
-              <input
-                type="text"
-                value={formData.company_registration_number}
-                onChange={(e) => safeSetFormData({ ...formData, company_registration_number: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">VAT Number</label>
-              <input
-                type="text"
-                value={formData.vat_number}
-                onChange={(e) => safeSetFormData({ ...formData, vat_number: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">Website</label>
-              <input
-                type="text"
-                value={formData.website}
-                onChange={(e) => safeSetFormData({ ...formData, website: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
+            {accountType === 'organization' ? (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Registration Number
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company_registration_number}
+                    onChange={(e) => safeSetFormData({ ...formData, company_registration_number: e.target.value })}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">VAT Number</label>
+                  <input
+                    type="text"
+                    value={formData.vat_number}
+                    onChange={(e) => safeSetFormData({ ...formData, vat_number: e.target.value })}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">Website</label>
+                  <input
+                    type="text"
+                    value={formData.website}
+                    onChange={(e) => safeSetFormData({ ...formData, website: e.target.value })}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  ID Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.company_registration_number}
+                  onChange={(e) => safeSetFormData({ ...formData, company_registration_number: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="e.g., 8001015009087"
+                  maxLength={13}
+                />
+              </div>
+            )}
           </div>
         </div>
 
         <div className="border-t pt-3">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Organization Address</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-2">
+            {accountType === 'organization' ? 'Organization Address' : 'Residential Address'}
+          </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">Address Line 1</label>

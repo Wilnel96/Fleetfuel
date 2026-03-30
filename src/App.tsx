@@ -438,17 +438,17 @@ function App() {
   if (showModeSelection && !session && !driverData && !garageId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col">
-          <div className="bg-blue-600 text-white p-6 text-center flex-shrink-0">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <Fuel className="w-10 h-10" />
-              <h1 className="text-2xl font-bold">FleetFuel</h1>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh]">
+          <div className="p-6 space-y-3 overflow-y-auto max-h-[90vh]">
+            <div className="text-center mb-3">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Fuel className="w-7 h-7 text-blue-600" />
+                <h1 className="text-xl font-bold text-gray-900">FleetFuel</h1>
+              </div>
+              <p className="text-blue-600 text-xs">Mobile Fuel Management</p>
             </div>
-            <p className="text-blue-100 text-sm">Mobile Fuel Management</p>
-          </div>
 
-          <div className="p-6 space-y-3 overflow-y-auto flex-1">
-            <h2 className="text-xl font-semibold text-gray-900 text-center mb-4">
+            <h2 className="text-base font-semibold text-gray-900 text-center mb-3">
               Select Login Type
             </h2>
 

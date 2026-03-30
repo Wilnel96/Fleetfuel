@@ -100,7 +100,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [garages, setGarages] = useState<Garage[]>([]);
   const [garageAccountNumber, setGarageAccountNumber] = useState<string>('');
   const [isLocalAccount, setIsLocalAccount] = useState(false);
-  const [paymentOption, setPaymentOption] = useState<'Card Payment' | 'Local Account' | 'EFT Batch' | null>(null);
+  const [paymentOption, setPaymentOption] = useState<'Card Payment' | 'Local Account' | null>(null);
   const [pinInput, setPinInput] = useState('');
   const [nfcStatus, setNfcStatus] = useState<'idle' | 'writing' | 'success' | 'failed' | 'not_supported'>('idle');
   const [showAccountDetails, setShowAccountDetails] = useState(false);
@@ -448,11 +448,6 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         setIsLocalAccount(false);
         setEncryptedCardData(paymentCard);
         console.log('[FuelPurchase] Payment flow: Card Payment (PIN + NFC + Encrypted Card)');
-      } else if (orgPaymentOption === 'EFT') {
-        // EFT: No PIN, no NFC, just EFT batch processing
-        setPaymentOption('EFT Batch');
-        setIsLocalAccount(false);
-        console.log('[FuelPurchase] Payment flow: EFT Batch (no PIN, no NFC)');
       }
 
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;
@@ -1029,13 +1024,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       console.log('[FuelPurchase] ==========================================');
 
       if (paymentOption === 'Local Account' || paymentOption === 'Card Payment') {
-        // Both Local Account and Card Payment (with garage limit) use PIN + NFC flow
+        // Both Local Account and Card Payment use PIN + NFC flow
         console.log('[FuelPurchase] ✅ Moving to PIN entry step for:', paymentOption);
         setCurrentStep('pin_entry');
-      } else {
-        // EFT Batch payment (Card Payment without garage limit)
-        console.log('[FuelPurchase] ✅ EFT Batch - Transaction complete, no PIN/NFC required');
-        setSuccess(true);
       }
     } catch (err: any) {
       console.error('[FuelPurchase] ❌❌❌ CRITICAL ERROR ❌❌❌');

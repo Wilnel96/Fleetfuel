@@ -181,8 +181,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
           website: editForm.website,
           status: editForm.status,
           payment_option: editForm.payment_option || null,
-          fuel_payment_terms: editForm.payment_option === 'EFT Payment' ? (editForm.fuel_payment_terms || null) : null,
-          fuel_payment_interest_rate: editForm.payment_option === 'EFT Payment' && editForm.fuel_payment_terms !== 'Same Day' ? editForm.fuel_payment_interest_rate : null,
+          fuel_payment_terms: null,
+          fuel_payment_interest_rate: null,
           phone_number: editForm.phone_number,
         })
         .eq('id', editingId);
@@ -541,59 +541,16 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                         onChange={(e) => setEditForm({
                           ...editForm,
                           payment_option: e.target.value,
-                          fuel_payment_terms: e.target.value !== 'EFT Payment' ? null : editForm.fuel_payment_terms,
-                          fuel_payment_interest_rate: e.target.value !== 'EFT Payment' ? null : editForm.fuel_payment_interest_rate,
+                          fuel_payment_terms: null,
+                          fuel_payment_interest_rate: null,
                         })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       >
                         <option value="">-- Select --</option>
                         <option value="Card Payment">Credit/Debit Card Payment</option>
                         <option value="Local Account">Local Account</option>
-                        <option value="EFT Payment">EFT Payment</option>
                       </select>
                     </div>
-
-                    {editForm.payment_option === 'EFT Payment' && (
-                      <div className="bg-green-50 border border-green-200 rounded p-2 space-y-2">
-                        <p className="text-xs text-green-900 font-medium">
-                          Client pays garages directly via collated EFT runs
-                        </p>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Terms</label>
-                          <select
-                            value={editForm.fuel_payment_terms || ''}
-                            onChange={(e) => setEditForm({
-                              ...editForm,
-                              fuel_payment_terms: e.target.value,
-                              fuel_payment_interest_rate: e.target.value === 'Same Day' ? null : editForm.fuel_payment_interest_rate,
-                            })}
-                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                          >
-                            <option value="">-- Select --</option>
-                            <option value="Same Day">Same Day</option>
-                            <option value="Next Day">Next Day</option>
-                            <option value="30-Days">30-Days</option>
-                          </select>
-                        </div>
-                        {editForm.fuel_payment_terms && editForm.fuel_payment_terms !== 'Same Day' && (
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Interest Rate (%)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editForm.fuel_payment_interest_rate || ''}
-                              onChange={(e) => setEditForm({ ...editForm, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
-                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                              placeholder="e.g. 1.5"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Interest applied when terms are not Same Day
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
 
                     {editForm.payment_option === 'Card Payment' && (
                       <div className="bg-blue-50 border border-blue-200 rounded p-2">
@@ -635,7 +592,6 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       </span>
                       {org.payment_option && (
                         <span className={`px-2 py-0.5 text-xs font-medium rounded ${
-                          org.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
                           org.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
                           org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
                           'bg-gray-100 text-gray-800'
@@ -785,7 +741,6 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                             {org.payment_option ? (
                               <>
                                 <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                                  org.payment_option === 'EFT Payment' ? 'bg-green-100 text-green-800' :
                                   org.payment_option === 'Card Payment' ? 'bg-blue-100 text-blue-800' :
                                   org.payment_option === 'Local Account' ? 'bg-amber-100 text-amber-800' :
                                   'bg-gray-100 text-gray-800'
@@ -807,20 +762,6 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                             )}
                           </div>
                         </div>
-                        {org.payment_option === 'EFT Payment' && (
-                          <>
-                            <div>
-                              <label className="block text-xs font-medium text-gray-500 mb-0.5">Fuel Payment Terms</label>
-                              <p className="text-gray-900">{org.fuel_payment_terms || 'Not Set'}</p>
-                            </div>
-                            {org.fuel_payment_terms && org.fuel_payment_terms !== 'Same Day' && (
-                              <div>
-                                <label className="block text-xs font-medium text-gray-500 mb-0.5">Fuel Payment Interest Rate</label>
-                                <p className="text-gray-900">{org.fuel_payment_interest_rate ? `${org.fuel_payment_interest_rate}%` : 'Not Set'}</p>
-                              </div>
-                            )}
-                          </>
-                        )}
                       </div>
                     </div>
                   </div>

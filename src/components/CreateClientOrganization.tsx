@@ -59,7 +59,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     year_end_day: 28,
     daily_spending_limit: null as number | null,
     monthly_spending_limit: null as number | null,
-    payment_option: null as 'Card Payment' | 'Local Account' | 'EFT Payment' | null,
+    payment_option: null as 'Card Payment' | 'Local Account' | null,
     fuel_payment_terms: null as 'Same Day' | 'Next Day' | '30-Days' | null,
     fuel_payment_interest_rate: null as number | null,
   });
@@ -682,8 +682,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 onChange={(e) => safeSetFormData({
                   ...formData,
                   payment_option: e.target.value || null as any,
-                  fuel_payment_terms: e.target.value !== 'EFT Payment' ? null : formData.fuel_payment_terms,
-                  fuel_payment_interest_rate: e.target.value !== 'EFT Payment' ? null : formData.fuel_payment_interest_rate,
+                  fuel_payment_terms: null,
+                  fuel_payment_interest_rate: null,
                 })}
                 className={`w-full px-2.5 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                   !formData.payment_option ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -692,7 +692,6 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 <option value="">-- Select Payment Option --</option>
                 <option value="Card Payment">Credit/Debit Card Payment</option>
                 <option value="Local Account">Local Account</option>
-                <option value="EFT Payment">EFT Payment</option>
               </select>
             </div>
 
@@ -715,54 +714,6 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               </div>
             )}
 
-            {formData.payment_option === 'EFT Payment' && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-3">
-                <p className="text-xs text-green-900 font-medium">
-                  Client pays garages directly via collated EFT runs. MyFuelApp manages transactions and billing.
-                </p>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                    Fuel Payment Terms <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required={formData.payment_option === 'EFT Payment'}
-                    value={formData.fuel_payment_terms || ''}
-                    onChange={(e) => safeSetFormData({
-                      ...formData,
-                      fuel_payment_terms: e.target.value || null as any,
-                      fuel_payment_interest_rate: e.target.value === 'Same Day' ? null : formData.fuel_payment_interest_rate,
-                    })}
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">-- Select Payment Terms --</option>
-                    <option value="Same Day">Same Day</option>
-                    <option value="Next Day">Next Day</option>
-                    <option value="30-Days">30-Days</option>
-                  </select>
-                </div>
-                {formData.fuel_payment_terms && formData.fuel_payment_terms !== 'Same Day' && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                      Fuel Payment Interest Rate (%) <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      required={formData.fuel_payment_terms !== 'Same Day'}
-                      value={formData.fuel_payment_interest_rate || ''}
-                      onChange={(e) => safeSetFormData({ ...formData, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
-                      className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      placeholder="e.g. 1.5"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Interest rate applied to fuel payments when terms are not Same Day
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
               <h4 className="text-xs font-semibold text-gray-900 mb-2">Payment Option Guide:</h4>
               <div className="space-y-1.5 text-xs text-gray-700">
@@ -771,9 +722,6 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 </div>
                 <div>
                   <span className="font-medium text-amber-700">Local Account:</span> Client has existing accounts with garages. MyFuelApp tracks transactions. Client pays MyFuelApp for management fees only. Best for established garage relationships.
-                </div>
-                <div>
-                  <span className="font-medium text-green-700">EFT Payment:</span> Client handles direct payments to garages via EFT. MyFuelApp manages transactions and billing. Best for businesses with dedicated finance teams.
                 </div>
               </div>
             </div>

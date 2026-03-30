@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { DollarSign, Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
+import { DollarSign, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
 import { OrganizationPaymentCardReadOnly } from './OrganizationPaymentCardReadOnly';
 import ClientGarageAccounts from './ClientGarageAccounts';
 
@@ -587,15 +587,14 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                         onChange={(e) => setEditForm({
                           ...editForm,
                           payment_option: e.target.value,
-                          fuel_payment_terms: e.target.value !== 'EFT Payment' ? null : editForm.fuel_payment_terms,
-                          fuel_payment_interest_rate: e.target.value !== 'EFT Payment' ? null : editForm.fuel_payment_interest_rate,
+                          fuel_payment_terms: null,
+                          fuel_payment_interest_rate: null,
                         })}
                         className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                       >
                         <option value="">-- Select --</option>
                         <option value="Card Payment">Credit/Debit Card Payment</option>
                         <option value="Local Account">Local Account</option>
-                        <option value="EFT Payment">EFT Payment</option>
                       </select>
                     </div>
 
@@ -619,47 +618,6 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                       </div>
                     )}
 
-                    {editForm.payment_option === 'EFT Payment' && (
-                      <div className="bg-green-50 border border-green-200 rounded p-2 space-y-2">
-                        <p className="text-xs text-green-900 font-medium">
-                          Client pays garages directly via collated EFT runs. MyFuelApp manages transactions and billing.
-                        </p>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Terms</label>
-                          <select
-                            value={editForm.fuel_payment_terms || ''}
-                            onChange={(e) => setEditForm({
-                              ...editForm,
-                              fuel_payment_terms: e.target.value,
-                              fuel_payment_interest_rate: e.target.value === 'Same Day' ? null : editForm.fuel_payment_interest_rate,
-                            })}
-                            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                          >
-                            <option value="">-- Select --</option>
-                            <option value="Same Day">Same Day</option>
-                            <option value="Next Day">Next Day</option>
-                            <option value="30-Days">30-Days</option>
-                          </select>
-                        </div>
-                        {editForm.fuel_payment_terms && editForm.fuel_payment_terms !== 'Same Day' && (
-                          <div>
-                            <label className="block text-xs font-medium text-gray-700 mb-0.5">Fuel Payment Interest Rate (%)</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editForm.fuel_payment_interest_rate || ''}
-                              onChange={(e) => setEditForm({ ...editForm, fuel_payment_interest_rate: e.target.value ? parseFloat(e.target.value) : null })}
-                              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                              placeholder="e.g. 1.5"
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Interest applied when terms are not Same Day
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

@@ -576,6 +576,7 @@ function App() {
         onSelectPortal={(portalType) => {
           setClientPortalType(portalType);
           setShowPortalSelection(false);
+          setShowSignup(true);
         }}
         onBack={() => {
           setUserMode(null);

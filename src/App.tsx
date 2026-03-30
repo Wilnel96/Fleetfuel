@@ -598,6 +598,7 @@ function App() {
         setShowModeSelection(true);
         setShowPortalSelection(false);
       }}
+      onSignup={() => setShowPortalSelection(true)}
       onPasswordReset={() => setShowPasswordReset(true)}
     />;
   }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Store, AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 
 interface GarageAuthProps {
   onLogin: (garageId: string, garageName: string, garageEmail: string, garagePassword: string) => void;
@@ -83,9 +83,6 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
           </button>
         )}
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-blue-600 p-4 rounded-full mb-4">
-            <Store className="w-12 h-12 text-white" />
-          </div>
           <h1 className="text-xl font-bold text-gray-900">Garage Portal</h1>
           <p className="text-gray-600 mt-2 text-center">
             Sign in to manage your fuel prices

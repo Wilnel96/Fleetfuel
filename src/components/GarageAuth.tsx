@@ -86,7 +86,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
           <div className="bg-blue-600 p-4 rounded-full mb-4">
             <Store className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Garage Portal</h1>
+          <h1 className="text-xl font-bold text-gray-900">Garage Portal</h1>
           <p className="text-gray-600 mt-2 text-center">
             Sign in to manage your fuel prices
           </p>

@@ -86,7 +86,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
           <div className="bg-blue-600 p-4 rounded-full mb-4">
             <Store className="w-12 h-12 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Garage Portal</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Garage Portal</h1>
           <p className="text-gray-600 mt-2 text-center">
             Sign in to manage your fuel prices
           </p>
@@ -144,10 +144,9 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
             <button
               type="button"
               onClick={onSignup}
-              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium transition-colors flex flex-col items-center gap-1"
+              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium transition-colors"
             >
-              <span className="text-base font-semibold">Sign Up</span>
-              <span className="text-xs font-normal opacity-90">Don't have an account? Register your garage</span>
+              Sign Up - Don't have an account? Register your garage
             </button>
           )}
           <p className="text-sm text-gray-600">

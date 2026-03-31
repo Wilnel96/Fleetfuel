@@ -144,9 +144,10 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
             <button
               type="button"
               onClick={onSignup}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+              className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 font-medium transition-colors flex flex-col items-center gap-1"
             >
-              Don't have an account? Register your garage
+              <span className="text-base font-semibold">Sign Up</span>
+              <span className="text-xs font-normal opacity-90">Don't have an account? Register your garage</span>
             </button>
           )}
           <p className="text-sm text-gray-600">

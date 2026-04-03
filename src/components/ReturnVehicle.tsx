@@ -33,6 +33,7 @@ export default function ReturnVehicle({ organizationId, driverId, onBack, drawnV
   const [drawTransaction, setDrawTransaction] = useState<DrawTransaction | null>(null);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false);
   const [odometerReading, setOdometerReading] = useState('');
+  const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -216,6 +217,7 @@ export default function ReturnVehicle({ organizationId, driverId, onBack, drawnV
           odometer_reading: returnOdometer,
           location: location ? `${location.lat},${location.lng}` : 'Unknown',
           related_transaction_id: drawTransaction.id,
+          notes: notes.trim() || null,
         })
         .select()
         .single();
@@ -293,6 +295,7 @@ export default function ReturnVehicle({ organizationId, driverId, onBack, drawnV
     setSelectedVehicle(null);
     setDrawTransaction(null);
     setOdometerReading('');
+    setNotes('');
     setSuccess(false);
     setKmDriven(null);
     setError('');
@@ -489,6 +492,26 @@ export default function ReturnVehicle({ organizationId, driverId, onBack, drawnV
                   )}
                 </>
               )}
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes
+                <span className="text-gray-500 font-normal ml-1">(Optional)</span>
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Add notes about the vehicle condition, trip details, or any issues encountered
+              </p>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+                style={{ fontSize: '16px', minHeight: '100px' }}
+                placeholder="e.g., Vehicle brakes need attention, Completed delivery to Cape Town, Low tire pressure warning light on..."
+                rows={4}
+                maxLength={1000}
+              />
+              <p className="text-xs text-gray-500 mt-1 text-right">{notes.length}/1000 characters</p>
             </div>
 
             <button

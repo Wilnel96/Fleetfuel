@@ -16,6 +16,7 @@ interface TripRecord {
   return_odometer: number | null;
   km_travelled: number | null;
   trip_description: string | null;
+  return_notes: string | null;
   status: 'in_progress' | 'completed';
 }
 
@@ -108,7 +109,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
       for (const draw of draws || []) {
         const { data: returnData } = await supabase
           .from('vehicle_transactions')
-          .select('odometer_reading, created_at')
+          .select('odometer_reading, created_at, notes')
           .eq('related_transaction_id', draw.id)
           .eq('transaction_type', 'return')
           .order('created_at', { ascending: true })
@@ -130,7 +131,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
         const drawDate = new Date(draw.created_at);
         const { data: returnData } = await supabase
           .from('vehicle_transactions')
-          .select('odometer_reading, created_at')
+          .select('odometer_reading, created_at, notes')
           .eq('related_transaction_id', draw.id)
           .eq('transaction_type', 'return')
           .order('created_at', { ascending: true })
@@ -167,6 +168,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
             return_odometer: returnData?.odometer_reading || null,
             km_travelled: kmTravelled,
             trip_description: draw.trip_description,
+            return_notes: returnData?.notes || null,
             status: returnData ? 'completed' : 'in_progress',
           });
         }
@@ -194,6 +196,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
       'Return Odometer (km)': trip.return_odometer || '-',
       'KM Travelled': trip.km_travelled || '-',
       'Trip Description': trip.trip_description || '-',
+      'Return Notes': trip.return_notes || '-',
       'Status': trip.status === 'completed' ? 'Completed' : 'In Progress',
     }));
 
@@ -324,7 +327,7 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Draw Time</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Return Time</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">KM Travelled</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Description</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trip Details</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
@@ -396,13 +399,27 @@ export default function DailyTripReport({ organizationId: propOrgId }: DailyTrip
                         )}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-700 max-w-xs">
-                        {trip.trip_description ? (
-                          <p className="truncate" title={trip.trip_description}>
-                            {trip.trip_description}
-                          </p>
-                        ) : (
-                          <span className="text-gray-400 italic">No description</span>
-                        )}
+                        <div className="space-y-1">
+                          {trip.trip_description && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-0.5">Trip:</p>
+                              <p className="text-sm text-gray-900" title={trip.trip_description}>
+                                {trip.trip_description}
+                              </p>
+                            </div>
+                          )}
+                          {trip.return_notes && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-0.5">Notes:</p>
+                              <p className="text-sm text-gray-900" title={trip.return_notes}>
+                                {trip.return_notes}
+                              </p>
+                            </div>
+                          )}
+                          {!trip.trip_description && !trip.return_notes && (
+                            <span className="text-gray-400 italic">No details</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-center">
                         {trip.status === 'completed' ? (

@@ -73,68 +73,27 @@ export default function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardP
 
   const getColorClasses = (color: string) => {
     const colors: Record<string, { bg: string; hover: string; icon: string }> = {
-      blue: {
-        bg: 'bg-blue-50',
-        hover: 'hover:bg-blue-100 hover:border-blue-300',
-        icon: 'text-blue-600',
-      },
-      green: {
-        bg: 'bg-green-50',
-        hover: 'hover:bg-green-100 hover:border-green-300',
-        icon: 'text-green-600',
-      },
-      orange: {
-        bg: 'bg-orange-50',
-        hover: 'hover:bg-orange-100 hover:border-orange-300',
-        icon: 'text-orange-600',
-      },
-      cyan: {
-        bg: 'bg-cyan-50',
-        hover: 'hover:bg-cyan-100 hover:border-cyan-300',
-        icon: 'text-cyan-600',
-      },
-      teal: {
-        bg: 'bg-teal-50',
-        hover: 'hover:bg-teal-100 hover:border-teal-300',
-        icon: 'text-teal-600',
-      },
-      amber: {
-        bg: 'bg-amber-50',
-        hover: 'hover:bg-amber-100 hover:border-amber-300',
-        icon: 'text-amber-600',
-      },
-      gray: {
-        bg: 'bg-gray-50',
-        hover: 'hover:bg-gray-100 hover:border-gray-300',
-        icon: 'text-gray-600',
-      },
-      violet: {
-        bg: 'bg-violet-50',
-        hover: 'hover:bg-violet-100 hover:border-violet-300',
-        icon: 'text-violet-600',
-      },
-      indigo: {
-        bg: 'bg-indigo-50',
-        hover: 'hover:bg-indigo-100 hover:border-indigo-300',
-        icon: 'text-indigo-600',
-      },
-      emerald: {
-        bg: 'bg-emerald-50',
-        hover: 'hover:bg-emerald-100 hover:border-emerald-300',
-        icon: 'text-emerald-600',
-      },
+      blue: { bg: 'bg-blue-100', hover: 'group-hover:bg-blue-600', icon: 'text-blue-600' },
+      green: { bg: 'bg-green-100', hover: 'group-hover:bg-green-600', icon: 'text-green-600' },
+      orange: { bg: 'bg-orange-100', hover: 'group-hover:bg-orange-600', icon: 'text-orange-600' },
+      cyan: { bg: 'bg-cyan-100', hover: 'group-hover:bg-cyan-600', icon: 'text-cyan-600' },
+      teal: { bg: 'bg-teal-100', hover: 'group-hover:bg-teal-600', icon: 'text-teal-600' },
+      amber: { bg: 'bg-amber-100', hover: 'group-hover:bg-amber-600', icon: 'text-amber-600' },
+      gray: { bg: 'bg-gray-100', hover: 'group-hover:bg-gray-600', icon: 'text-gray-600' },
+      violet: { bg: 'bg-violet-100', hover: 'group-hover:bg-violet-600', icon: 'text-violet-600' },
+      emerald: { bg: 'bg-emerald-100', hover: 'group-hover:bg-emerald-600', icon: 'text-emerald-600' },
     };
     return colors[color] || colors.blue;
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">System Administration</h2>
-        <p className="text-gray-600 mt-1">Select an option below to manage the system</p>
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">System Administration</h2>
+        <p className="text-gray-600">Select an option below to manage the system</p>
       </div>
 
-      <div className="space-y-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const colors = getColorClasses(item.color);
@@ -143,15 +102,16 @@ export default function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardP
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-3 text-left transition-colors flex items-center gap-3"
+              className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
             >
-              <div className={`${colors.icon} flex-shrink-0`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <div className="flex items-center gap-2 flex-1">
-                <span className="font-semibold text-gray-900">{item.title}</span>
-                <span className="text-gray-400">•</span>
-                <span className="text-sm text-gray-600">{item.description}</span>
+              <div className="flex items-start gap-4">
+                <div className={`flex-shrink-0 w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center ${colors.hover} transition-colors`}>
+                  <Icon className={`w-6 h-6 ${colors.icon} group-hover:text-white transition-colors`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-600">{item.description}</p>
+                </div>
               </div>
             </button>
           );

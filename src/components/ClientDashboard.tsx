@@ -34,14 +34,24 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
         title: 'Fee Invoices',
         description: 'Monthly subscription and service fees',
         icon: DollarSign,
+        color: 'blue',
       },
       {
         id: 'fuel-invoices',
         title: 'Fuel Invoices',
         description: 'Individual fuel transaction invoices',
         icon: FileText,
+        color: 'green',
       },
     ];
+
+    const getColorClasses = (color: string) => {
+      const colors: Record<string, { bg: string; hover: string; icon: string }> = {
+        blue: { bg: 'bg-blue-100', hover: 'group-hover:bg-blue-600', icon: 'text-blue-600' },
+        green: { bg: 'bg-green-100', hover: 'group-hover:bg-green-600', icon: 'text-green-600' },
+      };
+      return colors[color] || colors.blue;
+    };
 
     return (
       <div className="space-y-4">
@@ -59,22 +69,23 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-4 md:grid-cols-2">
         {invoicesMenuItems.map((item) => {
           const Icon = item.icon;
+          const colors = getColorClasses(item.color);
 
           return (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+              className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <Icon className="w-6 h-6 text-blue-600" />
+              <div className="flex items-start gap-4">
+                <div className={`flex-shrink-0 w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center ${colors.hover} transition-colors`}>
+                  <Icon className={`w-6 h-6 ${colors.icon} group-hover:text-white transition-colors`} />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
                   <p className="text-sm text-gray-600">{item.description}</p>
                 </div>
               </div>
@@ -91,14 +102,26 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
       {
         id: 'reports',
         title: 'Reports',
+        description: 'View standard reports and analytics',
         icon: FileText,
+        color: 'blue',
       },
       {
         id: 'custom-reports',
         title: 'Custom Report Builder',
+        description: 'Build custom reports from any data',
         icon: BarChart3,
+        color: 'green',
       },
     ];
+
+    const getColorClasses = (color: string) => {
+      const colors: Record<string, { bg: string; hover: string; icon: string }> = {
+        blue: { bg: 'bg-blue-100', hover: 'group-hover:bg-blue-600', icon: 'text-blue-600' },
+        green: { bg: 'bg-green-100', hover: 'group-hover:bg-green-600', icon: 'text-green-600' },
+      };
+      return colors[color] || colors.blue;
+    };
 
     return (
       <div className="space-y-4">
@@ -116,18 +139,26 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
           </button>
         </div>
 
-        <div className="space-y-2">
+        <div className="grid gap-4 md:grid-cols-2">
         {reportsMenuItems.map((item) => {
           const Icon = item.icon;
+          const colors = getColorClasses(item.color);
 
           return (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors flex items-center gap-3"
+              className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
             >
-              <Icon className="w-5 h-5 flex-shrink-0 text-blue-600" />
-              <span className="font-medium text-gray-900">{item.title}</span>
+              <div className="flex items-start gap-4">
+                <div className={`flex-shrink-0 w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center ${colors.hover} transition-colors`}>
+                  <Icon className={`w-6 h-6 ${colors.icon} group-hover:text-white transition-colors`} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-600">{item.description}</p>
+                </div>
+              </div>
             </button>
           );
         })}
@@ -140,39 +171,64 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
     {
       id: 'vehicles',
       title: 'Vehicles',
+      description: 'Manage your fleet vehicles',
       icon: Truck,
+      color: 'blue',
     },
     {
       id: 'drivers',
       title: 'Drivers',
+      description: 'Manage your drivers',
       icon: Users,
+      color: 'green',
     },
     {
       id: 'garages',
       title: 'Garages',
+      description: 'View garage network',
       icon: Store,
+      color: 'orange',
     },
     {
       id: 'invoices-menu',
       title: 'Invoices',
+      description: 'View and manage invoices',
       icon: DollarSign,
+      color: 'cyan',
     },
     {
       id: 'reports-menu',
       title: 'Reports',
+      description: 'View reports and analytics',
       icon: FileText,
+      color: 'amber',
     },
     {
       id: 'backoffice',
       title: 'Back Office',
+      description: 'Organization settings and management',
       icon: Settings,
+      color: 'gray',
     },
   ];
 
+  const getColorClasses = (color: string) => {
+    const colors: Record<string, { bg: string; hover: string; icon: string }> = {
+      blue: { bg: 'bg-blue-100', hover: 'group-hover:bg-blue-600', icon: 'text-blue-600' },
+      green: { bg: 'bg-green-100', hover: 'group-hover:bg-green-600', icon: 'text-green-600' },
+      orange: { bg: 'bg-orange-100', hover: 'group-hover:bg-orange-600', icon: 'text-orange-600' },
+      cyan: { bg: 'bg-cyan-100', hover: 'group-hover:bg-cyan-600', icon: 'text-cyan-600' },
+      amber: { bg: 'bg-amber-100', hover: 'group-hover:bg-amber-600', icon: 'text-amber-600' },
+      gray: { bg: 'bg-gray-100', hover: 'group-hover:bg-gray-600', icon: 'text-gray-600' },
+    };
+    return colors[color] || colors.blue;
+  };
+
   return (
-    <div className="space-y-2">
+    <div className="grid gap-4 md:grid-cols-2">
       {menuItems.map((item) => {
         const Icon = item.icon;
+        const colors = getColorClasses(item.color);
 
         return (
           <button
@@ -188,20 +244,34 @@ export default function ClientDashboard({ onNavigate, onSignOut, initialView = '
                 onNavigate(item.id);
               }
             }}
-            className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors flex items-center gap-3"
+            className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
           >
-            <Icon className="w-5 h-5 flex-shrink-0 text-blue-600" />
-            <span className="font-medium text-gray-900">{item.title}</span>
+            <div className="flex items-start gap-4">
+              <div className={`flex-shrink-0 w-12 h-12 ${colors.bg} rounded-lg flex items-center justify-center ${colors.hover} transition-colors`}>
+                <Icon className={`w-6 h-6 ${colors.icon} group-hover:text-white transition-colors`} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
+                <p className="text-sm text-gray-600">{item.description}</p>
+              </div>
+            </div>
           </button>
         );
       })}
 
       <button
         onClick={onSignOut}
-        className="w-full bg-white hover:bg-red-50 border border-gray-200 rounded-lg p-4 text-left transition-colors flex items-center gap-3"
+        className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-red-500 hover:shadow-md transition-all text-left group md:col-span-2"
       >
-        <LogOut className="w-5 h-5 flex-shrink-0 text-red-600" />
-        <span className="font-medium text-gray-900">Sign Out</span>
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center group-hover:bg-red-600 transition-colors">
+            <LogOut className="w-6 h-6 text-red-600 group-hover:text-white transition-colors" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Sign Out</h3>
+            <p className="text-sm text-gray-600">End your session and return to login</p>
+          </div>
+        </div>
       </button>
     </div>
   );

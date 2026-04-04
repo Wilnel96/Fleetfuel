@@ -529,7 +529,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       {viewingOrg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
-          onClick={(e) => {
+          onMouseDown={(e) => {
             if (e.target === e.currentTarget) {
               setViewingOrgId(null);
             }
@@ -870,7 +870,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       {showAddModal && selectedOrganization && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 pt-16"
-          onClick={(e) => {
+          onMouseDown={(e) => {
             if (e.target === e.currentTarget && saving === null) {
               handleCancelAddModal();
             }

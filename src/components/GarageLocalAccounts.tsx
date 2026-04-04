@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, DollarSign, Download, Send, ChevronDown, ChevronRight } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -44,6 +44,7 @@ interface FuelInvoice {
   id: string;
   invoice_number: string;
   invoice_date: string;
+  transaction_date: string;
   period_start: string;
   period_end: string;
   subtotal: number;
@@ -51,6 +52,8 @@ interface FuelInvoice {
   total_amount: number;
   payment_status: string;
   payment_due_date: string;
+  vehicle_registration?: string;
+  driver_name?: string;
 }
 
 interface GarageLocalAccountsProps {
@@ -402,8 +405,54 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   };
 
   const handleDownloadInvoice = async (invoice: FuelInvoice) => {
-    // TODO: Implement invoice download functionality
-    alert(`Download functionality for invoice ${invoice.invoice_number} will be implemented`);
+    try {
+      const org = organizations.find(o => o.id === selectedFinancialOrgId);
+      if (!org) return;
+
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+
+      doc.setFontSize(20);
+      doc.text(garageName, 105, 20, { align: 'center' });
+
+      doc.setFontSize(10);
+      doc.text('FUEL TRANSACTION INVOICE', 105, 30, { align: 'center' });
+
+      doc.setFontSize(12);
+      doc.text(`Invoice: ${invoice.invoice_number}`, 20, 50);
+      doc.text(`Date: ${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}`, 20, 57);
+      doc.text(`Transaction Date: ${new Date(invoice.transaction_date).toLocaleDateString('en-ZA')}`, 20, 64);
+
+      doc.setFontSize(10);
+      doc.text('BILL TO:', 20, 80);
+      doc.setFontSize(11);
+      doc.text(org.name, 20, 87);
+      if (org.vat_number) {
+        doc.text(`VAT: ${org.vat_number}`, 20, 94);
+      }
+
+      doc.setFontSize(10);
+      doc.text('DETAILS:', 20, 110);
+      doc.setFontSize(11);
+      if (invoice.vehicle_registration) {
+        doc.text(`Vehicle: ${invoice.vehicle_registration}`, 20, 117);
+      }
+      if (invoice.driver_name) {
+        doc.text(`Driver: ${invoice.driver_name}`, 20, 124);
+      }
+
+      doc.setFontSize(12);
+      doc.text('AMOUNT:', 20, 145);
+      doc.text(`Subtotal: R ${invoice.subtotal.toFixed(2)}`, 30, 152);
+      doc.text(`VAT: R ${invoice.vat_amount.toFixed(2)}`, 30, 159);
+      doc.setFont(undefined, 'bold');
+      doc.text(`Total: R ${invoice.total_amount.toFixed(2)}`, 30, 169);
+
+      doc.save(`${invoice.invoice_number}.pdf`);
+    } catch (err) {
+      console.error('Error downloading invoice:', err);
+      alert('Failed to download invoice. Please try again.');
+    }
   };
 
   const handleEmailInvoice = async (invoice: FuelInvoice) => {
@@ -718,7 +767,6 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                           </div>
                           <div className="text-right">
                             <div className="flex items-center gap-1 justify-end">
-                              <DollarSign className="w-3 h-3 text-gray-600" />
                               <span className="text-xs font-bold text-gray-900">
                                 R {invoice.total_amount.toFixed(2)}
                               </span>
@@ -1306,7 +1354,6 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                               </div>
                               <div className="text-right">
                                 <div className="flex items-center gap-1 justify-end mb-1">
-                                  <DollarSign className="w-4 h-4 text-gray-600" />
                                   <span className="text-sm font-bold text-gray-900">
                                     R {invoice.total_amount.toFixed(2)}
                                   </span>

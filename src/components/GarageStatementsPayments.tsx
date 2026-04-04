@@ -143,6 +143,17 @@ export default function GarageStatementsPayments({
 
       if (numberError) throw numberError;
 
+      const { data: previousStatement } = await supabase
+        .from('garage_statements')
+        .select('closing_balance')
+        .eq('garage_id', garageId)
+        .eq('organization_id', organizationId)
+        .order('statement_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const openingBalance = previousStatement?.closing_balance || 0;
+
       const { data: newStatement, error: insertError } = await supabase
         .from('garage_statements')
         .insert({
@@ -151,7 +162,11 @@ export default function GarageStatementsPayments({
           statement_number: statementNumberData,
           statement_date: statementPeriodEnd,
           period_start: statementPeriodStart,
-          period_end: statementPeriodEnd
+          period_end: statementPeriodEnd,
+          opening_balance: openingBalance,
+          total_invoices: 0,
+          total_payments: 0,
+          closing_balance: openingBalance
         })
         .select()
         .single();

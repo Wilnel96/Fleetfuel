@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight, Receipt } from 'lucide-react';
+import GarageStatementsPayments from './GarageStatementsPayments';
 
 interface Organization {
   id: string;
@@ -99,6 +100,8 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [financialInvoices, setFinancialInvoices] = useState<FuelInvoice[]>([]);
   const [loadingFinancialInvoices, setLoadingFinancialInvoices] = useState(false);
   const [showFinancialSection, setShowFinancialSection] = useState(false);
+  const [viewingStatementsOrgId, setViewingStatementsOrgId] = useState<string | null>(null);
+  const [viewingStatementsOrgName, setViewingStatementsOrgName] = useState<string>('');
 
   useEffect(() => {
     loadData();
@@ -692,6 +695,21 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const viewingOrgUsers = viewingOrgId ? organizationUsers[viewingOrgId] || [] : [];
   const mainUser = viewingOrgUsers.find(u => u.is_main_user);
   const viewingAccount = viewingOrgId ? localAccounts.find(a => a.organization_id === viewingOrgId) : null;
+
+  if (viewingStatementsOrgId) {
+    return (
+      <GarageStatementsPayments
+        garageId={garageId}
+        garageName={garageName}
+        organizationId={viewingStatementsOrgId}
+        organizationName={viewingStatementsOrgName}
+        onBack={() => {
+          setViewingStatementsOrgId(null);
+          setViewingStatementsOrgName('');
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -1352,6 +1370,17 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                                   </p>
                                 )}
                               </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setViewingStatementsOrgId(account.organization_id);
+                                  setViewingStatementsOrgName(org.name);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-100 hover:bg-green-200 rounded"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                Statements
+                              </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();

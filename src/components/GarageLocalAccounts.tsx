@@ -338,13 +338,22 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setLoadingInvoices(true);
       const { data, error } = await supabase
         .from('fuel_transaction_invoices')
-        .select('id, invoice_number, invoice_date, period_start, period_end, subtotal, vat_amount, total_amount, payment_status, payment_due_date')
+        .select('id, invoice_number, invoice_date, transaction_date, subtotal, vat_amount, total_amount, vehicle_registration, driver_name')
         .eq('organization_id', organizationId)
-        .eq('garage_id', garageId)
+        .eq('garage_name', garageName)
         .order('invoice_date', { ascending: false });
 
       if (error) throw error;
-      setOrgInvoices(data || []);
+
+      const transformedData = (data || []).map(invoice => ({
+        ...invoice,
+        period_start: invoice.transaction_date,
+        period_end: invoice.transaction_date,
+        payment_status: 'pending',
+        payment_due_date: invoice.invoice_date
+      }));
+
+      setOrgInvoices(transformedData);
     } catch (err: any) {
       console.error('Error loading invoices:', err.message);
       setOrgInvoices([]);
@@ -363,13 +372,22 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setLoadingFinancialInvoices(true);
       const { data, error } = await supabase
         .from('fuel_transaction_invoices')
-        .select('id, invoice_number, invoice_date, period_start, period_end, subtotal, vat_amount, total_amount, payment_status, payment_due_date')
+        .select('id, invoice_number, invoice_date, transaction_date, subtotal, vat_amount, total_amount, vehicle_registration, driver_name')
         .eq('organization_id', organizationId)
-        .eq('garage_id', garageId)
+        .eq('garage_name', garageName)
         .order('invoice_date', { ascending: false });
 
       if (error) throw error;
-      setFinancialInvoices(data || []);
+
+      const transformedData = (data || []).map(invoice => ({
+        ...invoice,
+        period_start: invoice.transaction_date,
+        period_end: invoice.transaction_date,
+        payment_status: 'pending',
+        payment_due_date: invoice.invoice_date
+      }));
+
+      setFinancialInvoices(transformedData);
     } catch (err: any) {
       console.error('Error loading financial invoices:', err.message);
       setFinancialInvoices([]);

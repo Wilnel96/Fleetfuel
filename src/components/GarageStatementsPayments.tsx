@@ -435,7 +435,19 @@ export default function GarageStatementsPayments({
     pdf.text('CLOSING BALANCE:', margin + 5, yPosition);
     pdf.text(`R ${statement.closing_balance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
-    pdf.save(`statement-${statement.statement_number}.pdf`);
+    const pdfBlob = pdf.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `statement-${statement.statement_number}.pdf`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
   const [saving, setSaving] = useState(false);

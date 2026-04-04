@@ -749,7 +749,19 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     yPosition += 5;
     pdf.text('Thank you for your business.', pageWidth / 2, yPosition, { align: 'center' });
 
-    pdf.save(`fuel-invoice-${invoice.invoice_number}.pdf`);
+    const pdfBlob = pdf.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `fuel-invoice-${invoice.invoice_number}.pdf`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
   const generateInvoiceHTML = (invoice: FuelInvoice) => {
@@ -1457,7 +1469,19 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       ? `${new Date(startDate).toISOString().split('T')[0]}_to_${new Date(endDate).toISOString().split('T')[0]}`
       : new Date().toISOString().split('T')[0];
 
-    pdf.save(`fuel-invoices-${dateRange}.pdf`);
+    const pdfBlob = pdf.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `fuel-invoices-${dateRange}.pdf`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
   };
 
   if (loading) {

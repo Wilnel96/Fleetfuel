@@ -657,7 +657,19 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       yPosition += 5;
       pdf.text('Thank you for your business.', pageWidth / 2, yPosition, { align: 'center' });
 
-      pdf.save(`fuel-invoice-${invoice.invoice_number}.pdf`);
+      const pdfBlob = pdf.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `fuel-invoice-${invoice.invoice_number}.pdf`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
     } catch (err) {
       console.error('Error downloading invoice:', err);
       alert('Failed to download invoice. Please try again.');

@@ -421,15 +421,24 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
     loadFinancialInvoices(orgId);
   };
 
-  const handleDownloadInvoice = async (invoice: FuelInvoice) => {
+  const handleDownloadInvoice = async (invoice: FuelInvoice, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     try {
       const { generateFuelInvoicePDF, downloadPDFBlob } = await import('../lib/invoicePdfGenerator');
 
-      const { data: garageData } = await supabase
+      const { data: garageData, error: fetchError } = await supabase
         .from('garages')
         .select('name, address_line_1, address_line_2, city, province, postal_code, vat_number')
         .eq('id', garageId)
         .single();
+
+      if (fetchError) {
+        console.error('Error fetching garage data:', fetchError);
+      }
 
       const garageAddress = garageData
         ? [
@@ -1426,14 +1435,14 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
                             <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
                               <button
-                                onClick={() => handleDownloadInvoice(invoice)}
+                                onClick={(e) => handleDownloadInvoice(invoice, e)}
                                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 Download
                               </button>
                               <button
-                                onClick={() => handleEmailInvoice(invoice)}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEmailInvoice(invoice); }}
                                 className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                               >
                                 <Send className="w-3.5 h-3.5" />

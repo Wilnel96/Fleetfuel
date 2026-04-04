@@ -494,7 +494,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     URL.revokeObjectURL(url);
   };
 
-  const exportInvoiceToPDF = async (invoice: FuelInvoice) => {
+  const exportInvoiceToPDF = async (invoice: FuelInvoice, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     try {
       const { generateFuelInvoicePDF, downloadPDFBlob } = await import('../lib/invoicePdfGenerator');
 
@@ -1277,7 +1282,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                 Export CSV
               </button>
               <button
-                onClick={() => exportInvoiceToPDF(selectedInvoice)}
+                onClick={(e) => exportInvoiceToPDF(selectedInvoice, e)}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
               >
                 <FileText className="w-4 h-4" />

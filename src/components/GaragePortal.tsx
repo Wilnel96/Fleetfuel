@@ -304,7 +304,11 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
-              {currentView !== 'menu' && (
+              {currentView !== 'menu' &&
+               currentView !== 'active-accounts' &&
+               currentView !== 'financial-info' &&
+               currentView !== 'add-new-client' &&
+               currentView !== 'local-accounts' && (
                 <button
                   onClick={() => setCurrentView('menu')}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -806,6 +810,7 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
             garageEmail={garageEmail}
             garagePassword={garagePassword}
             initialView={currentView === 'active-accounts' ? 'active' : currentView === 'financial-info' ? 'financial' : currentView === 'add-new-client' ? 'add-client' : 'all'}
+            onBack={() => setCurrentView('menu')}
           />
         )}
 

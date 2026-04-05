@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight, Receipt } from 'lucide-react';
+import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight, Receipt, ArrowLeft } from 'lucide-react';
 import GarageStatementsPayments from './GarageStatementsPayments';
 
 interface Organization {
@@ -77,9 +77,10 @@ interface GarageLocalAccountsProps {
   garageEmail: string;
   garagePassword: string;
   initialView?: 'active' | 'financial' | 'add-client' | 'all';
+  onBack?: () => void;
 }
 
-export default function GarageLocalAccounts({ garageId, garageName, garageEmail, garagePassword, initialView = 'all' }: GarageLocalAccountsProps) {
+export default function GarageLocalAccounts({ garageId, garageName, garageEmail, garagePassword, initialView = 'all', onBack }: GarageLocalAccountsProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
   const [organizationUsers, setOrganizationUsers] = useState<Record<string, OrgUser[]>>({});
@@ -1013,12 +1014,23 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {initialView === 'active' ? 'Active Accounts' :
-             initialView === 'financial' ? 'Financial Information' :
-             initialView === 'add-client' ? 'Add New Client' :
-             'MyFuelApp Local Accounts'}
-          </h2>
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Back to Menu"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <h2 className="text-lg font-semibold text-gray-900">
+              {initialView === 'active' ? 'Active Accounts' :
+               initialView === 'financial' ? 'Financial Information' :
+               initialView === 'add-client' ? 'Add New Client' :
+               'MyFuelApp Local Accounts'}
+            </h2>
+          </div>
           <span className="text-sm text-gray-600">
             {activeAccounts.length} active client{activeAccounts.length !== 1 ? 's' : ''}
           </span>

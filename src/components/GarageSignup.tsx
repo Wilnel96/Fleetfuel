@@ -178,8 +178,7 @@ export default function GarageSignup({ onBack, onSuccess }: GarageSignupProps) {
         name: formData.contactPersonName.trim(),
         surname: formData.contactPersonSurname.trim(),
         email: formData.contactPersonEmail.trim().toLowerCase(),
-        mobile_phone: formData.contactPersonMobile.trim(),
-        password: formData.password
+        mobile_phone: formData.contactPersonMobile.trim()
       }];
 
       const garageData = {
@@ -204,13 +203,45 @@ export default function GarageSignup({ onBack, onSuccess }: GarageSignupProps) {
         status: 'active'
       };
 
-      const { data, error: createError } = await supabase.rpc('public_garage_signup', {
+      const { data: signupData, error: createError } = await supabase.rpc('public_garage_signup', {
         p_garage_data: garageData
       });
 
       if (createError) {
         console.error('Garage creation error:', createError);
         throw createError;
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.contactPersonEmail.trim().toLowerCase(),
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.contactPersonName.trim(),
+            surname: formData.contactPersonSurname.trim(),
+            role: 'garage_user',
+            organization_id: signupData.organization_id
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('User creation error:', authError);
+        throw authError;
+      }
+
+      if (authData.user) {
+        const { error: linkError } = await supabase.rpc('link_garage_user_to_organization', {
+          p_organization_id: signupData.organization_id,
+          p_user_id: authData.user.id,
+          p_name: formData.contactPersonName.trim(),
+          p_surname: formData.contactPersonSurname.trim(),
+          p_mobile_phone: formData.contactPersonMobile.trim() || null
+        });
+
+        if (linkError) {
+          console.error('User linking error:', linkError);
+        }
       }
 
       setSuccess(true);

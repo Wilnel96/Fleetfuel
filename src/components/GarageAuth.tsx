@@ -20,48 +20,56 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
     setError('');
 
     try {
-      const { data: garages, error: garageError } = await supabase
-        .from('garages')
-        .select('id, name, contact_persons, status');
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: contactEmail.trim().toLowerCase(),
+        password: password
+      });
 
-      if (garageError) throw garageError;
-
-      if (!garages || garages.length === 0) {
+      if (authError) {
         setError('Invalid email or password');
         return;
       }
 
-      let matchedGarage = null;
-
-      for (const garage of garages) {
-        if (garage.status !== 'active') continue;
-
-        const contactPersons = garage.contact_persons as Array<{
-          email: string;
-          password: string;
-          name: string;
-        }>;
-
-        if (!contactPersons || contactPersons.length === 0) continue;
-
-        const matchedContact = contactPersons.find(
-          (contact) =>
-            contact.email?.toLowerCase() === contactEmail.trim().toLowerCase() &&
-            contact.password === password
-        );
-
-        if (matchedContact) {
-          matchedGarage = garage;
-          break;
-        }
-      }
-
-      if (!matchedGarage) {
-        setError('Invalid email or password');
+      if (!authData.user) {
+        setError('Login failed. Please try again.');
         return;
       }
 
-      onLogin(matchedGarage.id, matchedGarage.name, contactEmail.trim(), password);
+      const { data: orgUser, error: orgUserError } = await supabase
+        .from('organization_users')
+        .select(`
+          organization_id,
+          role,
+          organizations!inner(
+            id,
+            name,
+            garages!inner(
+              id,
+              name,
+              status
+            )
+          )
+        `)
+        .eq('user_id', authData.user.id)
+        .eq('is_active', true)
+        .eq('role', 'garage_user')
+        .single();
+
+      if (orgUserError || !orgUser) {
+        await supabase.auth.signOut();
+        setError('You do not have access to the garage portal');
+        return;
+      }
+
+      const garage = (orgUser.organizations as any).garages;
+
+      if (!garage || garage.status !== 'active') {
+        await supabase.auth.signOut();
+        setError('Your garage account is not active. Please contact support.');
+        return;
+      }
+
+      onLogin(garage.id, garage.name, contactEmail.trim(), '');
     } catch (err: any) {
       console.error('Login error:', err);
       setError(err.message || 'An error occurred during login');

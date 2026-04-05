@@ -86,6 +86,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [accountNumberInput, setAccountNumberInput] = useState('');
   const [accountLimitInput, setAccountLimitInput] = useState('');
@@ -480,8 +481,18 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   };
 
   const handleEmailInvoice = async (invoice: FuelInvoice) => {
-    // TODO: Implement invoice email functionality
-    alert(`Email functionality for invoice ${invoice.invoice_number} will be implemented`);
+    setError('');
+    setSuccessMessage('');
+
+    try {
+      setSuccessMessage(`Email functionality for invoice ${invoice.invoice_number} is not yet implemented. This feature will be available soon.`);
+
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 5000);
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const getOrganizationName = (orgId: string): string => {
@@ -1024,6 +1035,15 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600" />
               <p className="text-sm text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {successMessage && !showAddModal && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-blue-600" />
+              <p className="text-sm text-blue-800">{successMessage}</p>
             </div>
           </div>
         )}

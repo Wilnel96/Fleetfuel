@@ -749,7 +749,7 @@ export default function GarageStatementsPayments({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-xl font-bold text-gray-900">
-              {directPaymentMode ? 'Capture Payment' : 'Statements & Payments'}
+              {directPaymentMode ? 'Capture Payment' : showCreateStatement ? 'Create Statement' : showAddPayment ? 'Add Payment' : 'Statements & Payments'}
             </h2>
             <p className="text-gray-600">{organizationName}</p>
           </div>

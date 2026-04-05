@@ -918,7 +918,7 @@ export default function GarageStatementsPayments({
 
         {(directPaymentMode || activeTab === 'payments') && (
           <div>
-            {!directPaymentMode && (
+            {!directPaymentMode && activeTab === 'payments' && (
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Client Payments</h3>
               <button

@@ -1660,6 +1660,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                     organizationId={viewingStatementsOrgId}
                     organizationName={viewingStatementsOrgName}
                     initialTab={financialSubView === 'payments' ? 'payments' : 'statements'}
+                    directPaymentMode={financialSubView === 'payments'}
                     onBack={() => {
                       setViewingStatementsOrgId(null);
                       setViewingStatementsOrgName('');

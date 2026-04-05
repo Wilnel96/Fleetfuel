@@ -54,6 +54,7 @@ interface GarageStatementsPaymentsProps {
   organizationId: string;
   organizationName: string;
   initialTab?: 'statements' | 'payments';
+  directPaymentMode?: boolean;
   onBack: () => void;
 }
 
@@ -63,6 +64,7 @@ export default function GarageStatementsPayments({
   organizationId,
   organizationName,
   initialTab = 'statements',
+  directPaymentMode = false,
   onBack
 }: GarageStatementsPaymentsProps) {
   const [activeTab, setActiveTab] = useState<'statements' | 'payments'>(initialTab);
@@ -93,10 +95,10 @@ export default function GarageStatementsPayments({
   }, []);
 
   useEffect(() => {
-    if (initialTab === 'payments') {
+    if (initialTab === 'payments' && directPaymentMode) {
       setShowAddPayment(true);
     }
-  }, [initialTab]);
+  }, [initialTab, directPaymentMode]);
 
   useEffect(() => {
     const lastStatement = statements[0];
@@ -746,7 +748,9 @@ export default function GarageStatementsPayments({
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Statements & Payments</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              {directPaymentMode ? 'Capture Payment' : 'Statements & Payments'}
+            </h2>
             <p className="text-gray-600">{organizationName}</p>
           </div>
           <button
@@ -765,6 +769,7 @@ export default function GarageStatementsPayments({
           </div>
         )}
 
+        {!directPaymentMode && (
         <div className="border-b border-gray-200 mb-6">
           <div className="flex gap-4">
             <button
@@ -795,8 +800,9 @@ export default function GarageStatementsPayments({
             </button>
           </div>
         </div>
+        )}
 
-        {activeTab === 'statements' && (
+        {!directPaymentMode && activeTab === 'statements' && (
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Account Statements</h3>
@@ -910,8 +916,9 @@ export default function GarageStatementsPayments({
           </div>
         )}
 
-        {activeTab === 'payments' && (
+        {(directPaymentMode || activeTab === 'payments') && (
           <div>
+            {!directPaymentMode && (
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Client Payments</h3>
               <button
@@ -922,6 +929,7 @@ export default function GarageStatementsPayments({
                 Add Payment
               </button>
             </div>
+            )}
 
             {showAddPayment && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -1004,6 +1012,7 @@ export default function GarageStatementsPayments({
               </div>
             )}
 
+            {!directPaymentMode && (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
@@ -1038,6 +1047,7 @@ export default function GarageStatementsPayments({
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}
       </div>

@@ -53,7 +53,7 @@ interface GarageData {
   other_offerings?: OtherOfferings;
 }
 
-type MenuView = 'menu' | 'garage-info' | 'fuel-prices' | 'contact-management' | 'local-accounts' | 'other-offerings';
+type MenuView = 'menu' | 'garage-info' | 'fuel-prices' | 'contact-management' | 'local-accounts' | 'local-accounts-menu' | 'active-accounts' | 'financial-info' | 'add-new-client' | 'other-offerings';
 
 export default function GaragePortal({ garageId, garageName, garageEmail, garagePassword, onLogout }: GaragePortalProps) {
   const [currentView, setCurrentView] = useState<MenuView>('menu');
@@ -323,6 +323,10 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
                    currentView === 'garage-info' ? 'Garage Organization Information' :
                    currentView === 'fuel-prices' ? 'Fuel Prices' :
                    currentView === 'contact-management' ? 'Contact Management' :
+                   currentView === 'local-accounts-menu' ? 'Local Account Clients' :
+                   currentView === 'active-accounts' ? 'Active Accounts' :
+                   currentView === 'financial-info' ? 'Financial Information' :
+                   currentView === 'add-new-client' ? 'Add New Client' :
                    currentView === 'local-accounts' ? 'Local Account Clients' :
                    'Other Offerings'}
                 </p>
@@ -394,7 +398,7 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
               </button>
 
               <button
-                onClick={() => setCurrentView('local-accounts')}
+                onClick={() => setCurrentView('local-accounts-menu')}
                 className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-amber-500 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-start gap-4">
@@ -739,12 +743,69 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
           </div>
         )}
 
-        {currentView === 'local-accounts' && (
+        {currentView === 'local-accounts-menu' && (
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Local Account Clients</h2>
+              <p className="text-sm text-gray-600 mt-1">Manage your local account client organizations</p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <button
+                onClick={() => setCurrentView('active-accounts')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-green-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-600 transition-colors">
+                    <Building2 className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Active Accounts</h3>
+                    <p className="text-sm text-gray-600">View and manage active local account clients</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('financial-info')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                    <Receipt className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Financial Information</h3>
+                    <p className="text-sm text-gray-600">View invoices and financial details</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('add-new-client')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-amber-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-600 transition-colors">
+                    <Plus className="w-6 h-6 text-amber-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Add New Client</h3>
+                    <p className="text-sm text-gray-600">Add a new local account client organization</p>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {(currentView === 'active-accounts' || currentView === 'financial-info' || currentView === 'add-new-client' || currentView === 'local-accounts') && (
           <GarageLocalAccounts
             garageId={garageId}
             garageName={garageName}
             garageEmail={garageEmail}
             garagePassword={garagePassword}
+            initialView={currentView === 'active-accounts' ? 'active' : currentView === 'financial-info' ? 'financial' : currentView === 'add-new-client' ? 'add-client' : 'all'}
           />
         )}
 

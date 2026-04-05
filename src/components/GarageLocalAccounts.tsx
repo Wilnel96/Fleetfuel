@@ -76,9 +76,10 @@ interface GarageLocalAccountsProps {
   garageName: string;
   garageEmail: string;
   garagePassword: string;
+  initialView?: 'active' | 'financial' | 'add-client' | 'all';
 }
 
-export default function GarageLocalAccounts({ garageId, garageName, garageEmail, garagePassword }: GarageLocalAccountsProps) {
+export default function GarageLocalAccounts({ garageId, garageName, garageEmail, garagePassword, initialView = 'all' }: GarageLocalAccountsProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [localAccounts, setLocalAccounts] = useState<LocalAccount[]>([]);
   const [organizationUsers, setOrganizationUsers] = useState<Record<string, OrgUser[]>>({});
@@ -1000,14 +1001,22 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">MyFuelApp Local Accounts</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {initialView === 'active' ? 'Active Accounts' :
+             initialView === 'financial' ? 'Financial Information' :
+             initialView === 'add-client' ? 'Add New Client' :
+             'MyFuelApp Local Accounts'}
+          </h2>
           <span className="text-sm text-gray-600">
             {activeAccounts.length} active client{activeAccounts.length !== 1 ? 's' : ''}
           </span>
         </div>
 
         <p className="text-sm text-gray-600 mb-4">
-          Manage which organizations have local accounts at {garageName}. These clients can refuel at your garage using their account number.
+          {initialView === 'active' ? 'View and manage your active local account clients' :
+           initialView === 'financial' ? 'View invoices and financial information for your local account clients' :
+           initialView === 'add-client' ? 'Add new organizations to your local account client list' :
+           `Manage which organizations have local accounts at ${garageName}. These clients can refuel at your garage using their account number.`}
         </p>
 
         {error && !showAddModal && (
@@ -1019,6 +1028,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           </div>
         )}
 
+        {(initialView === 'all' || initialView === 'add-client') && (
         <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -1031,9 +1041,10 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             />
           </div>
         </div>
+        )}
 
         <div className="space-y-6">
-          {activeAccounts.length > 0 && (
+          {(initialView === 'active' || initialView === 'all') && activeAccounts.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 mb-3">Active Accounts</h3>
               <div className="space-y-2">
@@ -1234,7 +1245,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             </div>
           )}
 
-          {inactiveAccounts.length > 0 && (
+          {(initialView === 'active' || initialView === 'all') && inactiveAccounts.length > 0 && (
             <div>
               <h3 className="text-sm font-medium text-gray-900 mb-3">Inactive Accounts</h3>
               <div className="space-y-2">
@@ -1284,6 +1295,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             </div>
           )}
 
+          {(initialView === 'add-client' || initialView === 'all') && (
           <div>
             <h3 className="text-sm font-medium text-gray-900 mb-3">Add New Client</h3>
             <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg">
@@ -1329,8 +1341,10 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
               )}
             </div>
           </div>
+          )}
 
           {/* Financial Information Section */}
+          {(initialView === 'financial' || initialView === 'all') && (
           <div className="mt-6">
             <button
               onClick={() => setShowFinancialSection(!showFinancialSection)}
@@ -1482,8 +1496,10 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
               </div>
             )}
           </div>
+          )}
         </div>
 
+        {initialView === 'all' && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
           <p className="text-blue-900 text-sm font-medium">About Local Accounts:</p>
           <ul className="text-blue-800 text-sm mt-2 space-y-1 list-disc list-inside">
@@ -1493,6 +1509,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             <li>Toggle accounts on/off as needed without deleting the relationship</li>
           </ul>
         </div>
+        )}
       </div>
     </>
   );

@@ -235,14 +235,47 @@ export default function GarageStatementsPayments({
 
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('fuel_transaction_invoices')
-        .select('id, invoice_number, transaction_date, vehicle_registration, fuel_type, liters, total_amount, oil_quantity, oil_total_amount')
+        .select(`
+          id,
+          invoice_number,
+          transaction_date,
+          vehicle_registration,
+          fuel_type,
+          liters,
+          total_amount,
+          oil_quantity,
+          oil_total_amount,
+          fuel_transaction_id
+        `)
         .eq('organization_id', organizationId)
-        .eq('garage_name', garageName)
         .gte('transaction_date', statement.period_start)
         .lte('transaction_date', statement.period_end)
         .order('transaction_date', { ascending: true });
 
       if (invoicesError) throw invoicesError;
+
+      let filteredInvoices = invoicesData || [];
+
+      if (filteredInvoices.length > 0 && filteredInvoices[0].fuel_transaction_id) {
+        const transactionIds = filteredInvoices
+          .map(inv => inv.fuel_transaction_id)
+          .filter(id => id != null);
+
+        if (transactionIds.length > 0) {
+          const { data: transactionsData, error: transactionsError } = await supabase
+            .from('fuel_transactions')
+            .select('id')
+            .eq('garage_id', garageId)
+            .in('id', transactionIds);
+
+          if (transactionsError) throw transactionsError;
+
+          const validTransactionIds = new Set((transactionsData || []).map(t => t.id));
+          filteredInvoices = filteredInvoices.filter(inv =>
+            inv.fuel_transaction_id && validTransactionIds.has(inv.fuel_transaction_id)
+          );
+        }
+      }
 
       const { data: paymentsData, error: paymentsError } = await supabase
         .from('garage_client_payments')
@@ -255,7 +288,7 @@ export default function GarageStatementsPayments({
 
       if (paymentsError) throw paymentsError;
 
-      setStatementInvoices(invoicesData || []);
+      setStatementInvoices(filteredInvoices);
       setStatementPayments(paymentsData || []);
     } catch (err: any) {
       setError(err.message);

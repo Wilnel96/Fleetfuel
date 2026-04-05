@@ -804,6 +804,7 @@ export default function GarageStatementsPayments({
 
         {!directPaymentMode && activeTab === 'statements' && (
           <div>
+            {!showCreateStatement && (
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">Account Statements</h3>
               <button
@@ -814,6 +815,7 @@ export default function GarageStatementsPayments({
                 Create Statement
               </button>
             </div>
+            )}
 
             {showCreateStatement && (
               <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -856,6 +858,7 @@ export default function GarageStatementsPayments({
               </div>
             )}
 
+            {!showCreateStatement && (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
@@ -913,6 +916,7 @@ export default function GarageStatementsPayments({
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         )}
 

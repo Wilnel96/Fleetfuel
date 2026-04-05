@@ -102,6 +102,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [financialInvoices, setFinancialInvoices] = useState<FuelInvoice[]>([]);
   const [loadingFinancialInvoices, setLoadingFinancialInvoices] = useState(false);
   const [showFinancialSection, setShowFinancialSection] = useState(false);
+  const [financialSubView, setFinancialSubView] = useState<'menu' | 'invoices' | 'statements'>('menu');
   const [viewingStatementsOrgId, setViewingStatementsOrgId] = useState<string | null>(null);
   const [viewingStatementsOrgName, setViewingStatementsOrgName] = useState<string>('');
   const isDraggingRef = useRef(false);
@@ -1366,25 +1367,67 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           {/* Financial Information Section */}
           {(initialView === 'financial' || initialView === 'all') && (
           <div className="mt-6">
-            <button
-              onClick={() => setShowFinancialSection(!showFinancialSection)}
-              className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg hover:from-green-100 hover:to-emerald-100 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-green-700" />
-                <h3 className="text-sm font-semibold text-green-900">Financial Information</h3>
-              </div>
-              {showFinancialSection ? (
-                <ChevronDown className="w-5 h-5 text-green-700" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-green-700" />
-              )}
-            </button>
+            {financialSubView === 'menu' ? (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="w-5 h-5 text-green-700" />
+                  <h3 className="text-sm font-semibold text-green-900">Financial Information</h3>
+                </div>
 
-            {showFinancialSection && (
-              <div className="mt-3 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setFinancialSubView('invoices')}
+                    className="bg-white border-2 border-green-200 rounded-lg p-4 hover:border-green-400 hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 rounded-lg group-hover:bg-blue-100 transition-colors">
+                        <Receipt className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-sm">View Fuel Invoices</h4>
+                        <p className="text-xs text-gray-600 mt-0.5">View and download client invoices</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setFinancialSubView('statements')}
+                    className="bg-white border-2 border-green-200 rounded-lg p-4 hover:border-green-400 hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-50 rounded-lg group-hover:bg-green-100 transition-colors">
+                        <FileText className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-sm">Create Statements</h4>
+                        <p className="text-xs text-gray-600 mt-0.5">Generate and manage client statements</p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            ) : financialSubView === 'invoices' ? (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">View Fuel Invoices</h3>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFinancialSubView('menu');
+                      setSelectedFinancialOrgId(null);
+                      setFinancialInvoices([]);
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                  >
+                    <X className="w-4 h-4" />
+                    Back
+                  </button>
+                </div>
+
                 {/* Client Selection */}
-                <div>
+                <div className="mb-4">
                   <label className="block text-xs font-medium text-gray-700 mb-2">
                     Select Client to View Invoices
                   </label>
@@ -1399,7 +1442,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                         setFinancialInvoices([]);
                       }
                     }}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="">-- Select a local account client --</option>
                     {activeAccounts.map((account) => {
@@ -1416,7 +1459,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
                 {/* Invoices Display */}
                 {selectedFinancialOrgId && (
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div>
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-gray-900">
                         Client Invoices
@@ -1436,7 +1479,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                     ) : financialInvoices.length > 0 ? (
                       <div className="space-y-3 max-h-96 overflow-y-auto">
                         {financialInvoices.map((invoice) => (
-                          <div key={invoice.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-green-300 transition-colors">
+                          <div key={invoice.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-blue-300 transition-colors">
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1512,6 +1555,70 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                       </div>
                     )}
                   </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-green-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">Create Statements</h3>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFinancialSubView('menu');
+                      setViewingStatementsOrgId(null);
+                      setViewingStatementsOrgName('');
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                  >
+                    <X className="w-4 h-4" />
+                    Back
+                  </button>
+                </div>
+
+                {/* Client Selection for Statements */}
+                {!viewingStatementsOrgId ? (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Select Client to Create/View Statements
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const orgId = e.target.value;
+                        if (orgId) {
+                          const org = organizations.find(o => o.id === orgId);
+                          if (org) {
+                            setViewingStatementsOrgId(orgId);
+                            setViewingStatementsOrgName(org.name);
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">-- Select a local account client --</option>
+                      {activeAccounts.map((account) => {
+                        const org = organizations.find(o => o.id === account.organization_id);
+                        if (!org) return null;
+                        return (
+                          <option key={account.id} value={org.id}>
+                            {org.name} {account.account_number ? `(Acc: ${account.account_number})` : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                ) : (
+                  <GarageStatementsPayments
+                    garageId={garageId}
+                    garageName={garageName}
+                    organizationId={viewingStatementsOrgId}
+                    organizationName={viewingStatementsOrgName}
+                    onBack={() => {
+                      setViewingStatementsOrgId(null);
+                      setViewingStatementsOrgName('');
+                    }}
+                  />
                 )}
               </div>
             )}

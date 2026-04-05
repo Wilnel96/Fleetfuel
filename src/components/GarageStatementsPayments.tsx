@@ -36,10 +36,15 @@ interface Invoice {
   invoice_number: string;
   transaction_date: string;
   vehicle_registration: string;
+  driver_name: string;
   fuel_type: string;
   liters: number;
+  price_per_liter: number;
   total_amount: number;
+  odometer_reading?: number;
+  oil_type?: string;
   oil_quantity?: number;
+  oil_unit_price?: number;
   oil_total_amount?: number;
 }
 
@@ -240,10 +245,15 @@ export default function GarageStatementsPayments({
           invoice_number,
           transaction_date,
           vehicle_registration,
+          driver_name,
           fuel_type,
           liters,
+          price_per_liter,
           total_amount,
+          odometer_reading,
+          oil_type,
           oil_quantity,
+          oil_unit_price,
           oil_total_amount,
           fuel_transaction_id
         `)
@@ -375,13 +385,17 @@ export default function GarageStatementsPayments({
 
     yPosition += 5;
 
-    pdf.setFontSize(8);
+    pdf.setFontSize(7);
     pdf.setTextColor(75, 85, 99);
     pdf.text('Date', margin + 3, yPosition);
-    pdf.text('Description', margin + 25, yPosition);
-    pdf.text('Liters', margin + 90, yPosition, { align: 'right' });
-    pdf.text('Debit', margin + 120, yPosition, { align: 'right' });
-    pdf.text('Credit', margin + 150, yPosition, { align: 'right' });
+    pdf.text('Invoice/Payment', margin + 20, yPosition);
+    pdf.text('Driver/Vehicle', margin + 52, yPosition);
+    pdf.text('Fuel', margin + 85, yPosition);
+    pdf.text('Liters', margin + 105, yPosition, { align: 'right' });
+    pdf.text('R/L', margin + 118, yPosition, { align: 'right' });
+    pdf.text('Oil', margin + 130, yPosition);
+    pdf.text('Debit', margin + 147, yPosition, { align: 'right' });
+    pdf.text('Credit', margin + 165, yPosition, { align: 'right' });
     pdf.text('Balance', margin + contentWidth - 3, yPosition, { align: 'right' });
 
     yPosition += 2;
@@ -396,35 +410,52 @@ export default function GarageStatementsPayments({
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(17, 24, 39);
     pdf.text('', margin + 3, yPosition);
-    pdf.text('Opening Balance', margin + 25, yPosition);
-    pdf.text('', margin + 90, yPosition, { align: 'right' });
-    pdf.text('', margin + 120, yPosition, { align: 'right' });
-    pdf.text('', margin + 150, yPosition, { align: 'right' });
+    pdf.text('Opening Balance', margin + 20, yPosition);
     pdf.setFont('helvetica', 'bold');
     pdf.text(`R ${runningBalance.toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
 
     yPosition += 5;
 
-    const allTransactions: Array<{ date: string; description: string; liters: string; debit: number; credit: number; }> = [];
+    const allTransactions: Array<{
+      date: string;
+      invoiceNum: string;
+      driver: string;
+      vehicle: string;
+      fuel: string;
+      liters: string;
+      pricePerLiter: string;
+      oil: string;
+      debit: number;
+      credit: number;
+    }> = [];
 
     statementInvoices.forEach(inv => {
-      const description = `Invoice ${inv.invoice_number} - ${inv.vehicle_registration} - ${inv.fuel_type}`;
-      const liters = inv.liters ? inv.liters.toFixed(2) : '';
+      const fuelAmount = inv.liters * inv.price_per_liter;
+      const oilInfo = inv.oil_type ? `${inv.oil_quantity}x ${inv.oil_type.substring(0, 8)}` : '';
       allTransactions.push({
         date: new Date(inv.transaction_date).toLocaleDateString('en-ZA'),
-        description,
-        liters,
+        invoiceNum: inv.invoice_number,
+        driver: inv.driver_name.substring(0, 15),
+        vehicle: inv.vehicle_registration,
+        fuel: inv.fuel_type.substring(0, 10),
+        liters: inv.liters.toFixed(1),
+        pricePerLiter: inv.price_per_liter.toFixed(2),
+        oil: oilInfo,
         debit: inv.total_amount,
         credit: 0
       });
     });
 
     statementPayments.forEach(pmt => {
-      const description = `Payment ${pmt.payment_number} - ${pmt.payment_method.toUpperCase()}${pmt.reference ? ` - ${pmt.reference}` : ''}`;
       allTransactions.push({
         date: new Date(pmt.payment_date).toLocaleDateString('en-ZA'),
-        description,
+        invoiceNum: pmt.payment_number,
+        driver: pmt.payment_method.toUpperCase(),
+        vehicle: pmt.reference || '',
+        fuel: '',
         liters: '',
+        pricePerLiter: '',
+        oil: '',
         debit: 0,
         credit: pmt.amount
       });
@@ -440,17 +471,22 @@ export default function GarageStatementsPayments({
 
       runningBalance += txn.debit - txn.credit;
 
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
       pdf.text(txn.date, margin + 3, yPosition);
-      const maxDescWidth = 60;
-      const descLines = pdf.splitTextToSize(txn.description, maxDescWidth);
-      pdf.text(descLines[0], margin + 25, yPosition);
-      pdf.text(txn.liters, margin + 90, yPosition, { align: 'right' });
-      pdf.text(txn.debit > 0 ? `R ${txn.debit.toFixed(2)}` : '', margin + 120, yPosition, { align: 'right' });
-      pdf.text(txn.credit > 0 ? `R ${txn.credit.toFixed(2)}` : '', margin + 150, yPosition, { align: 'right' });
+      pdf.text(txn.invoiceNum, margin + 20, yPosition);
+      pdf.text(txn.driver, margin + 52, yPosition);
+      pdf.text(txn.vehicle, margin + 70, yPosition);
+      pdf.text(txn.fuel, margin + 85, yPosition);
+      pdf.text(txn.liters, margin + 105, yPosition, { align: 'right' });
+      pdf.text(txn.pricePerLiter, margin + 118, yPosition, { align: 'right' });
+      pdf.text(txn.oil, margin + 130, yPosition);
+      pdf.text(txn.debit > 0 ? `R ${txn.debit.toFixed(2)}` : '', margin + 147, yPosition, { align: 'right' });
+      pdf.text(txn.credit > 0 ? `R ${txn.credit.toFixed(2)}` : '', margin + 165, yPosition, { align: 'right' });
+      pdf.setFont('helvetica', 'bold');
       pdf.text(`R ${runningBalance.toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
 
-      yPosition += 5;
+      yPosition += 4;
     });
 
     yPosition += 5;
@@ -588,29 +624,60 @@ export default function GarageStatementsPayments({
               <p className="text-gray-500 text-center py-8">No invoices in this period</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Odometer</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel Type</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">R/L</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Fuel Amount</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Oil</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Oil Amount</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {statementInvoices.map((inv) => (
-                      <tr key={inv.id}>
-                        <td className="px-4 py-3 text-sm">{new Date(inv.transaction_date).toLocaleDateString('en-ZA')}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{inv.invoice_number}</td>
-                        <td className="px-4 py-3 text-sm">{inv.vehicle_registration}</td>
-                        <td className="px-4 py-3 text-sm">{inv.fuel_type}</td>
-                        <td className="px-4 py-3 text-sm text-right">{inv.liters.toFixed(2)} L</td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold">R {inv.total_amount.toFixed(2)}</td>
-                      </tr>
-                    ))}
+                    {statementInvoices.map((inv) => {
+                      const fuelAmount = inv.liters * inv.price_per_liter;
+                      return (
+                        <tr key={inv.id} className="hover:bg-gray-50">
+                          <td className="px-3 py-3 whitespace-nowrap">{new Date(inv.transaction_date).toLocaleDateString('en-ZA')}</td>
+                          <td className="px-3 py-3 font-medium whitespace-nowrap">{inv.invoice_number}</td>
+                          <td className="px-3 py-3">{inv.driver_name}</td>
+                          <td className="px-3 py-3 whitespace-nowrap">{inv.vehicle_registration}</td>
+                          <td className="px-3 py-3 text-right text-gray-600">{inv.odometer_reading?.toLocaleString() || '-'}</td>
+                          <td className="px-3 py-3">{inv.fuel_type}</td>
+                          <td className="px-3 py-3 text-right">{inv.liters.toFixed(2)}</td>
+                          <td className="px-3 py-3 text-right text-gray-600">{inv.price_per_liter.toFixed(2)}</td>
+                          <td className="px-3 py-3 text-right font-medium">R {fuelAmount.toFixed(2)}</td>
+                          <td className="px-3 py-3">
+                            {inv.oil_type ? (
+                              <span className="text-xs">
+                                {inv.oil_quantity}x {inv.oil_type}
+                              </span>
+                            ) : '-'}
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            {inv.oil_total_amount ? `R ${inv.oil_total_amount.toFixed(2)}` : '-'}
+                          </td>
+                          <td className="px-3 py-3 text-right font-bold text-blue-600">R {inv.total_amount.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
+                  <tfoot className="bg-gray-50 border-t-2">
+                    <tr>
+                      <td colSpan={11} className="px-3 py-3 text-right font-bold">Total Invoices:</td>
+                      <td className="px-3 py-3 text-right font-bold text-blue-600">
+                        R {statementInvoices.reduce((sum, inv) => sum + inv.total_amount, 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}

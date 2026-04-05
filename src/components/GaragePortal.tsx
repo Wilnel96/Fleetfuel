@@ -67,6 +67,19 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [editedGarageInfo, setEditedGarageInfo] = useState({
+    name: '',
+    address_line_1: '',
+    address_line_2: '',
+    city: '',
+    province: '',
+    postal_code: '',
+    latitude: '',
+    longitude: '',
+    phone_number: '',
+    email_address: '',
+    fuel_brand: ''
+  });
 
   useEffect(() => {
     loadGarageData();
@@ -96,11 +109,80 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
       setFuelPrices(roundedFuelPrices);
       setOtherOfferings(data.other_offerings || {});
       setContactPersons(data.contact_persons || []);
+      setEditedGarageInfo({
+        name: data.name || '',
+        address_line_1: data.address_line_1 || '',
+        address_line_2: data.address_line_2 || '',
+        city: data.city || '',
+        province: data.province || '',
+        postal_code: data.postal_code || '',
+        latitude: data.latitude?.toString() || '',
+        longitude: data.longitude?.toString() || '',
+        phone_number: data.phone_number || '',
+        email_address: data.email_address || '',
+        fuel_brand: data.fuel_brand || ''
+      });
     } catch (err: any) {
       console.error('Error loading garage:', err);
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveGarageInfo = async () => {
+    setSaving(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const updateData: any = {
+        name: editedGarageInfo.name.trim(),
+        address_line_1: editedGarageInfo.address_line_1.trim(),
+        address_line_2: editedGarageInfo.address_line_2.trim(),
+        city: editedGarageInfo.city.trim(),
+        province: editedGarageInfo.province,
+        postal_code: editedGarageInfo.postal_code.trim(),
+        phone_number: editedGarageInfo.phone_number.trim(),
+        email_address: editedGarageInfo.email_address.trim(),
+        fuel_brand: editedGarageInfo.fuel_brand.trim()
+      };
+
+      if (editedGarageInfo.latitude.trim()) {
+        updateData.latitude = parseFloat(editedGarageInfo.latitude);
+      }
+      if (editedGarageInfo.longitude.trim()) {
+        updateData.longitude = parseFloat(editedGarageInfo.longitude);
+      }
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          garageEmail,
+          garagePassword,
+          garageId,
+          updateData,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update garage information');
+      }
+
+      setSuccess('Garage information updated successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+      await loadGarageData();
+    } catch (err: any) {
+      console.error('Error updating garage information:', err);
+      setError(err.message || 'Failed to update garage information');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -345,81 +427,198 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
         )}
 
         {currentView === 'garage-info' && (
-          <div className="grid gap-6 lg:grid-cols-2">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
+          <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-6">Garage Information</h2>
 
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-green-800">{success}</p>
+              </div>
+            )}
+
             <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Garage Name</label>
-                <div className="flex items-start gap-2 mt-1 text-gray-900">
-                  <Building2 className="w-4 h-4 mt-1 text-gray-400" />
-                  <div className="font-medium">{garage.name}</div>
-                </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Garage Name *
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.name}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, name: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Address Line 1 *
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.address_line_1}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, address_line_1: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Street address"
+                  required
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Address Line 2
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.address_line_2}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, address_line_2: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Suburb, Unit, etc."
+                />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-600">Location</label>
-                <div className="flex items-start gap-2 mt-1 text-gray-900">
-                  <MapPin className="w-4 h-4 mt-1 text-gray-400" />
-                  <div>
-                    {[
-                      garage.address_line_1,
-                      garage.address_line_2,
-                      garage.city,
-                      garage.province,
-                      garage.postal_code
-                    ].filter(field => field && field.trim() !== '').join(', ')}
-                  </div>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  City *
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.city}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, city: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
               </div>
 
-              {garage.phone_number && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Contact Phone</label>
-                  <div className="flex items-start gap-2 mt-1 text-gray-900">
-                    <Store className="w-4 h-4 mt-1 text-gray-400" />
-                    <div>{garage.phone_number}</div>
-                  </div>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Province *
+                </label>
+                <select
+                  value={editedGarageInfo.province}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, province: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                  required
+                >
+                  <option value="">Select province</option>
+                  <option value="Eastern Cape">Eastern Cape</option>
+                  <option value="Free State">Free State</option>
+                  <option value="Gauteng">Gauteng</option>
+                  <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                  <option value="Limpopo">Limpopo</option>
+                  <option value="Mpumalanga">Mpumalanga</option>
+                  <option value="Northern Cape">Northern Cape</option>
+                  <option value="North West">North West</option>
+                  <option value="Western Cape">Western Cape</option>
+                </select>
+              </div>
 
-              {garage.email_address && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Email Address</label>
-                  <div className="flex items-start gap-2 mt-1 text-gray-900">
-                    <Store className="w-4 h-4 mt-1 text-gray-400" />
-                    <div>{garage.email_address}</div>
-                  </div>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Postal Code
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.postal_code}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, postal_code: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0000"
+                />
+              </div>
 
-              {(garage.latitude || garage.longitude) && (
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium text-gray-600">Coordinates</label>
-                  <div className="flex items-start gap-2 mt-1 text-gray-900">
-                    <MapPin className="w-4 h-4 mt-1 text-gray-400" />
-                    <div className="space-y-1">
-                      {garage.latitude && (
-                        <div><span className="text-gray-600">Latitude:</span> {garage.latitude}</div>
-                      )}
-                      {garage.longitude && (
-                        <div><span className="text-gray-600">Longitude:</span> {garage.longitude}</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Latitude (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.latitude}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, latitude: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="-26.2041"
+                />
+              </div>
 
-              {garage.fuel_brand && (
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Fuel Brand</label>
-                  <div className="flex items-start gap-2 mt-1">
-                    <Fuel className="w-4 h-4 mt-1 text-gray-400" />
-                    <div className="text-gray-900 font-medium">{garage.fuel_brand}</div>
-                  </div>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Longitude (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editedGarageInfo.longitude}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, longitude: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="28.0473"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Contact Phone *
+                </label>
+                <input
+                  type="tel"
+                  value={editedGarageInfo.phone_number}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, phone_number: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="012 345 6789"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  value={editedGarageInfo.email_address}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, email_address: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="info@garage.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fuel Brand
+                </label>
+                <select
+                  value={editedGarageInfo.fuel_brand}
+                  onChange={(e) => setEditedGarageInfo({ ...editedGarageInfo, fuel_brand: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                >
+                  <option value="">Select fuel brand</option>
+                  <option value="Shell">Shell</option>
+                  <option value="BP">BP</option>
+                  <option value="Total">Total</option>
+                  <option value="Engen">Engen</option>
+                  <option value="Sasol">Sasol</option>
+                  <option value="Caltex">Caltex</option>
+                  <option value="Independent">Independent</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={handleSaveGarageInfo}
+                disabled={saving}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </div>

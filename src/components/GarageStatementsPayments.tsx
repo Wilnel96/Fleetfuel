@@ -385,108 +385,123 @@ export default function GarageStatementsPayments({
 
     yPosition += 5;
 
-    pdf.setFontSize(7);
-    pdf.setTextColor(75, 85, 99);
-    pdf.text('Date', margin + 3, yPosition);
-    pdf.text('Invoice/Payment', margin + 20, yPosition);
-    pdf.text('Driver/Vehicle', margin + 52, yPosition);
-    pdf.text('Fuel', margin + 85, yPosition);
-    pdf.text('Liters', margin + 105, yPosition, { align: 'right' });
-    pdf.text('R/L', margin + 118, yPosition, { align: 'right' });
-    pdf.text('Oil', margin + 130, yPosition);
-    pdf.text('Debit', margin + 147, yPosition, { align: 'right' });
-    pdf.text('Credit', margin + 165, yPosition, { align: 'right' });
-    pdf.text('Balance', margin + contentWidth - 3, yPosition, { align: 'right' });
-
-    yPosition += 2;
     pdf.setDrawColor(209, 213, 219);
     pdf.setLineWidth(0.3);
     pdf.line(margin, yPosition, pageWidth - margin, yPosition);
 
-    yPosition += 4;
+    yPosition += 5;
     let runningBalance = statement.opening_balance;
 
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(17, 24, 39);
-    pdf.text('', margin + 3, yPosition);
-    pdf.text('Opening Balance', margin + 20, yPosition);
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`R ${runningBalance.toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
+    pdf.setTextColor(17, 24, 39);
+    pdf.text('Opening Balance:', margin + 5, yPosition);
+    pdf.text(`R ${runningBalance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
-    yPosition += 5;
+    yPosition += 6;
 
-    const allTransactions: Array<{
+    interface Transaction {
+      type: 'invoice' | 'payment';
       date: string;
-      invoiceNum: string;
-      driver: string;
-      vehicle: string;
-      fuel: string;
-      liters: string;
-      pricePerLiter: string;
-      oil: string;
-      debit: number;
-      credit: number;
-    }> = [];
+      data: Invoice | Payment;
+    }
+
+    const allTransactions: Transaction[] = [];
 
     statementInvoices.forEach(inv => {
-      const fuelAmount = inv.liters * inv.price_per_liter;
-      const oilInfo = inv.oil_type ? `${inv.oil_quantity}x ${inv.oil_type.substring(0, 8)}` : '';
       allTransactions.push({
-        date: new Date(inv.transaction_date).toLocaleDateString('en-ZA'),
-        invoiceNum: inv.invoice_number,
-        driver: inv.driver_name.substring(0, 15),
-        vehicle: inv.vehicle_registration,
-        fuel: inv.fuel_type.substring(0, 10),
-        liters: inv.liters.toFixed(1),
-        pricePerLiter: inv.price_per_liter.toFixed(2),
-        oil: oilInfo,
-        debit: inv.total_amount,
-        credit: 0
+        type: 'invoice',
+        date: inv.transaction_date,
+        data: inv
       });
     });
 
     statementPayments.forEach(pmt => {
       allTransactions.push({
-        date: new Date(pmt.payment_date).toLocaleDateString('en-ZA'),
-        invoiceNum: pmt.payment_number,
-        driver: pmt.payment_method.toUpperCase(),
-        vehicle: pmt.reference || '',
-        fuel: '',
-        liters: '',
-        pricePerLiter: '',
-        oil: '',
-        debit: 0,
-        credit: pmt.amount
+        type: 'payment',
+        date: pmt.payment_date,
+        data: pmt
       });
     });
 
     allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    allTransactions.forEach(txn => {
-      if (yPosition > 270) {
+    allTransactions.forEach((txn) => {
+      if (yPosition > 260) {
         pdf.addPage();
-        yPosition = margin;
+        yPosition = margin + 10;
       }
 
-      runningBalance += txn.debit - txn.credit;
+      if (txn.type === 'invoice') {
+        const inv = txn.data as Invoice;
+        runningBalance += inv.total_amount;
 
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text(txn.date, margin + 3, yPosition);
-      pdf.text(txn.invoiceNum, margin + 20, yPosition);
-      pdf.text(txn.driver, margin + 52, yPosition);
-      pdf.text(txn.vehicle, margin + 70, yPosition);
-      pdf.text(txn.fuel, margin + 85, yPosition);
-      pdf.text(txn.liters, margin + 105, yPosition, { align: 'right' });
-      pdf.text(txn.pricePerLiter, margin + 118, yPosition, { align: 'right' });
-      pdf.text(txn.oil, margin + 130, yPosition);
-      pdf.text(txn.debit > 0 ? `R ${txn.debit.toFixed(2)}` : '', margin + 147, yPosition, { align: 'right' });
-      pdf.text(txn.credit > 0 ? `R ${txn.credit.toFixed(2)}` : '', margin + 165, yPosition, { align: 'right' });
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`R ${runningBalance.toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.2);
+        pdf.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
 
-      yPosition += 4;
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${new Date(inv.transaction_date).toLocaleDateString('en-ZA')} - ${inv.invoice_number}`, margin + 5, yPosition);
+        pdf.text(`R ${inv.total_amount.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+
+        yPosition += 4;
+
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`Fuel: ${inv.liters.toFixed(2)} L ${inv.fuel_type} @ R${inv.price_per_liter.toFixed(2)}/L = R${(inv.liters * inv.price_per_liter).toFixed(2)}`, margin + 8, yPosition);
+
+        yPosition += 3.5;
+
+        if (inv.oil_type && inv.oil_quantity) {
+          pdf.text(`Oil: ${inv.oil_quantity}x ${inv.oil_type} @ R${inv.oil_unit_price?.toFixed(2) || '0.00'} = R${inv.oil_total_amount?.toFixed(2) || '0.00'}`, margin + 8, yPosition);
+          yPosition += 3.5;
+        }
+
+        pdf.text(`Driver: ${inv.driver_name} | Vehicle: ${inv.vehicle_registration} | Odometer: ${inv.odometer_reading?.toLocaleString() || 'N/A'} km`, margin + 8, yPosition);
+
+        yPosition += 4;
+
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(29, 78, 216);
+        pdf.text(`Balance: R ${runningBalance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+
+        yPosition += 5;
+
+      } else {
+        const pmt = txn.data as Payment;
+        runningBalance -= pmt.amount;
+
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.2);
+        pdf.line(margin, yPosition - 2, pageWidth - margin, yPosition - 2);
+
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(`${new Date(pmt.payment_date).toLocaleDateString('en-ZA')} - ${pmt.payment_number}`, margin + 5, yPosition);
+        pdf.setTextColor(34, 197, 94);
+        pdf.text(`-R ${pmt.amount.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+
+        yPosition += 4;
+
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`Payment: ${pmt.payment_method.toUpperCase()}${pmt.reference ? ` - ${pmt.reference}` : ''}`, margin + 8, yPosition);
+
+        yPosition += 4;
+
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(29, 78, 216);
+        pdf.text(`Balance: R ${runningBalance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+
+        yPosition += 5;
+      }
     });
 
     yPosition += 5;

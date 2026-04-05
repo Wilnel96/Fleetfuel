@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName, sortFuelTypes, AVAILABLE_FUEL_TYPES } from '../lib/fuelTypes';
-import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2, Building2, Users, Fuel, ShoppingBag, Home, ArrowLeft, Receipt } from 'lucide-react';
+import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2, Building2, Users, Fuel, ShoppingBag, Home, ArrowLeft, Receipt, FileText, CreditCard } from 'lucide-react';
 import GarageContactManagement from './GarageContactManagement';
 import GarageLocalAccounts from './GarageLocalAccounts';
 
@@ -53,7 +53,7 @@ interface GarageData {
   other_offerings?: OtherOfferings;
 }
 
-type MenuView = 'menu' | 'garage-info' | 'fuel-prices' | 'contact-management' | 'local-accounts' | 'local-accounts-menu' | 'active-accounts' | 'financial-info' | 'add-new-client' | 'other-offerings';
+type MenuView = 'menu' | 'garage-info' | 'fuel-prices' | 'contact-management' | 'local-accounts' | 'local-accounts-menu' | 'active-accounts' | 'view-invoices' | 'create-statements' | 'payments' | 'add-new-client' | 'other-offerings';
 
 export default function GaragePortal({ garageId, garageName, garageEmail, garagePassword, onLogout }: GaragePortalProps) {
   const [currentView, setCurrentView] = useState<MenuView>('menu');
@@ -306,7 +306,9 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
             <div className="flex items-center gap-3">
               {currentView !== 'menu' &&
                currentView !== 'active-accounts' &&
-               currentView !== 'financial-info' &&
+               currentView !== 'view-invoices' &&
+               currentView !== 'create-statements' &&
+               currentView !== 'payments' &&
                currentView !== 'add-new-client' &&
                currentView !== 'local-accounts' && (
                 <button
@@ -329,7 +331,9 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
                    currentView === 'contact-management' ? 'Contact Management' :
                    currentView === 'local-accounts-menu' ? 'Local Account Clients' :
                    currentView === 'active-accounts' ? 'Active Accounts' :
-                   currentView === 'financial-info' ? 'Financial Information' :
+                   currentView === 'view-invoices' ? 'View Fuel Invoices' :
+                   currentView === 'create-statements' ? 'Create Statements' :
+                   currentView === 'payments' ? 'Payments' :
                    currentView === 'add-new-client' ? 'Add New Client' :
                    currentView === 'local-accounts' ? 'Local Account Clients' :
                    'Other Offerings'}
@@ -771,7 +775,7 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
               </button>
 
               <button
-                onClick={() => setCurrentView('financial-info')}
+                onClick={() => setCurrentView('view-invoices')}
                 className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-blue-500 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-start gap-4">
@@ -779,8 +783,38 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
                     <Receipt className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Financial Information</h3>
-                    <p className="text-sm text-gray-600">View invoices and financial details</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">View Fuel Invoices</h3>
+                    <p className="text-sm text-gray-600">View and download client fuel invoices</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('create-statements')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-green-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-600 transition-colors">
+                    <FileText className="w-6 h-6 text-green-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Create Statements</h3>
+                    <p className="text-sm text-gray-600">Generate and manage client statements</p>
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCurrentView('payments')}
+                className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:border-emerald-500 hover:shadow-md transition-all text-left group"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center group-hover:bg-emerald-600 transition-colors">
+                    <CreditCard className="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Payments</h3>
+                    <p className="text-sm text-gray-600">Record and manage client payments</p>
                   </div>
                 </div>
               </button>
@@ -803,13 +837,20 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
           </div>
         )}
 
-        {(currentView === 'active-accounts' || currentView === 'financial-info' || currentView === 'add-new-client' || currentView === 'local-accounts') && (
+        {(currentView === 'active-accounts' || currentView === 'view-invoices' || currentView === 'create-statements' || currentView === 'payments' || currentView === 'add-new-client' || currentView === 'local-accounts') && (
           <GarageLocalAccounts
             garageId={garageId}
             garageName={garageName}
             garageEmail={garageEmail}
             garagePassword={garagePassword}
-            initialView={currentView === 'active-accounts' ? 'active' : currentView === 'financial-info' ? 'financial' : currentView === 'add-new-client' ? 'add-client' : 'all'}
+            initialView={
+              currentView === 'active-accounts' ? 'active' :
+              currentView === 'view-invoices' ? 'view-invoices' :
+              currentView === 'create-statements' ? 'create-statements' :
+              currentView === 'payments' ? 'payments' :
+              currentView === 'add-new-client' ? 'add-client' :
+              'all'
+            }
             onBack={() => setCurrentView('menu')}
           />
         )}

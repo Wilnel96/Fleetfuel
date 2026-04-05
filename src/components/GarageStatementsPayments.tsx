@@ -53,6 +53,7 @@ interface GarageStatementsPaymentsProps {
   garageName: string;
   organizationId: string;
   organizationName: string;
+  initialTab?: 'statements' | 'payments';
   onBack: () => void;
 }
 
@@ -61,9 +62,10 @@ export default function GarageStatementsPayments({
   garageName,
   organizationId,
   organizationName,
+  initialTab = 'statements',
   onBack
 }: GarageStatementsPaymentsProps) {
-  const [activeTab, setActiveTab] = useState<'statements' | 'payments'>('statements');
+  const [activeTab, setActiveTab] = useState<'statements' | 'payments'>(initialTab);
   const [statements, setStatements] = useState<Statement[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);

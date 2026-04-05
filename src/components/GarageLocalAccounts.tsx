@@ -76,7 +76,7 @@ interface GarageLocalAccountsProps {
   garageName: string;
   garageEmail: string;
   garagePassword: string;
-  initialView?: 'active' | 'financial' | 'add-client' | 'all';
+  initialView?: 'active' | 'view-invoices' | 'create-statements' | 'payments' | 'add-client' | 'all';
   onBack?: () => void;
 }
 
@@ -103,7 +103,12 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [financialInvoices, setFinancialInvoices] = useState<FuelInvoice[]>([]);
   const [loadingFinancialInvoices, setLoadingFinancialInvoices] = useState(false);
   const [showFinancialSection, setShowFinancialSection] = useState(false);
-  const [financialSubView, setFinancialSubView] = useState<'menu' | 'invoices' | 'statements'>('menu');
+  const [financialSubView, setFinancialSubView] = useState<'menu' | 'invoices' | 'statements' | 'payments'>(() => {
+    if (initialView === 'view-invoices') return 'invoices';
+    if (initialView === 'create-statements') return 'statements';
+    if (initialView === 'payments') return 'payments';
+    return 'menu';
+  });
   const [viewingStatementsOrgId, setViewingStatementsOrgId] = useState<string | null>(null);
   const [viewingStatementsOrgName, setViewingStatementsOrgName] = useState<string>('');
   const isDraggingRef = useRef(false);
@@ -1026,7 +1031,9 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
             )}
             <h2 className="text-lg font-semibold text-gray-900">
               {initialView === 'active' ? 'Active Accounts' :
-               initialView === 'financial' ? 'Financial Information' :
+               initialView === 'view-invoices' ? 'View Fuel Invoices' :
+               initialView === 'create-statements' ? 'Create Statements' :
+               initialView === 'payments' ? 'Payments' :
                initialView === 'add-client' ? 'Add New Client' :
                'MyFuelApp Local Accounts'}
             </h2>
@@ -1038,7 +1045,9 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
         <p className="text-sm text-gray-600 mb-4">
           {initialView === 'active' ? 'View and manage your active local account clients' :
-           initialView === 'financial' ? 'View invoices and financial information for your local account clients' :
+           initialView === 'view-invoices' ? 'View and download fuel invoices for your local account clients' :
+           initialView === 'create-statements' ? 'Generate and manage monthly statements for your clients' :
+           initialView === 'payments' ? 'Record and manage payments received from clients' :
            initialView === 'add-client' ? 'Add new organizations to your local account client list' :
            `Manage which organizations have local accounts at ${garageName}. These clients can refuel at your garage using their account number.`}
         </p>
@@ -1377,7 +1386,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           )}
 
           {/* Financial Information Section */}
-          {(initialView === 'financial' || initialView === 'all') && (
+          {(initialView === 'view-invoices' || initialView === 'create-statements' || initialView === 'payments' || initialView === 'all') && (
           <div className="mt-6">
             {financialSubView === 'menu' ? (
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
@@ -1386,7 +1395,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   <h3 className="text-sm font-semibold text-green-900">Financial Information</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <button
                     onClick={() => setFinancialSubView('invoices')}
                     className="bg-white border-2 border-green-200 rounded-lg p-4 hover:border-green-400 hover:shadow-md transition-all text-left group"
@@ -1413,6 +1422,21 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                       <div>
                         <h4 className="font-semibold text-gray-900 text-sm">Create Statements</h4>
                         <p className="text-xs text-gray-600 mt-0.5">Generate and manage client statements</p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setFinancialSubView('payments')}
+                    className="bg-white border-2 border-green-200 rounded-lg p-4 hover:border-green-400 hover:shadow-md transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-emerald-50 rounded-lg group-hover:bg-emerald-100 transition-colors">
+                        <CreditCard className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900 text-sm">Payments</h4>
+                        <p className="text-xs text-gray-600 mt-0.5">Record and manage client payments</p>
                       </div>
                     </div>
                   </button>
@@ -1569,12 +1593,21 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   </div>
                 )}
               </div>
-            ) : (
+            ) : financialSubView === 'statements' || financialSubView === 'payments' ? (
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-green-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">Create Statements</h3>
+                    {financialSubView === 'statements' ? (
+                      <>
+                        <FileText className="w-5 h-5 text-green-600" />
+                        <h3 className="text-sm font-semibold text-gray-900">Create Statements</h3>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5 text-emerald-600" />
+                        <h3 className="text-sm font-semibold text-gray-900">Payments</h3>
+                      </>
+                    )}
                   </div>
                   <button
                     onClick={() => {
@@ -1589,11 +1622,11 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   </button>
                 </div>
 
-                {/* Client Selection for Statements */}
+                {/* Client Selection for Statements/Payments */}
                 {!viewingStatementsOrgId ? (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Select Client to Create/View Statements
+                      {financialSubView === 'statements' ? 'Select Client to Create/View Statements' : 'Select Client to Manage Payments'}
                     </label>
                     <select
                       onChange={(e) => {
@@ -1626,6 +1659,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                     garageName={garageName}
                     organizationId={viewingStatementsOrgId}
                     organizationName={viewingStatementsOrgName}
+                    initialTab={financialSubView === 'payments' ? 'payments' : 'statements'}
                     onBack={() => {
                       setViewingStatementsOrgId(null);
                       setViewingStatementsOrgName('');
@@ -1633,7 +1667,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   />
                 )}
               </div>
-            )}
+            ) : null}
           </div>
           )}
         </div>

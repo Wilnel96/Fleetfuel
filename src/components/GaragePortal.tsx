@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName, sortFuelTypes, AVAILABLE_FUEL_TYPES } from '../lib/fuelTypes';
-import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2, Building2, Users, Fuel, ShoppingBag, Home, ArrowLeft } from 'lucide-react';
+import { Store, LogOut, Save, MapPin, AlertCircle, X, Plus, Trash2, Building2, Users, Fuel, ShoppingBag, Home, ArrowLeft, Receipt } from 'lucide-react';
 import GarageContactManagement from './GarageContactManagement';
 import GarageLocalAccounts from './GarageLocalAccounts';
 

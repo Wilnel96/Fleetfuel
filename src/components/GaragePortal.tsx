@@ -42,6 +42,10 @@ interface GarageData {
   city?: string;
   province?: string;
   postal_code?: string;
+  latitude?: number;
+  longitude?: number;
+  phone_number?: string;
+  email_address?: string;
   contact_persons: ContactPerson[];
   fuel_types?: string[];
   fuel_prices?: Record<string, number>;
@@ -343,9 +347,17 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
         {currentView === 'garage-info' && (
           <div className="grid gap-6 lg:grid-cols-2">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 lg:col-span-2">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Garage Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Garage Information</h2>
 
-            <div className="space-y-4">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Garage Name</label>
+                <div className="flex items-start gap-2 mt-1 text-gray-900">
+                  <Building2 className="w-4 h-4 mt-1 text-gray-400" />
+                  <div className="font-medium">{garage.name}</div>
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-600">Location</label>
                 <div className="flex items-start gap-2 mt-1 text-gray-900">
@@ -362,10 +374,50 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
                 </div>
               </div>
 
+              {garage.phone_number && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Contact Phone</label>
+                  <div className="flex items-start gap-2 mt-1 text-gray-900">
+                    <Store className="w-4 h-4 mt-1 text-gray-400" />
+                    <div>{garage.phone_number}</div>
+                  </div>
+                </div>
+              )}
+
+              {garage.email_address && (
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Email Address</label>
+                  <div className="flex items-start gap-2 mt-1 text-gray-900">
+                    <Store className="w-4 h-4 mt-1 text-gray-400" />
+                    <div>{garage.email_address}</div>
+                  </div>
+                </div>
+              )}
+
+              {(garage.latitude || garage.longitude) && (
+                <div className="md:col-span-2">
+                  <label className="text-sm font-medium text-gray-600">Coordinates</label>
+                  <div className="flex items-start gap-2 mt-1 text-gray-900">
+                    <MapPin className="w-4 h-4 mt-1 text-gray-400" />
+                    <div className="space-y-1">
+                      {garage.latitude && (
+                        <div><span className="text-gray-600">Latitude:</span> {garage.latitude}</div>
+                      )}
+                      {garage.longitude && (
+                        <div><span className="text-gray-600">Longitude:</span> {garage.longitude}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {garage.fuel_brand && (
                 <div>
                   <label className="text-sm font-medium text-gray-600">Fuel Brand</label>
-                  <div className="mt-1 text-gray-900 font-medium">{garage.fuel_brand}</div>
+                  <div className="flex items-start gap-2 mt-1">
+                    <Fuel className="w-4 h-4 mt-1 text-gray-400" />
+                    <div className="text-gray-900 font-medium">{garage.fuel_brand}</div>
+                  </div>
                 </div>
               )}
             </div>

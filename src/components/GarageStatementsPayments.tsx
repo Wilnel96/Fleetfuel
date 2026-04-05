@@ -93,6 +93,12 @@ export default function GarageStatementsPayments({
   }, []);
 
   useEffect(() => {
+    if (initialTab === 'payments') {
+      setShowAddPayment(true);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
     const lastStatement = statements[0];
     if (lastStatement) {
       const nextDay = new Date(lastStatement.period_end);

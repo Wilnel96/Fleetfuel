@@ -644,15 +644,9 @@ export default function GarageStatementsPayments({
                     <tr>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
                       <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Odometer</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel Type</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Liters</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">R/L</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Fuel Amount</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Oil</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Oil Amount</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver / Vehicle</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel Details</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Oil Details</th>
                       <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
                     </tr>
                   </thead>
@@ -663,22 +657,27 @@ export default function GarageStatementsPayments({
                         <tr key={inv.id} className="hover:bg-gray-50">
                           <td className="px-3 py-3 whitespace-nowrap">{new Date(inv.transaction_date).toLocaleDateString('en-ZA')}</td>
                           <td className="px-3 py-3 font-medium whitespace-nowrap">{inv.invoice_number}</td>
-                          <td className="px-3 py-3">{inv.driver_name}</td>
-                          <td className="px-3 py-3 whitespace-nowrap">{inv.vehicle_registration}</td>
-                          <td className="px-3 py-3 text-right text-gray-600">{inv.odometer_reading?.toLocaleString() || '-'}</td>
-                          <td className="px-3 py-3">{inv.fuel_type}</td>
-                          <td className="px-3 py-3 text-right">{inv.liters.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right text-gray-600">{inv.price_per_liter.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right font-medium">R {fuelAmount.toFixed(2)}</td>
+                          <td className="px-3 py-3">
+                            <div className="space-y-0.5">
+                              <div className="font-medium text-gray-900">{inv.driver_name}</div>
+                              <div className="text-xs text-gray-600">{inv.vehicle_registration}</div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-3">
+                            <div className="space-y-0.5">
+                              <div className="font-medium text-gray-900">{inv.fuel_type}: {inv.liters.toFixed(2)}L @ R{inv.price_per_liter.toFixed(2)}</div>
+                              <div className="text-xs text-gray-600">Odometer: {inv.odometer_reading?.toLocaleString() || '-'} km • Amount: R{fuelAmount.toFixed(2)}</div>
+                            </div>
+                          </td>
                           <td className="px-3 py-3">
                             {inv.oil_type ? (
-                              <span className="text-xs">
-                                {inv.oil_quantity}x {inv.oil_type}
-                              </span>
-                            ) : '-'}
-                          </td>
-                          <td className="px-3 py-3 text-right">
-                            {inv.oil_total_amount ? `R ${inv.oil_total_amount.toFixed(2)}` : '-'}
+                              <div className="space-y-0.5">
+                                <div className="font-medium text-gray-900">{inv.oil_quantity}x {inv.oil_type}</div>
+                                <div className="text-xs text-gray-600">Amount: R{inv.oil_total_amount?.toFixed(2) || '0.00'}</div>
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
                           </td>
                           <td className="px-3 py-3 text-right font-bold text-blue-600">R {inv.total_amount.toFixed(2)}</td>
                         </tr>
@@ -687,7 +686,7 @@ export default function GarageStatementsPayments({
                   </tbody>
                   <tfoot className="bg-gray-50 border-t-2">
                     <tr>
-                      <td colSpan={11} className="px-3 py-3 text-right font-bold">Total Invoices:</td>
+                      <td colSpan={5} className="px-3 py-3 text-right font-bold">Total Invoices:</td>
                       <td className="px-3 py-3 text-right font-bold text-blue-600">
                         R {statementInvoices.reduce((sum, inv) => sum + inv.total_amount, 0).toFixed(2)}
                       </td>

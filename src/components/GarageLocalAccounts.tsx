@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight, Receipt } from 'lucide-react';
 import GarageStatementsPayments from './GarageStatementsPayments';
@@ -102,6 +102,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [showFinancialSection, setShowFinancialSection] = useState(false);
   const [viewingStatementsOrgId, setViewingStatementsOrgId] = useState<string | null>(null);
   const [viewingStatementsOrgName, setViewingStatementsOrgName] = useState<string>('');
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     loadData();
@@ -531,11 +532,20 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) {
-              setViewingOrgId(null);
+              isDraggingRef.current = false;
             }
           }}
+          onMouseMove={() => {
+            isDraggingRef.current = true;
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDraggingRef.current) {
+              setViewingOrgId(null);
+            }
+            isDraggingRef.current = false;
+          }}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full h-[85vh] flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between p-4 border-b border-gray-200">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -871,12 +881,21 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 pt-16"
           onMouseDown={(e) => {
-            if (e.target === e.currentTarget && saving === null) {
-              handleCancelAddModal();
+            if (e.target === e.currentTarget) {
+              isDraggingRef.current = false;
             }
           }}
+          onMouseMove={() => {
+            isDraggingRef.current = true;
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget && saving === null && !isDraggingRef.current) {
+              handleCancelAddModal();
+            }
+            isDraggingRef.current = false;
+          }}
         >
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[calc(100vh-8rem)] flex flex-col">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[calc(100vh-8rem)] flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start gap-3 p-4 border-b border-gray-200">
               <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <Plus className="w-4 h-4 text-blue-600" />

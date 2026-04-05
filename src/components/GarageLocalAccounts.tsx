@@ -111,6 +111,14 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   });
   const [viewingStatementsOrgId, setViewingStatementsOrgId] = useState<string | null>(null);
   const [viewingStatementsOrgName, setViewingStatementsOrgName] = useState<string>('');
+  const [capturingPaymentOrgId, setCapturingPaymentOrgId] = useState<string | null>(null);
+  const [capturingPaymentOrgName, setCapturingPaymentOrgName] = useState<string>('');
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'eft' | 'card' | 'other'>('eft');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [savingPayment, setSavingPayment] = useState(false);
   const isDraggingRef = useRef(false);
 
   useEffect(() => {
@@ -1593,21 +1601,12 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   </div>
                 )}
               </div>
-            ) : financialSubView === 'statements' || financialSubView === 'payments' ? (
+            ) : financialSubView === 'statements' ? (
               <div className="bg-white border border-gray-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    {financialSubView === 'statements' ? (
-                      <>
-                        <FileText className="w-5 h-5 text-green-600" />
-                        <h3 className="text-sm font-semibold text-gray-900">Create Statements</h3>
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-5 h-5 text-emerald-600" />
-                        <h3 className="text-sm font-semibold text-gray-900">Payments</h3>
-                      </>
-                    )}
+                    <FileText className="w-5 h-5 text-green-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">Create Statements</h3>
                   </div>
                   <button
                     onClick={() => {
@@ -1622,11 +1621,11 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   </button>
                 </div>
 
-                {/* Client Selection for Statements/Payments */}
+                {/* Client Selection for Statements */}
                 {!viewingStatementsOrgId ? (
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-2">
-                      {financialSubView === 'statements' ? 'Select Client to Create/View Statements' : 'Select Client to Manage Payments'}
+                      Select Client to Create/View Statements
                     </label>
                     <select
                       onChange={(e) => {
@@ -1659,13 +1658,202 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                     garageName={garageName}
                     organizationId={viewingStatementsOrgId}
                     organizationName={viewingStatementsOrgName}
-                    initialTab={financialSubView === 'payments' ? 'payments' : 'statements'}
-                    directPaymentMode={financialSubView === 'payments'}
+                    initialTab="statements"
+                    directPaymentMode={false}
                     onBack={() => {
                       setViewingStatementsOrgId(null);
                       setViewingStatementsOrgName('');
                     }}
                   />
+                )}
+              </div>
+            ) : financialSubView === 'payments' ? (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-emerald-600" />
+                    <h3 className="text-sm font-semibold text-gray-900">Capture Payment</h3>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFinancialSubView('menu');
+                      setCapturingPaymentOrgId(null);
+                      setCapturingPaymentOrgName('');
+                      setPaymentDate(new Date().toISOString().split('T')[0]);
+                      setPaymentAmount('');
+                      setPaymentMethod('eft');
+                      setPaymentReference('');
+                      setPaymentNotes('');
+                    }}
+                    className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+                  >
+                    <X className="w-4 h-4" />
+                    Back
+                  </button>
+                </div>
+
+                {/* Client Selection for Payment */}
+                {!capturingPaymentOrgId ? (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      Select Client to Capture Payment
+                    </label>
+                    <select
+                      onChange={(e) => {
+                        const orgId = e.target.value;
+                        if (orgId) {
+                          const org = organizations.find(o => o.id === orgId);
+                          if (org) {
+                            setCapturingPaymentOrgId(orgId);
+                            setCapturingPaymentOrgName(org.name);
+                          }
+                        }
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      <option value="">-- Select a local account client --</option>
+                      {activeAccounts.map((account) => {
+                        const org = organizations.find(o => o.id === account.organization_id);
+                        if (!org) return null;
+                        return (
+                          <option key={account.id} value={org.id}>
+                            {org.name} {account.account_number ? `(Acc: ${account.account_number})` : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 className="font-semibold mb-4">Record Payment for {capturingPaymentOrgName}</h4>
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Payment Date</label>
+                        <input
+                          type="date"
+                          value={paymentDate}
+                          onChange={(e) => setPaymentDate(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Amount</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Payment Method</label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'eft' | 'card' | 'other')}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        >
+                          <option value="eft">EFT</option>
+                          <option value="cash">Cash</option>
+                          <option value="card">Card</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Reference</label>
+                        <input
+                          type="text"
+                          placeholder="Payment reference (optional)"
+                          value={paymentReference}
+                          onChange={(e) => setPaymentReference(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium mb-1">Notes</label>
+                      <textarea
+                        placeholder="Additional notes (optional)"
+                        value={paymentNotes}
+                        onChange={(e) => setPaymentNotes(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+                            setError('Please enter a valid payment amount');
+                            return;
+                          }
+
+                          try {
+                            setSavingPayment(true);
+                            setError('');
+
+                            const { data: paymentNumber, error: numberError } = await supabase.rpc('generate_payment_number', {
+                              p_garage_id: garageId,
+                              p_organization_id: capturingPaymentOrgId
+                            });
+
+                            if (numberError) throw numberError;
+
+                            const { error: insertError } = await supabase
+                              .from('garage_debtor_payments')
+                              .insert({
+                                garage_id: garageId,
+                                organization_id: capturingPaymentOrgId,
+                                payment_number: paymentNumber,
+                                payment_date: paymentDate,
+                                amount: parseFloat(paymentAmount),
+                                payment_method: paymentMethod,
+                                reference: paymentReference || null,
+                                notes: paymentNotes || null
+                              });
+
+                            if (insertError) throw insertError;
+
+                            setSuccessMessage(`Payment ${paymentNumber} recorded successfully!`);
+                            setTimeout(() => setSuccessMessage(''), 3000);
+
+                            // Reset form
+                            setCapturingPaymentOrgId(null);
+                            setCapturingPaymentOrgName('');
+                            setPaymentDate(new Date().toISOString().split('T')[0]);
+                            setPaymentAmount('');
+                            setPaymentMethod('eft');
+                            setPaymentReference('');
+                            setPaymentNotes('');
+                          } catch (err: any) {
+                            setError(err.message || 'Failed to record payment');
+                          } finally {
+                            setSavingPayment(false);
+                          }
+                        }}
+                        disabled={savingPayment}
+                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {savingPayment ? 'Recording...' : 'Record Payment'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCapturingPaymentOrgId(null);
+                          setCapturingPaymentOrgName('');
+                          setPaymentDate(new Date().toISOString().split('T')[0]);
+                          setPaymentAmount('');
+                          setPaymentMethod('eft');
+                          setPaymentReference('');
+                          setPaymentNotes('');
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : null}

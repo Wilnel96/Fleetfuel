@@ -156,10 +156,16 @@ function App() {
         const isPendingGarageLogin = localStorage.getItem('pendingGarageLogin') === 'true';
         const savedGarageData = localStorage.getItem('garageData');
 
-        if (isPendingGarageLogin) {
+        if (isPendingGarageLogin && savedGarageData) {
           console.log('Auth state - Pending garage login detected, waiting for garage data...');
           // Keep loading true - GarageAuth will call handleGarageLogin which sets loading to false
           return; // Skip profile loading, GarageAuth will call handleGarageLogin
+        }
+
+        // Clear stale pendingGarageLogin flag if no garage data
+        if (isPendingGarageLogin && !savedGarageData) {
+          console.log('Auth state - Clearing stale pendingGarageLogin flag');
+          localStorage.removeItem('pendingGarageLogin');
         }
 
         if (savedGarageData) {

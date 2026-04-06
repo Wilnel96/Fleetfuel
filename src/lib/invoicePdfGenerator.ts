@@ -35,12 +35,12 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
   const contentWidth = pageWidth - (margin * 2);
   let yPosition = margin;
 
-  pdf.setFontSize(20);
+  pdf.setFontSize(24);
   pdf.setFont('helvetica', 'bold');
   pdf.text('FUEL TRANSACTION INVOICE', pageWidth / 2, yPosition, { align: 'center' });
 
-  yPosition += 7;
-  pdf.setFontSize(10);
+  yPosition += 8;
+  pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
   pdf.text('Fuel Empowerment Systems (Pty) Ltd', pageWidth / 2, yPosition, { align: 'center' });
 
@@ -51,17 +51,17 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
 
   yPosition += 8;
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
   pdf.text('INVOICE', margin, yPosition);
 
   yPosition += 3;
   pdf.setFillColor(249, 250, 251);
-  pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+  pdf.rect(margin, yPosition, contentWidth, 14, 'F');
 
-  yPosition += 4;
-  pdf.setFontSize(7);
+  yPosition += 5;
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
 
@@ -93,17 +93,17 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
 
   yPosition += 12;
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
   pdf.text('VEHICLE & DRIVER', margin, yPosition);
 
   yPosition += 3;
   pdf.setFillColor(249, 250, 251);
-  pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+  pdf.rect(margin, yPosition, contentWidth, 14, 'F');
 
-  yPosition += 4;
-  pdf.setFontSize(7);
+  yPosition += 5;
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
 
@@ -127,17 +127,17 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
 
   yPosition += 12;
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
   pdf.text('FUEL STATION', margin, yPosition);
 
   yPosition += 3;
   pdf.setFillColor(249, 250, 251);
-  pdf.rect(margin, yPosition, contentWidth, 16, 'F');
+  pdf.rect(margin, yPosition, contentWidth, 18, 'F');
 
-  yPosition += 4;
-  pdf.setFontSize(7);
+  yPosition += 5;
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
 
@@ -168,17 +168,17 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
 
   yPosition += 8;
 
-  pdf.setFontSize(8);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(107, 114, 128);
   pdf.text('FUEL DETAILS', margin, yPosition);
 
   yPosition += 4;
   pdf.setFillColor(249, 250, 251);
-  pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+  pdf.rect(margin, yPosition, contentWidth, 14, 'F');
 
-  yPosition += 4;
-  pdf.setFontSize(7);
+  yPosition += 5;
+  pdf.setFontSize(9);
   pdf.setTextColor(75, 85, 99);
   pdf.setFont('helvetica', 'normal');
   pdf.text('Fuel Type', margin + 3, yPosition);
@@ -186,8 +186,8 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
   pdf.text('Price per Liter', margin + contentWidth * 0.6, yPosition, { align: 'right' });
   pdf.text('Fuel Amount', margin + contentWidth - 3, yPosition, { align: 'right' });
 
-  yPosition += 4;
-  pdf.setFontSize(8);
+  yPosition += 5;
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(17, 24, 39);
   pdf.text(invoice.fuel_type, margin + 3, yPosition);
@@ -200,17 +200,17 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
 
   const hasOil = invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0;
   if (hasOil) {
-    pdf.setFontSize(8);
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(107, 114, 128);
     pdf.text('OIL PURCHASE', margin, yPosition);
 
     yPosition += 4;
     pdf.setFillColor(249, 250, 251);
-    pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+    pdf.rect(margin, yPosition, contentWidth, 14, 'F');
 
-    yPosition += 4;
-    pdf.setFontSize(7);
+    yPosition += 5;
+    pdf.setFontSize(9);
     pdf.setTextColor(75, 85, 99);
     pdf.setFont('helvetica', 'normal');
     pdf.text('Oil Type', margin + 3, yPosition);
@@ -218,8 +218,8 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
     pdf.text('Unit Price (Incl VAT)', margin + contentWidth * 0.6, yPosition, { align: 'right' });
     pdf.text('Oil Amount (Incl VAT)', margin + contentWidth - 3, yPosition, { align: 'right' });
 
-    yPosition += 4;
-    pdf.setFontSize(8);
+    yPosition += 5;
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     const oilTypeText = `${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}`;
@@ -233,8 +233,8 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
     pdf.setLineWidth(0.3);
     pdf.line(margin + 3, yPosition, margin + contentWidth - 3, yPosition);
 
-    yPosition += 4;
-    pdf.setFontSize(8);
+    yPosition += 5;
+    pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(75, 85, 99);
     pdf.text('Amount of VAT included:', margin + 3, yPosition);
@@ -265,7 +265,7 @@ export async function generateFuelInvoicePDF(invoice: InvoiceData): Promise<Blob
   pdf.text(`R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
 
   yPosition += 15;
-  pdf.setFontSize(9);
+  pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);
   pdf.text('This invoice is for accounting and tax compliance purposes.', pageWidth / 2, yPosition, { align: 'center' });

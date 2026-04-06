@@ -41,7 +41,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         return;
       }
 
-      // Now verify the user is a garage user and get garage data
+      // Now verify the user has access to garage portal and get garage data
       const { data: orgUser, error: orgUserError } = await supabase
         .from('organization_users')
         .select(`
@@ -49,7 +49,6 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
           role
         `)
         .eq('user_id', authData.user.id)
-        .eq('role', 'garage_user')
         .eq('is_active', true)
         .maybeSingle();
 
@@ -67,10 +66,17 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         .eq('organization_id', orgUser.organization_id)
         .maybeSingle();
 
-      if (garageError || !garage || garage.status !== 'active') {
+      if (garageError || !garage) {
         localStorage.removeItem('pendingGarageLogin');
         await supabase.auth.signOut();
-        setError('Your garage account is not active. Please contact support.');
+        setError('No garage found for this account. Please contact support.');
+        return;
+      }
+
+      if (garage.status !== 'active') {
+        localStorage.removeItem('pendingGarageLogin');
+        await supabase.auth.signOut();
+        setError('Your garage account is pending approval. Please wait for activation.');
         return;
       }
 

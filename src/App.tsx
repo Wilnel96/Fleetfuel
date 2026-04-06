@@ -159,7 +159,7 @@ function App() {
           console.warn('Profile load timeout, using defaults');
           if (!mounted) return;
           setUserRole('admin');
-          setCurrentView(null);
+          // Don't reset currentView if user is already using the app
         }, 3000);
 
         supabase
@@ -175,7 +175,7 @@ function App() {
             if (profileError) {
               console.error('Auth state - Profile error:', profileError);
               setUserRole('admin');
-              setCurrentView(null);
+              // Don't reset currentView on profile error during token refresh
               return;
             }
 
@@ -195,7 +195,10 @@ function App() {
               console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
 
               setUserRole(effectiveRole);
-              setCurrentView(null);
+              // Only reset currentView on initial sign-in, not on token refresh
+              if (_event === 'SIGNED_IN') {
+                setCurrentView(null);
+              }
 
               // Set payment option if organization data is available
               if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
@@ -212,7 +215,7 @@ function App() {
             } else {
               console.warn('Auth state - No profile found, using defaults');
               setUserRole('admin');
-              setCurrentView(null);
+              // Don't reset currentView if no profile found during token refresh
             }
           })
           .catch((err) => {
@@ -220,7 +223,7 @@ function App() {
             console.error('Auth state - Exception loading profile:', err);
             if (!mounted) return;
             setUserRole('admin');
-            setCurrentView(null);
+            // Don't reset currentView on exception during token refresh
           });
       } else if (_event === 'SIGNED_OUT') {
         console.log('User signed out event');

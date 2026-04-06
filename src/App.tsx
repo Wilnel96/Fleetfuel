@@ -725,8 +725,8 @@ function App() {
     />;
   }
 
-  if (userMode === 'garage' && garageId && garageName && garageEmail && garagePassword) {
-    return <GaragePortal garageId={garageId} garageName={garageName} garageEmail={garageEmail} garagePassword={garagePassword} onLogout={handleGarageLogout} />;
+  if (userMode === 'garage' && garageId && garageName) {
+    return <GaragePortal garageId={garageId} garageName={garageName} garageEmail={garageEmail || ''} garagePassword={garagePassword || ''} onLogout={handleGarageLogout} />;
   }
 
   if (userMode === 'admin' && showSignup && clientPortalType) {

@@ -404,41 +404,26 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       </html>
     `;
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      document.body.removeChild(iframe);
+    // Use a popup window instead of iframe to avoid navigation issues
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print invoices');
       return;
     }
 
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
 
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (error) {
-        console.error('Print error:', error);
-      } finally {
-        setTimeout(() => {
-          try {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          } catch (error) {
-            console.error('Error removing iframe:', error);
-          }
-        }, 1000);
-      }
-    }, 500);
+    // Wait for content to load, then print and close
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      // Close the window after printing (user can cancel the print dialog)
+      setTimeout(() => {
+        printWindow.close();
+      }, 100);
+    };
   };
 
   const exportToCSV = () => {
@@ -956,41 +941,26 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       </html>
     `).join('');
 
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentWindow?.document;
-    if (!iframeDoc) {
-      document.body.removeChild(iframe);
+    // Use a popup window instead of iframe to avoid navigation issues
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print invoices');
       return;
     }
 
-    iframeDoc.open();
-    iframeDoc.write(allInvoicesHTML);
-    iframeDoc.close();
+    printWindow.document.open();
+    printWindow.document.write(allInvoicesHTML);
+    printWindow.document.close();
 
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (error) {
-        console.error('Print error:', error);
-      } finally {
-        setTimeout(() => {
-          try {
-            if (document.body.contains(iframe)) {
-              document.body.removeChild(iframe);
-            }
-          } catch (error) {
-            console.error('Error removing iframe:', error);
-          }
-        }, 1000);
-      }
-    }, 500);
+    // Wait for content to load, then print and close
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      // Close the window after printing (user can cancel the print dialog)
+      setTimeout(() => {
+        printWindow.close();
+      }, 100);
+    };
   };
 
   const exportAllInvoicesToPDF = () => {

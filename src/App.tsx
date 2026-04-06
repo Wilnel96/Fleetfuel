@@ -154,10 +154,16 @@ function App() {
 
         // Check if user is logging in as garage (garage data in localStorage)
         const savedGarageData = localStorage.getItem('garageData');
-        if (!savedGarageData) {
-          setUserMode('admin');
+        const isGarageUser = !!savedGarageData;
+
+        if (isGarageUser) {
+          console.log('Auth state - Garage user detected, skipping profile load');
+          setShowModeSelection(false);
+          setLoading(false);
+          return; // Skip profile loading for garage users
         }
 
+        setUserMode('admin');
         setShowModeSelection(false);
         setLoading(false);
 

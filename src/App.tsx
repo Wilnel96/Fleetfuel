@@ -154,13 +154,23 @@ function App() {
 
         // Check if user is logging in as garage (garage data in localStorage)
         const savedGarageData = localStorage.getItem('garageData');
-        const isGarageUser = !!savedGarageData;
 
-        if (isGarageUser) {
-          console.log('Auth state - Garage user detected, skipping profile load');
-          setShowModeSelection(false);
-          setLoading(false);
-          return; // Skip profile loading for garage users
+        if (savedGarageData) {
+          try {
+            const garage = JSON.parse(savedGarageData);
+            console.log('Auth state - Garage user detected, setting garage mode');
+            setGarageId(garage.id);
+            setGarageName(garage.name);
+            setGarageEmail(garage.email);
+            setGaragePassword(garage.password || '');
+            setUserMode('garage');
+            setShowModeSelection(false);
+            setLoading(false);
+            return; // Skip profile loading for garage users
+          } catch (e) {
+            console.error('Failed to parse garage data:', e);
+            localStorage.removeItem('garageData');
+          }
         }
 
         setUserMode('admin');

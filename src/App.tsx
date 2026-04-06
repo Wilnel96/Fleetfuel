@@ -151,50 +151,15 @@ function App() {
       if (session && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION')) {
         console.log('Auth state - Session detected, loading profile...');
         setSession(session);
-
-        // Check if this is a pending garage login or existing garage session
-        const isPendingGarageLogin = localStorage.getItem('pendingGarageLogin') === 'true';
-        const savedGarageData = localStorage.getItem('garageData');
-
-        if (isPendingGarageLogin && savedGarageData) {
-          console.log('Auth state - Pending garage login detected, waiting for garage data...');
-          // Keep loading true - GarageAuth will call handleGarageLogin which sets loading to false
-          return; // Skip profile loading, GarageAuth will call handleGarageLogin
-        }
-
-        // Clear stale pendingGarageLogin flag if no garage data
-        if (isPendingGarageLogin && !savedGarageData) {
-          console.log('Auth state - Clearing stale pendingGarageLogin flag');
-          localStorage.removeItem('pendingGarageLogin');
-        }
-
-        if (savedGarageData) {
-          try {
-            const garage = JSON.parse(savedGarageData);
-            console.log('Auth state - Garage user detected, setting garage mode');
-            setGarageId(garage.id);
-            setGarageName(garage.name);
-            setGarageEmail(garage.email);
-            setGaragePassword(garage.password || '');
-            setUserMode('garage');
-            setShowModeSelection(false);
-            setLoading(false);
-            return; // Skip profile loading for garage users
-          } catch (e) {
-            console.error('Failed to parse garage data:', e);
-            localStorage.removeItem('garageData');
-          }
-        }
-
-        setUserMode('admin');
-        setShowModeSelection(false);
-        setLoading(false);
+        setLoading(true);
 
         const profileTimeout = setTimeout(() => {
           console.warn('Profile load timeout, using defaults');
           if (!mounted) return;
           setUserRole('admin');
-          // Don't reset currentView if user is already using the app
+          setUserMode('admin');
+          setShowModeSelection(false);
+          setLoading(false);
         }, 3000);
 
         supabase
@@ -210,55 +175,107 @@ function App() {
             if (profileError) {
               console.error('Auth state - Profile error:', profileError);
               setUserRole('admin');
-              // Don't reset currentView on profile error during token refresh
+              setUserMode('admin');
+              setShowModeSelection(false);
+              setLoading(false);
               return;
             }
 
             console.log('Auth state - Profile loaded:', profile);
 
-            if (profile) {
-              // Check if user is in management organization
-              const isManagementUser = profile.organizations &&
-                typeof profile.organizations === 'object' &&
-                'is_management_org' in profile.organizations &&
-                (profile.organizations as any).is_management_org === true;
-
-              // If user is in management org, treat them as super_admin for routing purposes
-              // Otherwise use their actual role
-              const effectiveRole = isManagementUser ? 'super_admin' : profile.role;
-
-              console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
-
-              setUserRole(effectiveRole);
-              // Only reset currentView on initial sign-in, not on token refresh
-              if (_event === 'SIGNED_IN') {
-                setCurrentView(null);
-              }
-
-              // Set payment option if organization data is available
-              if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
-                setPaymentOption((profile.organizations as any).payment_option);
-              }
-
-              // Set organization ID and name
-              if (profile.organization_id) {
-                setOrganizationId(profile.organization_id);
-              }
-              if (profile.organizations && typeof profile.organizations === 'object' && 'name' in profile.organizations) {
-                setOrganizationName((profile.organizations as any).name);
-              }
-            } else {
+            if (!profile) {
               console.warn('Auth state - No profile found, using defaults');
               setUserRole('admin');
-              // Don't reset currentView if no profile found during token refresh
+              setUserMode('admin');
+              setShowModeSelection(false);
+              setLoading(false);
+              return;
             }
+
+            // Check if this is a garage user
+            if (profile.role === 'garage_user') {
+              console.log('Auth state - Garage user detected, loading garage details');
+
+              // Fetch garage details from organization
+              supabase
+                .from('garages')
+                .select('id, name, email_address')
+                .eq('organization_id', profile.organization_id)
+                .maybeSingle()
+                .then(({ data: garage, error: garageError }) => {
+                  if (!mounted) return;
+
+                  if (garageError || !garage) {
+                    console.error('Auth state - Failed to load garage:', garageError);
+                    setLoading(false);
+                    return;
+                  }
+
+                  console.log('Auth state - Garage loaded:', garage);
+
+                  // Set garage mode
+                  const garageData = {
+                    id: garage.id,
+                    name: garage.name,
+                    email: garage.email_address || session.user.email || '',
+                    password: ''
+                  };
+
+                  localStorage.setItem('garageData', JSON.stringify(garageData));
+                  setGarageId(garage.id);
+                  setGarageName(garage.name);
+                  setGarageEmail(garage.email_address || session.user.email || '');
+                  setGaragePassword('');
+                  setUserMode('garage');
+                  setShowModeSelection(false);
+                  setLoading(false);
+                });
+
+              return;
+            }
+
+            // Regular client/admin user
+            const isManagementUser = profile.organizations &&
+              typeof profile.organizations === 'object' &&
+              'is_management_org' in profile.organizations &&
+              (profile.organizations as any).is_management_org === true;
+
+            const effectiveRole = isManagementUser ? 'super_admin' : profile.role;
+
+            console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
+
+            setUserRole(effectiveRole);
+            setUserMode('admin');
+            setShowModeSelection(false);
+
+            // Only reset currentView on initial sign-in, not on token refresh
+            if (_event === 'SIGNED_IN') {
+              setCurrentView(null);
+            }
+
+            // Set payment option if organization data is available
+            if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
+              setPaymentOption((profile.organizations as any).payment_option);
+            }
+
+            // Set organization ID and name
+            if (profile.organization_id) {
+              setOrganizationId(profile.organization_id);
+            }
+            if (profile.organizations && typeof profile.organizations === 'object' && 'name' in profile.organizations) {
+              setOrganizationName((profile.organizations as any).name);
+            }
+
+            setLoading(false);
           })
           .catch((err) => {
             clearTimeout(profileTimeout);
             console.error('Auth state - Exception loading profile:', err);
             if (!mounted) return;
             setUserRole('admin');
-            // Don't reset currentView on exception during token refresh
+            setUserMode('admin');
+            setShowModeSelection(false);
+            setLoading(false);
           });
       } else if (_event === 'SIGNED_OUT') {
         console.log('User signed out event');

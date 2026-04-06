@@ -20,86 +20,58 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
     setError('');
 
     try {
-      // Set a temporary flag BEFORE signing in so onAuthStateChange knows this is a garage login
-      localStorage.setItem('pendingGarageLogin', 'true');
+      console.log('[GarageAuth] Attempting login with email:', contactEmail);
 
-      // First authenticate with Supabase
+      // Authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: contactEmail.trim().toLowerCase(),
         password: password
       });
 
       if (authError) {
-        localStorage.removeItem('pendingGarageLogin');
+        console.error('[GarageAuth] Auth error:', authError);
         setError('Invalid email or password');
+        setLoading(false);
         return;
       }
 
       if (!authData.user) {
-        localStorage.removeItem('pendingGarageLogin');
         setError('Login failed. Please try again.');
+        setLoading(false);
         return;
       }
 
-      // Now verify the user has access to garage portal and get garage data
-      const { data: orgUser, error: orgUserError } = await supabase
-        .from('organization_users')
-        .select(`
-          organization_id,
-          role
-        `)
-        .eq('user_id', authData.user.id)
-        .eq('is_active', true)
+      console.log('[GarageAuth] Login successful, verifying garage access...');
+
+      // Verify the user is a garage user by checking their profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', authData.user.id)
         .maybeSingle();
 
-      if (orgUserError || !orgUser) {
-        localStorage.removeItem('pendingGarageLogin');
+      if (profileError || !profile) {
+        console.error('[GarageAuth] Profile error:', profileError);
         await supabase.auth.signOut();
-        setError('You do not have access to the garage portal');
+        setError('Could not verify account. Please contact support.');
+        setLoading(false);
         return;
       }
 
-      // Get the garage associated with this organization
-      const { data: garage, error: garageError } = await supabase
-        .from('garages')
-        .select('id, name, status')
-        .eq('organization_id', orgUser.organization_id)
-        .maybeSingle();
-
-      if (garageError || !garage) {
-        localStorage.removeItem('pendingGarageLogin');
+      if (profile.role !== 'garage_user') {
+        console.error('[GarageAuth] User is not a garage user:', profile.role);
         await supabase.auth.signOut();
-        setError('No garage found for this account. Please contact support.');
+        setError('This account does not have access to the garage portal.');
+        setLoading(false);
         return;
       }
 
-      if (garage.status !== 'active') {
-        localStorage.removeItem('pendingGarageLogin');
-        await supabase.auth.signOut();
-        setError('Your garage account is pending approval. Please wait for activation.');
-        return;
-      }
-
-      // Save garage data to localStorage
-      const garageData = {
-        id: garage.id,
-        name: garage.name,
-        email: contactEmail.trim(),
-        password: ''
-      };
-      localStorage.setItem('garageData', JSON.stringify(garageData));
-      localStorage.removeItem('pendingGarageLogin');
-      console.log('Garage data saved to localStorage:', garageData);
-
-      // Call the onLogin callback to update app state
-      console.log('Calling onLogin callback with garage data');
-      onLogin(garage.id, garage.name, contactEmail.trim(), '');
+      console.log('[GarageAuth] Garage user verified, auth state listener will handle routing');
+      // The auth state listener in App.tsx will detect the garage_user role
+      // and automatically route to the garage portal
     } catch (err: any) {
-      console.error('Login error:', err);
-      localStorage.removeItem('garageData');
-      localStorage.removeItem('pendingGarageLogin');
+      console.error('[GarageAuth] Login error:', err);
       setError(err.message || 'An error occurred during login');
-    } finally {
       setLoading(false);
     }
   };

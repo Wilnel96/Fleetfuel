@@ -271,7 +271,7 @@ function App() {
             if (profile) {
               console.log('Profile loaded on mount:', profile);
               setUserRole(profile.role);
-              setCurrentView(null);
+              // Don't reset currentView on mount - user might be in the middle of something
 
               // Set payment option if organization data is available
               if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
@@ -288,14 +288,14 @@ function App() {
             } else {
               console.warn('No profile on mount, using defaults');
               setUserRole('admin');
-              setCurrentView(null);
+              // Don't reset currentView on mount
             }
           })
           .catch((err) => {
             console.error('Error loading profile on mount:', err);
             if (!mounted) return;
             setUserRole('admin');
-            setCurrentView(null);
+            // Don't reset currentView on exception
           });
       } else {
         console.log('No existing session on mount');

@@ -422,12 +422,22 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     iframeDoc.close();
 
     setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (error) {
+        console.error('Print error:', error);
+      } finally {
+        setTimeout(() => {
+          try {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          } catch (error) {
+            console.error('Error removing iframe:', error);
+          }
+        }, 1000);
+      }
     }, 500);
   };
 
@@ -964,12 +974,22 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     iframeDoc.close();
 
     setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (error) {
+        console.error('Print error:', error);
+      } finally {
+        setTimeout(() => {
+          try {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          } catch (error) {
+            console.error('Error removing iframe:', error);
+          }
+        }, 1000);
+      }
     }, 500);
   };
 

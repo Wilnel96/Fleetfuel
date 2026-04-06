@@ -310,67 +310,103 @@ function App() {
       if (currentSession) {
         console.log('Existing session found on mount');
         setSession(currentSession);
+        setLoading(true);
 
-        // Check if this is a garage user session
-        const savedGarageData = localStorage.getItem('garageData');
-        if (savedGarageData) {
-          try {
-            const garage = JSON.parse(savedGarageData);
-            console.log('Garage session detected on mount, restoring garage mode');
-            setGarageId(garage.id);
-            setGarageName(garage.name);
-            setGarageEmail(garage.email);
-            setGaragePassword(garage.password || '');
-            setUserMode('garage');
-            setShowModeSelection(false);
-            setLoading(false);
-            return;
-          } catch (e) {
-            console.error('Failed to parse garage data on mount:', e);
-            localStorage.removeItem('garageData');
-          }
-        }
-
-        // Not a garage user, treat as admin
-        setUserMode('admin');
-        setShowModeSelection(false);
-        setLoading(false);
-
+        // Load profile to determine user type
         supabase
           .from('profiles')
-          .select('role, organization_id, organizations(name, payment_option)')
+          .select('role, organization_id, organizations(name, payment_option, is_management_org, organization_type)')
           .eq('id', currentSession.user.id)
           .maybeSingle()
           .then(({ data: profile }) => {
             if (!mounted) return;
-            if (profile) {
-              console.log('Profile loaded on mount:', profile);
-              setUserRole(profile.role);
-              // Don't reset currentView on mount - user might be in the middle of something
 
-              // Set payment option if organization data is available
-              if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
-                setPaymentOption((profile.organizations as any).payment_option);
-              }
-
-              // Set organization ID and name
-              if (profile.organization_id) {
-                setOrganizationId(profile.organization_id);
-              }
-              if (profile.organizations && typeof profile.organizations === 'object' && 'name' in profile.organizations) {
-                setOrganizationName((profile.organizations as any).name);
-              }
-            } else {
-              console.warn('No profile on mount, using defaults');
-              setUserRole('admin');
-              // Don't reset currentView on mount
+            if (!profile) {
+              console.log('No profile found on mount');
+              setUserMode('admin');
+              setShowModeSelection(false);
+              setLoading(false);
+              return;
             }
+
+            console.log('Profile loaded on mount:', profile);
+
+            // Check if this is a garage user
+            if (profile.role === 'garage_user') {
+              console.log('Garage user detected on mount, loading garage details');
+
+              // Fetch garage details
+              supabase
+                .from('garages')
+                .select('id, name, email_address')
+                .eq('organization_id', profile.organization_id)
+                .maybeSingle()
+                .then(({ data: garage }) => {
+                  if (!mounted) return;
+
+                  if (!garage) {
+                    console.error('No garage found for garage user on mount');
+                    setLoading(false);
+                    return;
+                  }
+
+                  console.log('Garage loaded on mount:', garage);
+
+                  // Set garage mode
+                  const garageData = {
+                    id: garage.id,
+                    name: garage.name,
+                    email: garage.email_address || currentSession.user.email || '',
+                    password: ''
+                  };
+
+                  localStorage.setItem('garageData', JSON.stringify(garageData));
+                  setGarageId(garage.id);
+                  setGarageName(garage.name);
+                  setGarageEmail(garage.email_address || currentSession.user.email || '');
+                  setGaragePassword('');
+                  setUserMode('garage');
+                  setShowModeSelection(false);
+                  setLoading(false);
+                });
+
+              return;
+            }
+
+            // Regular client/admin user
+            const isManagementUser = profile.organizations &&
+              typeof profile.organizations === 'object' &&
+              'is_management_org' in profile.organizations &&
+              (profile.organizations as any).is_management_org === true;
+
+            const effectiveRole = isManagementUser ? 'super_admin' : profile.role;
+
+            setUserRole(effectiveRole);
+            setUserMode('admin');
+            setShowModeSelection(false);
+
+            // Set payment option if organization data is available
+            if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
+              setPaymentOption((profile.organizations as any).payment_option);
+            }
+
+            // Set organization ID and name
+            if (profile.organization_id) {
+              setOrganizationId(profile.organization_id);
+            }
+            if (profile.organizations && typeof profile.organizations === 'object' && 'name' in profile.organizations) {
+              setOrganizationName((profile.organizations as any).name);
+            }
+
+            setLoading(false);
           })
           .catch((err) => {
             console.error('Error loading profile on mount:', err);
             if (!mounted) return;
             setUserRole('admin');
-            // Don't reset currentView on exception
+            setUserMode('admin');
+            setShowModeSelection(false);
+            setLoading(false);
           });
       } else {
         console.log('No existing session on mount');

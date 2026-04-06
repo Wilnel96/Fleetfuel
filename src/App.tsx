@@ -162,12 +162,18 @@ function App() {
           setLoading(false);
         }, 3000);
 
-        supabase
-          .from('profiles')
-          .select('role, organization_id, organizations(name, payment_option, is_management_org, organization_type)')
-          .eq('id', session.user.id)
-          .maybeSingle()
-          .then(({ data: profile, error: profileError }) => {
+        Promise.all([
+          supabase
+            .from('profiles')
+            .select('role, organization_id, organizations(name, payment_option, is_management_org, organization_type)')
+            .eq('id', session.user.id)
+            .maybeSingle(),
+          supabase
+            .from('organization_users')
+            .select('role, organization_id')
+            .eq('user_id', session.user.id)
+            .maybeSingle()
+        ]).then(([{ data: profile, error: profileError }, { data: orgUser }]) => {
             clearTimeout(profileTimeout);
 
             if (!mounted) return;
@@ -182,6 +188,7 @@ function App() {
             }
 
             console.log('Auth state - Profile loaded:', profile);
+            console.log('Auth state - Organization user loaded:', orgUser);
 
             if (!profile) {
               console.warn('Auth state - No profile found, using defaults');
@@ -192,15 +199,19 @@ function App() {
               return;
             }
 
-            // Check if this is a garage user
-            if (profile.role === 'garage_user') {
+            // Check if this is a garage user (check both profile and organization_users)
+            const isGarageUser = profile.role === 'garage_user' || orgUser?.role === 'garage_user';
+
+            if (isGarageUser) {
               console.log('Auth state - Garage user detected, loading garage details');
+
+              const garageOrgId = orgUser?.organization_id || profile.organization_id;
 
               // Fetch garage details from organization
               supabase
                 .from('garages')
                 .select('id, name, email_address')
-                .eq('organization_id', profile.organization_id)
+                .eq('organization_id', garageOrgId)
                 .maybeSingle()
                 .then(({ data: garage, error: garageError }) => {
                   if (!mounted) return;
@@ -312,13 +323,19 @@ function App() {
         setSession(currentSession);
         setLoading(true);
 
-        // Load profile to determine user type
-        supabase
-          .from('profiles')
-          .select('role, organization_id, organizations(name, payment_option, is_management_org, organization_type)')
-          .eq('id', currentSession.user.id)
-          .maybeSingle()
-          .then(({ data: profile }) => {
+        // Load profile AND check organization_users to determine user type
+        Promise.all([
+          supabase
+            .from('profiles')
+            .select('role, organization_id, organizations(name, payment_option, is_management_org, organization_type)')
+            .eq('id', currentSession.user.id)
+            .maybeSingle(),
+          supabase
+            .from('organization_users')
+            .select('role, organization_id')
+            .eq('user_id', currentSession.user.id)
+            .maybeSingle()
+        ]).then(([{ data: profile }, { data: orgUser }]) => {
             if (!mounted) return;
 
             if (!profile) {
@@ -330,16 +347,21 @@ function App() {
             }
 
             console.log('Profile loaded on mount:', profile);
+            console.log('Organization user loaded on mount:', orgUser);
 
-            // Check if this is a garage user
-            if (profile.role === 'garage_user') {
+            // Check if this is a garage user (check both profile and organization_users)
+            const isGarageUser = profile.role === 'garage_user' || orgUser?.role === 'garage_user';
+
+            if (isGarageUser) {
               console.log('Garage user detected on mount, loading garage details');
+
+              const garageOrgId = orgUser?.organization_id || profile.organization_id;
 
               // Fetch garage details
               supabase
                 .from('garages')
                 .select('id, name, email_address')
-                .eq('organization_id', profile.organization_id)
+                .eq('organization_id', garageOrgId)
                 .maybeSingle()
                 .then(({ data: garage }) => {
                   if (!mounted) return;

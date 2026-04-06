@@ -43,23 +43,23 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
 
       console.log('[GarageAuth] Login successful, verifying garage access...');
 
-      // Verify the user is a garage user by checking their profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+      // Verify the user is a garage user by checking organization_users table
+      const { data: orgUser, error: orgUserError } = await supabase
+        .from('organization_users')
         .select('role')
-        .eq('id', authData.user.id)
+        .eq('user_id', authData.user.id)
         .maybeSingle();
 
-      if (profileError || !profile) {
-        console.error('[GarageAuth] Profile error:', profileError);
+      if (orgUserError) {
+        console.error('[GarageAuth] Organization user error:', orgUserError);
         await supabase.auth.signOut();
         setError('Could not verify account. Please contact support.');
         setLoading(false);
         return;
       }
 
-      if (profile.role !== 'garage_user') {
-        console.error('[GarageAuth] User is not a garage user:', profile.role);
+      if (!orgUser || orgUser.role !== 'garage_user') {
+        console.error('[GarageAuth] User is not a garage user:', orgUser?.role);
         await supabase.auth.signOut();
         setError('This account does not have access to the garage portal.');
         setLoading(false);

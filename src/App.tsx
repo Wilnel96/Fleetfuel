@@ -158,8 +158,7 @@ function App() {
 
         if (isPendingGarageLogin) {
           console.log('Auth state - Pending garage login detected, waiting for garage data...');
-          // Don't set userMode yet - let GarageAuth handle it after verification
-          setLoading(false);
+          // Keep loading true - GarageAuth will call handleGarageLogin which sets loading to false
           return; // Skip profile loading, GarageAuth will call handleGarageLogin
         }
 
@@ -454,6 +453,7 @@ function App() {
     setGaragePassword(password);
     setUserMode('garage');
     setShowModeSelection(false);
+    setLoading(false);
     console.log('Garage login complete - state updated:', { garageId: id, userMode: 'garage' });
   };
 

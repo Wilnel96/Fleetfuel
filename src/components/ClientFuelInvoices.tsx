@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileText, Search, Calendar, DollarSign, Fuel, Download, Eye, AlertCircle, Printer, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { generateFuelInvoicePDF, type InvoiceData } from '../lib/invoicePdfGenerator';
 import jsPDF from 'jspdf';
 
 interface FuelInvoice {
@@ -131,7 +132,59 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     return filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.liters.toString()), 0);
   };
 
-  const printInvoice = (invoice: FuelInvoice, e?: React.MouseEvent) => {
+  const printInvoice = async (invoice: FuelInvoice, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      const invoiceData: InvoiceData = {
+        invoice_number: invoice.invoice_number,
+        invoice_date: invoice.invoice_date,
+        transaction_date: invoice.transaction_date,
+        vehicle_registration: invoice.vehicle_registration,
+        driver_name: invoice.driver_name || 'N/A',
+        garage_name: invoice.garage_name,
+        garage_vat_number: invoice.garage_vat_number,
+        garage_address: invoice.garage_address,
+        fuel_type: invoice.fuel_type,
+        liters: invoice.liters,
+        price_per_liter: invoice.price_per_liter,
+        total_amount: invoice.total_amount,
+        oil_quantity: invoice.oil_quantity,
+        oil_type: invoice.oil_type,
+        oil_brand: invoice.oil_brand,
+        oil_unit_price: invoice.oil_unit_price,
+        oil_total_amount: invoice.oil_total_amount,
+      };
+
+      const pdfBlob = await generateFuelInvoicePDF(invoiceData);
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+
+      const printWindow = window.open(pdfUrl, '_blank');
+      if (!printWindow) {
+        alert('Please allow pop-ups to print invoices');
+        URL.revokeObjectURL(pdfUrl);
+        return;
+      }
+
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
+
+      setTimeout(() => {
+        URL.revokeObjectURL(pdfUrl);
+      }, 5000);
+    } catch (error) {
+      console.error('Error generating invoice PDF:', error);
+      alert('Failed to generate invoice PDF');
+    }
+  };
+
+  const printInvoice_OLD = (invoice: FuelInvoice, e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -664,6 +717,289 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
   };
 
   const printAllInvoices = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    if (filteredInvoices.length === 0) {
+      alert('No invoices to print');
+      return;
+    }
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
+
+    filteredInvoices.forEach((invoice, index) => {
+      if (index > 0) {
+        pdf.addPage();
+      }
+
+      let yPosition = margin;
+
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('FUEL TRANSACTION INVOICE', pageWidth / 2, yPosition, { align: 'center' });
+
+      yPosition += 7;
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Fuel Empowerment Systems (Pty) Ltd', pageWidth / 2, yPosition, { align: 'center' });
+
+      yPosition += 10;
+      pdf.setDrawColor(17, 24, 39);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+
+      yPosition += 8;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('INVOICE', margin, yPosition);
+
+      yPosition += 3;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+
+      yPosition += 4;
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+
+      pdf.text('Number:', margin + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.invoice_number}`, margin + 3 + pdf.getTextWidth('Number:'), yPosition);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      const dateLabelAll = 'Date:';
+      const dateXAll = margin + (contentWidth / 2) - (pdf.getTextWidth(dateLabelAll) / 2);
+      pdf.text(dateLabelAll, dateXAll, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${new Date(invoice.invoice_date).toLocaleDateString('en-ZA')}`, dateXAll + pdf.getTextWidth(dateLabelAll), yPosition);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      const transLabelAll = 'Transaction Date & Time:';
+      const transDateAll = new Date(invoice.transaction_date).toLocaleDateString('en-ZA');
+      const transTimeAll = new Date(invoice.transaction_date).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' });
+      const transValueAll = ` ${transDateAll} ${transTimeAll}`;
+      const transWidthAll = pdf.getTextWidth(transLabelAll) + pdf.getTextWidth(transValueAll);
+      pdf.text(transLabelAll, margin + contentWidth - 3 - transWidthAll, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(transValueAll, margin + contentWidth - 3 - pdf.getTextWidth(transValueAll), yPosition);
+
+      yPosition += 12;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('VEHICLE & DRIVER', margin, yPosition);
+
+      yPosition += 3;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+
+      yPosition += 4;
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+
+      pdf.text('Vehicle:', margin + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.vehicle_registration}`, margin + 3 + pdf.getTextWidth('Vehicle:'), yPosition);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      const driverLabelAll = 'Driver:';
+      const driverXAll = margin + (contentWidth / 2) - (pdf.getTextWidth(driverLabelAll) / 2);
+      pdf.text(driverLabelAll, driverXAll, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.driver_name || 'N/A'}`, driverXAll + pdf.getTextWidth(driverLabelAll), yPosition);
+
+      yPosition += 12;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('FUEL STATION', margin, yPosition);
+
+      yPosition += 3;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, contentWidth, 18, 'F');
+
+      yPosition += 4;
+      pdf.setFontSize(7);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+
+      pdf.text('Station:', margin + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.garage_name}`, margin + 3 + pdf.getTextWidth('Station:'), yPosition);
+
+      if (invoice.garage_vat_number) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        const vatLabel = 'VAT no:';
+        const vatValue = ` ${invoice.garage_vat_number}`;
+        const vatWidth = pdf.getTextWidth(vatLabel) + pdf.getTextWidth(vatValue);
+        pdf.text(vatLabel, margin + contentWidth - 3 - vatWidth, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        pdf.text(vatValue, margin + contentWidth - 3 - pdf.getTextWidth(vatValue), yPosition);
+      }
+
+      yPosition += 5;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('Address:', margin + 3, yPosition);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(` ${invoice.garage_address}`, margin + 3 + pdf.getTextWidth('Address:'), yPosition);
+
+      yPosition += 8;
+
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('FUEL DETAILS', margin, yPosition);
+
+      yPosition += 4;
+      pdf.setFillColor(249, 250, 251);
+      pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+
+      yPosition += 4;
+      pdf.setFontSize(7);
+      pdf.setTextColor(75, 85, 99);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Fuel Type', margin + 3, yPosition);
+      pdf.text('Liters', margin + contentWidth * 0.35, yPosition, { align: 'right' });
+      pdf.text('Price per Liter', margin + contentWidth * 0.6, yPosition, { align: 'right' });
+      pdf.text('Fuel Amount', margin + contentWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 4;
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(invoice.fuel_type, margin + 3, yPosition);
+      pdf.text(parseFloat(invoice.liters.toString()).toFixed(2), margin + contentWidth * 0.35, yPosition, { align: 'right' });
+      pdf.text(`R ${parseFloat(invoice.price_per_liter.toString()).toFixed(2)}`, margin + contentWidth * 0.6, yPosition, { align: 'right' });
+      const fuelAmountAll = parseFloat(invoice.liters.toString()) * parseFloat(invoice.price_per_liter.toString());
+      pdf.text(`R ${fuelAmountAll.toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
+
+      yPosition += 8;
+
+      const hasOilAll = invoice.oil_quantity && parseFloat(invoice.oil_quantity.toString()) > 0;
+      if (hasOilAll) {
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text('OIL PURCHASE', margin, yPosition);
+
+        yPosition += 4;
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(margin, yPosition, contentWidth, 12, 'F');
+
+        yPosition += 4;
+        pdf.setFontSize(7);
+        pdf.setTextColor(75, 85, 99);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text('Oil Type', margin + 3, yPosition);
+        pdf.text('Quantity', margin + contentWidth * 0.35, yPosition, { align: 'right' });
+        pdf.text('Unit Price (Incl VAT)', margin + contentWidth * 0.6, yPosition, { align: 'right' });
+        pdf.text('Oil Amount (Incl VAT)', margin + contentWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 4;
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        const oilTypeTextAll = `${invoice.oil_type || 'N/A'}${invoice.oil_brand ? ` (${invoice.oil_brand})` : ''}`;
+        pdf.text(oilTypeTextAll, margin + 3, yPosition);
+        pdf.text(`${parseFloat(invoice.oil_quantity.toString()).toFixed(0)} Unit${parseFloat(invoice.oil_quantity.toString()) > 1 ? 's' : ''}`, margin + contentWidth * 0.35, yPosition, { align: 'right' });
+        pdf.text(`R ${parseFloat(invoice.oil_unit_price?.toString() || '0').toFixed(2)}`, margin + contentWidth * 0.6, yPosition, { align: 'right' });
+        pdf.text(`R ${parseFloat(invoice.oil_total_amount?.toString() || '0').toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 6;
+        pdf.setDrawColor(209, 213, 219);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin + 3, yPosition, margin + contentWidth - 3, yPosition);
+
+        yPosition += 5;
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(75, 85, 99);
+        pdf.text('Amount of VAT included:', margin + 3, yPosition);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(17, 24, 39);
+        const oilVATAll = parseFloat(invoice.oil_total_amount?.toString() || '0') - (parseFloat(invoice.oil_total_amount?.toString() || '0') / 1.15);
+        pdf.text(`R ${oilVATAll.toFixed(2)}`, margin + contentWidth - 3, yPosition, { align: 'right' });
+
+        yPosition += 8;
+      }
+
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+
+      yPosition += 10;
+      pdf.setFillColor(239, 246, 255);
+      pdf.rect(margin, yPosition, contentWidth, 20, 'F');
+
+      yPosition += 12;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text('TOTAL AMOUNT:', margin + 5, yPosition);
+
+      pdf.setFontSize(16);
+      pdf.setTextColor(37, 99, 235);
+      pdf.text(`R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`, pageWidth - margin - 5, yPosition, { align: 'right' });
+
+      yPosition += 15;
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text('This invoice is for accounting and tax compliance purposes.', pageWidth / 2, yPosition, { align: 'center' });
+      yPosition += 5;
+      pdf.text('Thank you for your business.', pageWidth / 2, yPosition, { align: 'center' });
+    });
+
+    const pdfBlob = pdf.output('blob');
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+
+    const printWindow = window.open(pdfUrl, '_blank');
+    if (!printWindow) {
+      alert('Please allow pop-ups to print invoices');
+      URL.revokeObjectURL(pdfUrl);
+      return;
+    }
+
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    };
+
+    setTimeout(() => {
+      URL.revokeObjectURL(pdfUrl);
+    }, 5000);
+  };
+
+  const printAllInvoices_OLD = (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
       e.stopPropagation();

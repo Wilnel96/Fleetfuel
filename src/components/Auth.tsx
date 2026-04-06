@@ -57,22 +57,12 @@ export default function Auth({ onBack, onSignup, onPasswordReset }: AuthProps = 
 
       console.log('[Auth] Profile verified:', profile.role);
 
-      // Check if session is established every 500ms
-      const checkInterval = setInterval(async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          console.log('[Auth] Session confirmed, forcing reload');
-          clearInterval(checkInterval);
-          window.location.reload();
-        }
-      }, 500);
+      // Clear any stale flags
+      localStorage.removeItem('pendingGarageLogin');
 
-      // Safety timeout - if session not confirmed in 3 seconds, force reload anyway
-      setTimeout(() => {
-        clearInterval(checkInterval);
-        console.warn('[Auth] Safety timeout - forcing page reload');
-        window.location.reload();
-      }, 3000);
+      // Login successful - the auth state listener in App.tsx will handle the rest
+      console.log('[Auth] Login complete, waiting for auth state change');
+      setLoading(false);
 
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);

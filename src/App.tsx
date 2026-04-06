@@ -281,6 +281,7 @@ function App() {
     console.log('Checking session... Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
 
     supabase.auth.getSession().then(({ data: { session: currentSession }, error }) => {
+      console.log('Initial getSession call:', { hasSession: !!currentSession, error, mounted });
       if (!mounted) return;
 
       if (error) {

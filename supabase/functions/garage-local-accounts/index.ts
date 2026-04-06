@@ -19,35 +19,69 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const authHeader = req.headers.get('Authorization');
     const { action, garageEmail, garagePassword, accountId, accountData } = await req.json();
 
-    // Validate garage credentials
-    const { data: garages, error: garageError } = await supabase
-      .from('garages')
-      .select('id, name, contact_persons, status');
-
-    if (garageError) throw garageError;
-
     let authenticatedGarage = null;
-    for (const garage of garages || []) {
-      if (garage.status !== 'active') continue;
 
-      const contactPersons = garage.contact_persons as Array<{
-        email: string;
-        password: string;
-      }>;
+    // First, check if user is authenticated via Supabase Auth
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
-      if (!contactPersons) continue;
+      if (user && !userError) {
+        // User is authenticated - check if they're a garage user
+        const { data: orgUser } = await supabase
+          .from('organization_users')
+          .select('organization_id, role')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
 
-      const matchedContact = contactPersons.find(
-        (contact: any) =>
-          contact.email?.toLowerCase() === garageEmail?.toLowerCase() &&
-          contact.password === garagePassword
-      );
+        if (orgUser && orgUser.role === 'garage_user') {
+          // Get the garage for this organization
+          const { data: garage, error: garageError } = await supabase
+            .from('garages')
+            .select('id, name, status')
+            .eq('organization_id', orgUser.organization_id)
+            .eq('status', 'active')
+            .maybeSingle();
 
-      if (matchedContact) {
-        authenticatedGarage = garage;
-        break;
+          if (garage && !garageError) {
+            authenticatedGarage = garage;
+          }
+        }
+      }
+    }
+
+    // If not authenticated via Auth, try password-based authentication
+    if (!authenticatedGarage && garageEmail && garagePassword) {
+      const { data: garages, error: garageError } = await supabase
+        .from('garages')
+        .select('id, name, contact_persons, status');
+
+      if (garageError) throw garageError;
+
+      for (const garage of garages || []) {
+        if (garage.status !== 'active') continue;
+
+        const contactPersons = garage.contact_persons as Array<{
+          email: string;
+          password: string;
+        }>;
+
+        if (!contactPersons) continue;
+
+        const matchedContact = contactPersons.find(
+          (contact: any) =>
+            contact.email?.toLowerCase() === garageEmail?.toLowerCase() &&
+            contact.password === garagePassword
+        );
+
+        if (matchedContact) {
+          authenticatedGarage = garage;
+          break;
+        }
       }
     }
 

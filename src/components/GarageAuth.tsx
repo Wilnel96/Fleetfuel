@@ -20,35 +20,58 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
     setError('');
 
     try {
-      // First, verify the garage exists and get its data BEFORE signing in
-      const { data: garageUser, error: garageCheckError } = await supabase
-        .from('garage_users')
-        .select(`
-          garage_id,
-          garages!inner(
-            id,
-            name,
-            status,
-            contact_email
-          )
-        `)
-        .eq('email', contactEmail.trim().toLowerCase())
-        .eq('is_active', true)
-        .maybeSingle();
+      // First authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: contactEmail.trim().toLowerCase(),
+        password: password
+      });
 
-      if (garageCheckError || !garageUser) {
+      if (authError) {
         setError('Invalid email or password');
         return;
       }
 
-      const garage = (garageUser.garages as any);
+      if (!authData.user) {
+        setError('Login failed. Please try again.');
+        return;
+      }
+
+      // Now verify the user is a garage user and get garage data
+      const { data: orgUser, error: orgUserError } = await supabase
+        .from('organization_users')
+        .select(`
+          organization_id,
+          role,
+          organizations!inner(
+            id,
+            name,
+            garages!inner(
+              id,
+              name,
+              status
+            )
+          )
+        `)
+        .eq('user_id', authData.user.id)
+        .eq('role', 'garage_user')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (orgUserError || !orgUser) {
+        await supabase.auth.signOut();
+        setError('You do not have access to the garage portal');
+        return;
+      }
+
+      const garage = (orgUser.organizations as any).garages;
 
       if (!garage || garage.status !== 'active') {
+        await supabase.auth.signOut();
         setError('Your garage account is not active. Please contact support.');
         return;
       }
 
-      // Save garage data to localStorage BEFORE authenticating
+      // Save garage data to localStorage
       const garageData = {
         id: garage.id,
         name: garage.name,
@@ -56,26 +79,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         password: ''
       };
       localStorage.setItem('garageData', JSON.stringify(garageData));
-      console.log('Garage data saved to localStorage before auth');
-
-      // Now authenticate
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: contactEmail.trim().toLowerCase(),
-        password: password
-      });
-
-      if (authError) {
-        // Clear the saved garage data on auth failure
-        localStorage.removeItem('garageData');
-        setError('Invalid email or password');
-        return;
-      }
-
-      if (!authData.user) {
-        localStorage.removeItem('garageData');
-        setError('Login failed. Please try again.');
-        return;
-      }
+      console.log('Garage data saved to localStorage after successful auth');
 
       // Call the onLogin callback to update app state
       onLogin(garage.id, garage.name, contactEmail.trim(), '');

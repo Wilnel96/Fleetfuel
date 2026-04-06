@@ -151,7 +151,13 @@ function App() {
       if (session && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION')) {
         console.log('Auth state - Session detected, loading profile...');
         setSession(session);
-        setUserMode('admin');
+
+        // Check if user is logging in as garage (garage data in localStorage)
+        const savedGarageData = localStorage.getItem('garageData');
+        if (!savedGarageData) {
+          setUserMode('admin');
+        }
+
         setShowModeSelection(false);
         setLoading(false);
 

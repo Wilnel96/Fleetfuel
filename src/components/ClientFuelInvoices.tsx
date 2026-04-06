@@ -131,7 +131,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     return filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.liters.toString()), 0);
   };
 
-  const printInvoice = (invoice: FuelInvoice) => {
+  const printInvoice = (invoice: FuelInvoice, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -659,7 +664,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     `;
   };
 
-  const printAllInvoices = () => {
+  const printAllInvoices = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     if (filteredInvoices.length === 0) {
       alert('No invoices to print');
       return;
@@ -1289,7 +1299,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                 Export PDF
               </button>
               <button
-                onClick={() => printInvoice(selectedInvoice)}
+                onClick={(e) => printInvoice(selectedInvoice, e)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Printer className="w-4 h-4" />
@@ -1525,7 +1535,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
           </button>
 
           <button
-            onClick={printAllInvoices}
+            onClick={(e) => printAllInvoices(e)}
             disabled={filteredInvoices.length === 0}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -1592,7 +1602,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => printInvoice(invoice)}
+                          onClick={(e) => printInvoice(invoice, e)}
                           className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                           title="Print Invoice"
                         >

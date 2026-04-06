@@ -404,23 +404,30 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       </html>
     `;
 
-    // Use a popup window instead of iframe to avoid navigation issues
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    // Create a blob URL for the HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Open in new window
+    const printWindow = window.open(blobUrl, '_blank');
     if (!printWindow) {
       alert('Please allow pop-ups to print invoices');
+      URL.revokeObjectURL(blobUrl);
       return;
     }
 
-    printWindow.document.open();
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    };
 
-    // Wait for content to render, then print
+    // Cleanup blob URL after a delay
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      // Don't auto-close - let user close after printing
-    }, 250);
+      URL.revokeObjectURL(blobUrl);
+    }, 5000);
   };
 
   const exportToCSV = () => {
@@ -938,23 +945,30 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
       </html>
     `).join('');
 
-    // Use a popup window instead of iframe to avoid navigation issues
-    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    // Create a blob URL for the HTML content
+    const blob = new Blob([allInvoicesHTML], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    // Open in new window
+    const printWindow = window.open(blobUrl, '_blank');
     if (!printWindow) {
       alert('Please allow pop-ups to print invoices');
+      URL.revokeObjectURL(blobUrl);
       return;
     }
 
-    printWindow.document.open();
-    printWindow.document.write(allInvoicesHTML);
-    printWindow.document.close();
+    // Wait for content to load, then print
+    printWindow.onload = () => {
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    };
 
-    // Wait for content to render, then print
+    // Cleanup blob URL after a delay
     setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-      // Don't auto-close - let user close after printing
-    }, 250);
+      URL.revokeObjectURL(blobUrl);
+    }, 5000);
   };
 
   const exportAllInvoicesToPDF = () => {

@@ -20,6 +20,9 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
     setError('');
 
     try {
+      // Set a temporary flag BEFORE signing in so onAuthStateChange knows this is a garage login
+      localStorage.setItem('pendingGarageLogin', 'true');
+
       // First authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: contactEmail.trim().toLowerCase(),
@@ -27,11 +30,13 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
       });
 
       if (authError) {
+        localStorage.removeItem('pendingGarageLogin');
         setError('Invalid email or password');
         return;
       }
 
       if (!authData.user) {
+        localStorage.removeItem('pendingGarageLogin');
         setError('Login failed. Please try again.');
         return;
       }
@@ -58,6 +63,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         .maybeSingle();
 
       if (orgUserError || !orgUser) {
+        localStorage.removeItem('pendingGarageLogin');
         await supabase.auth.signOut();
         setError('You do not have access to the garage portal');
         return;
@@ -66,12 +72,13 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
       const garage = (orgUser.organizations as any).garages;
 
       if (!garage || garage.status !== 'active') {
+        localStorage.removeItem('pendingGarageLogin');
         await supabase.auth.signOut();
         setError('Your garage account is not active. Please contact support.');
         return;
       }
 
-      // Save garage data to localStorage BEFORE calling onLogin
+      // Save garage data to localStorage
       const garageData = {
         id: garage.id,
         name: garage.name,
@@ -79,10 +86,8 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         password: ''
       };
       localStorage.setItem('garageData', JSON.stringify(garageData));
+      localStorage.removeItem('pendingGarageLogin');
       console.log('Garage data saved to localStorage:', garageData);
-
-      // Small delay to ensure localStorage is written and auth state has settled
-      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Call the onLogin callback to update app state
       console.log('Calling onLogin callback with garage data');
@@ -90,6 +95,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
     } catch (err: any) {
       console.error('Login error:', err);
       localStorage.removeItem('garageData');
+      localStorage.removeItem('pendingGarageLogin');
       setError(err.message || 'An error occurred during login');
     } finally {
       setLoading(false);

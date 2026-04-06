@@ -152,8 +152,16 @@ function App() {
         console.log('Auth state - Session detected, loading profile...');
         setSession(session);
 
-        // Check if user is logging in as garage (garage data in localStorage)
+        // Check if this is a pending garage login or existing garage session
+        const isPendingGarageLogin = localStorage.getItem('pendingGarageLogin') === 'true';
         const savedGarageData = localStorage.getItem('garageData');
+
+        if (isPendingGarageLogin) {
+          console.log('Auth state - Pending garage login detected, waiting for garage data...');
+          // Don't set userMode yet - let GarageAuth handle it after verification
+          setLoading(false);
+          return; // Skip profile loading, GarageAuth will call handleGarageLogin
+        }
 
         if (savedGarageData) {
           try {

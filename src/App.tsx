@@ -279,6 +279,28 @@ function App() {
       if (currentSession) {
         console.log('Existing session found on mount');
         setSession(currentSession);
+
+        // Check if this is a garage user session
+        const savedGarageData = localStorage.getItem('garageData');
+        if (savedGarageData) {
+          try {
+            const garage = JSON.parse(savedGarageData);
+            console.log('Garage session detected on mount, restoring garage mode');
+            setGarageId(garage.id);
+            setGarageName(garage.name);
+            setGarageEmail(garage.email);
+            setGaragePassword(garage.password || '');
+            setUserMode('garage');
+            setShowModeSelection(false);
+            setLoading(false);
+            return;
+          } catch (e) {
+            console.error('Failed to parse garage data on mount:', e);
+            localStorage.removeItem('garageData');
+          }
+        }
+
+        // Not a garage user, treat as admin
         setUserMode('admin');
         setShowModeSelection(false);
         setLoading(false);
@@ -415,6 +437,7 @@ function App() {
   };
 
   const handleGarageLogin = (id: string, name: string, email: string, password: string) => {
+    console.log('handleGarageLogin called with:', { id, name, email });
     const garageData = { id, name, email, password };
     localStorage.setItem('garageData', JSON.stringify(garageData));
     setGarageId(id);
@@ -423,7 +446,7 @@ function App() {
     setGaragePassword(password);
     setUserMode('garage');
     setShowModeSelection(false);
-    console.log('Garage login complete, session saved to localStorage');
+    console.log('Garage login complete - state updated:', { garageId: id, userMode: 'garage' });
   };
 
   const handleGarageLogout = async () => {

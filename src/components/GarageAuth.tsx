@@ -71,7 +71,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         return;
       }
 
-      // Save garage data to localStorage
+      // Save garage data to localStorage BEFORE calling onLogin
       const garageData = {
         id: garage.id,
         name: garage.name,
@@ -79,9 +79,13 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         password: ''
       };
       localStorage.setItem('garageData', JSON.stringify(garageData));
-      console.log('Garage data saved to localStorage after successful auth');
+      console.log('Garage data saved to localStorage:', garageData);
+
+      // Small delay to ensure localStorage is written and auth state has settled
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Call the onLogin callback to update app state
+      console.log('Calling onLogin callback with garage data');
       onLogin(garage.id, garage.name, contactEmail.trim(), '');
     } catch (err: any) {
       console.error('Login error:', err);

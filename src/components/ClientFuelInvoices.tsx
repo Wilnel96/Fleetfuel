@@ -415,15 +415,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     printWindow.document.write(htmlContent);
     printWindow.document.close();
 
-    // Wait for content to load, then print and close
-    printWindow.onload = () => {
+    // Wait for content to render, then print
+    setTimeout(() => {
       printWindow.focus();
       printWindow.print();
-      // Close the window after printing (user can cancel the print dialog)
-      setTimeout(() => {
-        printWindow.close();
-      }, 100);
-    };
+      // Don't auto-close - let user close after printing
+    }, 250);
   };
 
   const exportToCSV = () => {
@@ -952,15 +949,12 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
     printWindow.document.write(allInvoicesHTML);
     printWindow.document.close();
 
-    // Wait for content to load, then print and close
-    printWindow.onload = () => {
+    // Wait for content to render, then print
+    setTimeout(() => {
       printWindow.focus();
       printWindow.print();
-      // Close the window after printing (user can cancel the print dialog)
-      setTimeout(() => {
-        printWindow.close();
-      }, 100);
-    };
+      // Don't auto-close - let user close after printing
+    }, 250);
   };
 
   const exportAllInvoicesToPDF = () => {

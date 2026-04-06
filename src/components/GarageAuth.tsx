@@ -52,7 +52,6 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         `)
         .eq('user_id', authData.user.id)
         .eq('is_active', true)
-        .eq('role', 'garage_user')
         .single();
 
       if (orgUserError || !orgUser) {

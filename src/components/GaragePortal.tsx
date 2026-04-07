@@ -155,12 +155,15 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
         updateData.longitude = parseFloat(editedGarageInfo.longitude);
       }
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           garageEmail,
@@ -192,12 +195,15 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
     setSuccess('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           garageEmail,

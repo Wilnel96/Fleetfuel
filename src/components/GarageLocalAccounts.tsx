@@ -145,13 +145,17 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
       if (orgsResult.error) throw orgsResult.error;
 
+      // Get the current session for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
       // Fetch garage accounts via secure Edge Function
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
       const accountsResponse = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           action: 'list',
@@ -206,12 +210,15 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setSaving(account.id);
       setError('');
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           action: 'update',
@@ -253,6 +260,9 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setSaving(selectedOrganization.id);
       setError('');
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
       const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
@@ -260,7 +270,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           action: 'create',
@@ -324,6 +334,9 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
       setSaving(accountId);
       setError('');
 
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
       const monthlySpendLimit = accountLimitInput.trim() ? parseFloat(accountLimitInput) : null;
       const depositAmount = depositInput.trim() ? parseFloat(depositInput) : null;
 
@@ -332,7 +345,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({
           action: 'update',

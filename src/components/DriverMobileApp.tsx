@@ -29,6 +29,7 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
   const [needsPINSetup, setNeedsPINSetup] = useState(!localDriver.hasPIN);
   const [currentView, setCurrentView] = useState<MenuOption>(localDriver.hasPIN ? 'menu' : 'pin_setup');
   const [drawnVehicles, setDrawnVehicles] = useState<DrawnVehicle[]>([]);
+  const [showDrawnReminder, setShowDrawnReminder] = useState(false);
 
   console.log('[DriverMobileApp] Rendering. currentView:', currentView, 'needsPINSetup:', needsPINSetup, 'localDriver.hasPIN:', localDriver.hasPIN);
 
@@ -136,6 +137,58 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
   }
 
   if (currentView === 'draw') {
+    if (showDrawnReminder && drawnVehicles.length > 0) {
+      return (
+        <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full">
+            <div className="flex items-start gap-3 mb-4">
+              <AlertCircle className="w-7 h-7 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h2 className="text-lg font-bold text-amber-900">Vehicle Already Drawn</h2>
+                <p className="text-sm text-amber-700 mt-1">
+                  You have {drawnVehicles.length} vehicle{drawnVehicles.length > 1 ? 's' : ''} currently drawn under your name:
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-5">
+              {drawnVehicles.map((vehicle) => (
+                <div key={vehicle.id} className="bg-amber-50 rounded-lg p-3 border border-amber-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-gray-900">{vehicle.vehicleRegistration}</p>
+                      <p className="text-xs text-gray-600">Drawn at {vehicle.odometerReading.toLocaleString()} km</p>
+                      <p className="text-xs text-gray-500">{new Date(vehicle.drawnAt).toLocaleString()}</p>
+                    </div>
+                    <Car className="w-6 h-6 text-amber-500" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-sm text-gray-600 mb-5">
+              Please return {drawnVehicles.length > 1 ? 'these vehicles' : 'this vehicle'} before drawing a new one. Do you still want to proceed?
+            </p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => { setShowDrawnReminder(false); }}
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-lg font-semibold transition-colors"
+              >
+                Proceed Anyway
+              </button>
+              <button
+                onClick={() => { setShowDrawnReminder(false); setCurrentView('menu'); }}
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold transition-colors"
+              >
+                Back to Menu
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <DrawVehicle
         organizationId={driver.organizationId}
@@ -224,41 +277,6 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
       </div>
 
       <div className="p-4 max-w-2xl mx-auto">
-        {drawnVehicles.length > 0 && (
-          <div className="mb-4 bg-amber-50 border-l-4 border-amber-500 rounded-lg p-4 shadow-md">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-amber-900 mb-2">Vehicle Drawn Reminder</h3>
-                <p className="text-sm text-amber-800 mb-3">
-                  You have {drawnVehicles.length} vehicle{drawnVehicles.length > 1 ? 's' : ''} currently drawn under your name:
-                </p>
-                <div className="space-y-2">
-                  {drawnVehicles.map((vehicle) => (
-                    <div key={vehicle.id} className="bg-white rounded-md p-3 border border-amber-200">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-gray-900">{vehicle.vehicleRegistration}</p>
-                          <p className="text-xs text-gray-600">
-                            Drawn at {vehicle.odometerReading.toLocaleString()} km
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {new Date(vehicle.drawnAt).toLocaleString()}
-                          </p>
-                        </div>
-                        <Car className="w-6 h-6 text-amber-600" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-sm text-amber-800 mt-3 font-medium">
-                  Please remember to return {drawnVehicles.length > 1 ? 'these vehicles' : 'this vehicle'} when you're done.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome!</h2>
           <p className="text-gray-600">Select an option to get started</p>
@@ -266,7 +284,12 @@ export default function DriverMobileApp({ driver, onLogout, onDriverUpdate }: Dr
 
         <div className="grid grid-cols-1 gap-4">
           <button
-            onClick={() => setCurrentView('draw')}
+            onClick={() => {
+              if (drawnVehicles.length > 0) {
+                setShowDrawnReminder(true);
+              }
+              setCurrentView('draw');
+            }}
             className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all transform hover:-translate-y-1 text-left group"
           >
             <div className="flex items-start gap-4">

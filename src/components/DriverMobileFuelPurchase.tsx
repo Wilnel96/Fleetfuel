@@ -106,13 +106,22 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   const [showAccountDetails, setShowAccountDetails] = useState(false);
   const [transactionWarning, setTransactionWarning] = useState<string | null>(null);
   const [encryptedCardData, setEncryptedCardData] = useState<any>(null);
+  const [nearestGarage, setNearestGarage] = useState<Garage | null>(null);
+  const [detectingGarage, setDetectingGarage] = useState(false);
+  const [paymentCheckError, setPaymentCheckError] = useState<string>('');
 
   useEffect(() => {
     validateSession();
     loadDrawnVehicle();
-    loadGarages();
     getCurrentLocation();
   }, []);
+
+  // Once we have both location and garages, auto-detect nearest
+  useEffect(() => {
+    if (location && garages.length > 0 && !nearestGarage) {
+      detectNearestGarage();
+    }
+  }, [location, garages]);
 
   const validateSession = () => {
     const driverToken = localStorage.getItem('driverToken');
@@ -127,6 +136,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   };
 
   const getCurrentLocation = () => {
+    // Load garages in parallel with location request
+    loadGarages();
+
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -285,24 +297,19 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
   const loadGarages = async () => {
     try {
-      // Load all active garages
-      const { data: allGarages } = await supabase
-        .from('garages')
-        .select('*')
-        .eq('status', 'active')
-        .order('name');
-
-      // Also load local account mappings for this org so we can tag garages that have accounts
-      const { data: garageAccounts } = await supabase
-        .from('organization_garage_accounts')
-        .select('garage_id, account_number')
-        .eq('organization_id', driver.organizationId)
-        .eq('is_active', true);
+      const [{ data: allGarages }, { data: garageAccounts }] = await Promise.all([
+        supabase.from('garages').select('*').eq('status', 'active').order('name'),
+        supabase
+          .from('organization_garage_accounts')
+          .select('garage_id, account_number')
+          .eq('organization_id', driver.organizationId)
+          .eq('is_active', true),
+      ]);
 
       if (allGarages) {
         const garagesWithAccounts = allGarages.map(garage => ({
           ...garage,
-          accountNumber: garageAccounts?.find(acc => acc.garage_id === garage.id)?.account_number || null
+          accountNumber: garageAccounts?.find(acc => acc.garage_id === garage.id)?.account_number || null,
         }));
         setGarages(garagesWithAccounts);
       }
@@ -310,6 +317,35 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       console.error('Error loading garages:', err);
       setError('Failed to load garages');
     }
+  };
+
+  const detectNearestGarage = () => {
+    if (!location || garages.length === 0) return;
+    setDetectingGarage(true);
+
+    // Only consider garages that have coordinates
+    const garagesWithCoords = garages.filter(g => g.latitude && g.longitude);
+    if (garagesWithCoords.length === 0) {
+      setDetectingGarage(false);
+      return;
+    }
+
+    let closest = garagesWithCoords[0];
+    let closestDist = calculateDistance(location.lat, location.lng, closest.latitude!, closest.longitude!);
+
+    for (const garage of garagesWithCoords) {
+      const dist = calculateDistance(location.lat, location.lng, garage.latitude!, garage.longitude!);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = garage;
+      }
+    }
+
+    setNearestGarage(closest);
+    setSelectedGarageId(closest.id);
+    setDistanceFromGarage(closestDist);
+    setLocationMismatch(closestDist > 0.5);
+    setDetectingGarage(false);
   };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -793,22 +829,86 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   };
 
 
-  const handleGarageSelection = () => {
+  const handleGarageSelection = async () => {
     setError('');
+    setPaymentCheckError('');
+    setLoading(true);
 
     if (!selectedGarageId) {
       setError('Please select a garage.');
+      setLoading(false);
       return;
     }
 
     if (!drawnVehicle) {
       setError('No vehicle drawn.');
+      setLoading(false);
       return;
     }
 
     const selectedGarage = garages.find(g => g.id === selectedGarageId);
     if (!selectedGarage) {
       setError('Garage not found.');
+      setLoading(false);
+      return;
+    }
+
+    // Validate payment method for this org + garage combo before proceeding
+    try {
+      const [{ data: organization }, { data: garageAccount }] = await Promise.all([
+        supabase
+          .from('organizations')
+          .select('payment_option, daily_spending_limit, monthly_spending_limit')
+          .eq('id', drawnVehicle.organization_id)
+          .maybeSingle(),
+        supabase
+          .from('organization_garage_accounts')
+          .select('account_number, monthly_spend_limit')
+          .eq('organization_id', drawnVehicle.organization_id)
+          .eq('garage_id', selectedGarage.id)
+          .eq('is_active', true)
+          .maybeSingle(),
+      ]);
+
+      if (garageAccount) {
+        // Local account exists for this garage — use it
+        setPaymentOption('Local Account');
+        setIsLocalAccount(true);
+        setGarageAccountNumber(garageAccount.account_number);
+        setPaymentCheckError('');
+      } else {
+        // No local account — check if card payment is available
+        const orgPaymentOption = organization?.payment_option || 'Card Payment';
+
+        if (orgPaymentOption === 'Local Account') {
+          // Org is local-account only but no account at this garage
+          setPaymentCheckError(`No local account found for this garage. Please contact your administrator to set one up.`);
+          setLoading(false);
+          return;
+        }
+
+        const { data: paymentCard } = await supabase
+          .from('organization_payment_cards')
+          .select('id')
+          .eq('organization_id', drawnVehicle.organization_id)
+          .eq('is_active', true)
+          .eq('is_default', true)
+          .maybeSingle();
+
+        if (!paymentCard) {
+          setPaymentCheckError('No payment method available. No local account exists for this garage and no active payment card is loaded. Please contact your administrator.');
+          setLoading(false);
+          return;
+        }
+
+        setPaymentOption('Card Payment');
+        setIsLocalAccount(false);
+        setPaymentCheckError('');
+      }
+    } catch (err: any) {
+      console.error('Payment validation error:', err);
+      setError('Failed to validate payment method. Please try again.');
+      setLoading(false);
       return;
     }
 
@@ -816,6 +916,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     setDistanceFromGarage(proximityCheck.distance);
     setLocationMismatch(!proximityCheck.isNear);
     setCurrentStep('location_confirmation');
+    setLoading(false);
   };
 
   const proceedToScan = () => {
@@ -1998,53 +2099,181 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
             {currentStep === 'garage_selection' && (
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Garage</label>
-                  <select
-                    value={selectedGarageId}
-                    onChange={(e) => {
-                      setSelectedGarageId(e.target.value);
-                      const selectedGarage = garages.find(g => g.id === e.target.value);
-                      if (selectedGarage?.accountNumber) {
-                        setGarageAccountNumber(selectedGarage.accountNumber);
-                      } else {
-                        setGarageAccountNumber('');
-                      }
-                    }}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3"
-                    required
-                  >
-                    <option value="">Choose a garage to refuel at</option>
-                    {garages.map((garage) => (
-                      <option key={garage.id} value={garage.id}>
-                        {garage.name} - {garage.address}, {garage.city} - Tel: {garage.phone}
-                      </option>
-                    ))}
-                  </select>
-
-                  {selectedGarageId && garageAccountNumber && drawnVehicle && (
-                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-blue-900">
-                        <strong>Note:</strong> Account details will be displayed after PIN verification for security purposes.
-                      </p>
+                {/* Nearest garage auto-detected card */}
+                {detectingGarage || (garages.length > 0 && !nearestGarage && location) ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-center">
+                      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-sm text-gray-600">Detecting nearest garage...</p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : nearestGarage ? (
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      Nearest garage detected
+                    </p>
 
-                <button
-                  onClick={handleGarageSelection}
-                  disabled={loading || !selectedGarageId}
-                  className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    'Processing...'
-                  ) : (
-                    <>
-                      <MapPin className="w-5 h-5" />
-                      Continue to Location Verification
-                    </>
-                  )}
-                </button>
+                    <div className="rounded-xl border-2 border-blue-500 bg-blue-50 p-4 mb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <p className="text-lg font-bold text-blue-900">{nearestGarage.name}</p>
+                          <p className="text-sm text-blue-700">{nearestGarage.address}{nearestGarage.address_line_2 ? `, ${nearestGarage.address_line_2}` : ''}</p>
+                          <p className="text-sm text-blue-700">{nearestGarage.city}{nearestGarage.province ? `, ${nearestGarage.province}` : ''}</p>
+                          {nearestGarage.phone && <p className="text-sm text-blue-600 mt-1">Tel: {nearestGarage.phone}</p>}
+                        </div>
+                        <div className="ml-3 text-right flex-shrink-0">
+                          {distanceFromGarage !== null && (
+                            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${distanceFromGarage <= 0.5 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+                              {distanceFromGarage < 1
+                                ? `${(distanceFromGarage * 1000).toFixed(0)}m`
+                                : `${distanceFromGarage.toFixed(1)}km`}
+                            </span>
+                          )}
+                          {nearestGarage.accountNumber && (
+                            <span className="block mt-1 px-2 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-800">
+                              Local Account
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment method indicator */}
+                    {nearestGarage.accountNumber ? (
+                      <div className="flex items-center gap-2 p-3 bg-teal-50 border border-teal-200 rounded-lg mb-3">
+                        <CheckCircle className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                        <p className="text-sm text-teal-800">Local account available — payment via account number</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 p-3 bg-gray-50 border border-gray-200 rounded-lg mb-3">
+                        <CheckCircle className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                        <p className="text-sm text-gray-700">Payment via card</p>
+                      </div>
+                    )}
+
+                    {paymentCheckError && (
+                      <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-3">
+                        <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-800">{paymentCheckError}</p>
+                      </div>
+                    )}
+
+                    {distanceFromGarage !== null && distanceFromGarage > 0.5 && (
+                      <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mb-3">
+                        <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-amber-800">
+                          You are {distanceFromGarage < 1 ? `${(distanceFromGarage * 1000).toFixed(0)} meters` : `${distanceFromGarage.toFixed(1)} km`} from this garage. If this is not correct, select a different garage below.
+                        </p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleGarageSelection}
+                      disabled={loading || !!paymentCheckError}
+                      className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-base mb-3"
+                    >
+                      {loading ? (
+                        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Verifying...</>
+                      ) : (
+                        <><CheckCircle className="w-5 h-5" /> Confirm — {nearestGarage.name}</>
+                      )}
+                    </button>
+
+                    {/* Separator */}
+                    <div className="flex items-center gap-3 my-3">
+                      <div className="flex-1 h-px bg-gray-200" />
+                      <span className="text-xs text-gray-400 font-medium">Not the right garage?</span>
+                      <div className="flex-1 h-px bg-gray-200" />
+                    </div>
+
+                    {/* Manual override dropdown */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Select a different garage</label>
+                      <select
+                        value={selectedGarageId}
+                        onChange={(e) => {
+                          setSelectedGarageId(e.target.value);
+                          setPaymentCheckError('');
+                          const g = garages.find(x => x.id === e.target.value);
+                          if (g) {
+                            setNearestGarage(g);
+                            if (location && g.latitude && g.longitude) {
+                              const d = calculateDistance(location.lat, location.lng, g.latitude, g.longitude);
+                              setDistanceFromGarage(d);
+                              setLocationMismatch(d > 0.5);
+                            } else {
+                              setDistanceFromGarage(null);
+                              setLocationMismatch(false);
+                            }
+                          }
+                        }}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                      >
+                        <option value="">Choose a garage...</option>
+                        {garages.map((garage) => (
+                          <option key={garage.id} value={garage.id}>
+                            {garage.name} — {garage.city}{garage.accountNumber ? ' (Local Account)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ) : (
+                  /* Fallback: no GPS coords available — show dropdown */
+                  <div>
+                    {!location && (
+                      <div className="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg mb-3">
+                        <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                        <p className="text-sm text-amber-800">Location not available. Please select your garage manually.</p>
+                      </div>
+                    )}
+
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Garage</label>
+                    <select
+                      value={selectedGarageId}
+                      onChange={(e) => {
+                        setSelectedGarageId(e.target.value);
+                        setPaymentCheckError('');
+                        const g = garages.find(x => x.id === e.target.value);
+                        if (g) {
+                          if (location && g.latitude && g.longitude) {
+                            const d = calculateDistance(location.lat, location.lng, g.latitude, g.longitude);
+                            setDistanceFromGarage(d);
+                            setLocationMismatch(d > 0.5);
+                          }
+                        }
+                      }}
+                      className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-3"
+                    >
+                      <option value="">Choose a garage to refuel at</option>
+                      {garages.map((garage) => (
+                        <option key={garage.id} value={garage.id}>
+                          {garage.name} — {garage.city}{garage.accountNumber ? ' (Local Account)' : ''}
+                        </option>
+                      ))}
+                    </select>
+
+                    {paymentCheckError && (
+                      <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg mb-3">
+                        <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-sm text-red-800">{paymentCheckError}</p>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleGarageSelection}
+                      disabled={loading || !selectedGarageId}
+                      className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                    >
+                      {loading ? (
+                        <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Verifying...</>
+                      ) : (
+                        <><MapPin className="w-5 h-5" /> Continue</>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

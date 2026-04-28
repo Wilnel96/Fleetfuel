@@ -274,9 +274,12 @@ export default function GarageStatementsPayments({
 
       if (invoicesError) throw invoicesError;
 
+      // Keep all invoices in the period for this org — the garage association is
+      // stored on fuel_transactions but can be null for older records. We include
+      // invoices whose linked transaction matches garageId OR has no garage_id.
       let filteredInvoices = invoicesData || [];
 
-      if (filteredInvoices.length > 0 && filteredInvoices[0].fuel_transaction_id) {
+      if (filteredInvoices.length > 0) {
         const transactionIds = filteredInvoices
           .map(inv => inv.fuel_transaction_id)
           .filter(id => id != null);
@@ -284,16 +287,18 @@ export default function GarageStatementsPayments({
         if (transactionIds.length > 0) {
           const { data: transactionsData, error: transactionsError } = await supabase
             .from('fuel_transactions')
-            .select('id')
-            .eq('garage_id', garageId)
+            .select('id, garage_id')
             .in('id', transactionIds);
 
           if (transactionsError) throw transactionsError;
 
-          const validTransactionIds = new Set((transactionsData || []).map(t => t.id));
-          filteredInvoices = filteredInvoices.filter(inv =>
-            inv.fuel_transaction_id && validTransactionIds.has(inv.fuel_transaction_id)
-          );
+          const transactionMap = new Map((transactionsData || []).map(t => [t.id, t.garage_id]));
+          filteredInvoices = filteredInvoices.filter(inv => {
+            if (!inv.fuel_transaction_id) return true;
+            const txGarageId = transactionMap.get(inv.fuel_transaction_id);
+            // Include if garage matches, or if transaction has no garage set
+            return txGarageId === garageId || txGarageId == null;
+          });
         }
       }
 

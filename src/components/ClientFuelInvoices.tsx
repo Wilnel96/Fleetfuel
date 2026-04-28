@@ -34,26 +34,14 @@ interface ClientFuelInvoicesProps {
 }
 
 export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesProps) {
-  // Set default date range: yesterday to today
-  const getDefaultStartDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() - 1);
-    return date.toISOString().split('T')[0];
-  };
-
-  const getDefaultEndDate = () => {
-    const date = new Date();
-    return date.toISOString().split('T')[0];
-  };
-
   const [invoices, setInvoices] = useState<FuelInvoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<FuelInvoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<FuelInvoice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState(getDefaultStartDate());
-  const [endDate, setEndDate] = useState(getDefaultEndDate());
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     loadInvoices();

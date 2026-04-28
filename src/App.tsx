@@ -264,9 +264,14 @@ function App() {
               setCurrentView(null);
             }
 
-            // Set payment option if organization data is available
+            // Set payment option and derive portal type if organization data is available
             if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
-              setPaymentOption((profile.organizations as any).payment_option);
+              const po = (profile.organizations as any).payment_option;
+              setPaymentOption(po);
+              if (!isManagementUser) {
+                if (po === 'Card Payment') setClientPortalType('card');
+                else if (po === 'Local Account') setClientPortalType('account');
+              }
             }
 
             // Set organization ID and name
@@ -407,9 +412,14 @@ function App() {
             setUserMode('admin');
             setShowModeSelection(false);
 
-            // Set payment option if organization data is available
+            // Set payment option and derive portal type if organization data is available
             if (profile.organizations && typeof profile.organizations === 'object' && 'payment_option' in profile.organizations) {
-              setPaymentOption((profile.organizations as any).payment_option);
+              const po = (profile.organizations as any).payment_option;
+              setPaymentOption(po);
+              if (!isManagementUser) {
+                if (po === 'Card Payment') setClientPortalType('card');
+                else if (po === 'Local Account') setClientPortalType('account');
+              }
             }
 
             // Set organization ID and name

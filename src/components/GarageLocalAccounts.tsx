@@ -421,21 +421,29 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const loadFinancialInvoices = async (organizationId: string) => {
     try {
       setLoadingFinancialInvoices(true);
-      const { data, error } = await supabase
-        .from('fuel_transaction_invoices')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .eq('garage_name', garageName)
-        .order('invoice_date', { ascending: false });
+
+      // Use SECURITY DEFINER RPC to fetch invoices for this garage+org combination,
+      // avoiding RLS issues and the unreliable garage_name text match.
+      const { data, error } = await supabase.rpc('get_statement_invoices', {
+        p_garage_id: garageId,
+        p_organization_id: organizationId,
+        p_period_start: '2000-01-01',
+        p_period_end: '2099-12-31',
+      });
 
       if (error) throw error;
 
-      const transformedData = (data || []).map(invoice => ({
+      const transformedData = (data || []).map((invoice: any) => ({
         ...invoice,
+        invoice_date: invoice.invoice_date || invoice.transaction_date,
         period_start: invoice.transaction_date,
         period_end: invoice.transaction_date,
         payment_status: 'pending',
-        payment_due_date: invoice.invoice_date
+        payment_due_date: invoice.invoice_date || invoice.transaction_date,
+        garage_name: garageName,
+        garage_address: '',
+        subtotal: Number(invoice.total_amount),
+        vat_amount: 0,
       }));
 
       setFinancialInvoices(transformedData);

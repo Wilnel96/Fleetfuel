@@ -328,7 +328,56 @@ export default function GarageStatementsPayments({
     }
   };
 
-  const printStatement = (statement: Statement) => {
+  const printStatement = async (statement: Statement) => {
+    // Always fetch fresh data so printing from the list works correctly
+    let invoices: Invoice[] = statementInvoices;
+    let pmts: Payment[] = statementPayments;
+
+    if (!selectedStatement || selectedStatement.id !== statement.id) {
+      const periodEndInclusive = `${statement.period_end}T23:59:59`;
+
+      const { data: invoicesData } = await supabase
+        .from('fuel_transaction_invoices')
+        .select(`
+          id, invoice_number, transaction_date, vehicle_registration, driver_name,
+          fuel_type, liters, price_per_liter, total_amount, odometer_reading,
+          oil_type, oil_quantity, oil_unit_price, oil_total_amount, fuel_transaction_id
+        `)
+        .eq('organization_id', organizationId)
+        .gte('transaction_date', statement.period_start)
+        .lte('transaction_date', periodEndInclusive)
+        .order('transaction_date', { ascending: true });
+
+      invoices = invoicesData || [];
+
+      if (invoices.length > 0) {
+        const txIds = invoices.map(inv => inv.fuel_transaction_id).filter(Boolean);
+        if (txIds.length > 0) {
+          const { data: txData } = await supabase
+            .from('fuel_transactions')
+            .select('id, garage_id')
+            .in('id', txIds);
+          const txMap = new Map((txData || []).map(t => [t.id, t.garage_id]));
+          invoices = invoices.filter(inv => {
+            if (!inv.fuel_transaction_id) return true;
+            const gid = txMap.get(inv.fuel_transaction_id);
+            return gid === garageId || gid == null;
+          });
+        }
+      }
+
+      const { data: pmtsData } = await supabase
+        .from('garage_client_payments')
+        .select('*')
+        .eq('garage_id', garageId)
+        .eq('organization_id', organizationId)
+        .gte('payment_date', statement.period_start)
+        .lte('payment_date', statement.period_end)
+        .order('payment_date', { ascending: true });
+
+      pmts = pmtsData || [];
+    }
+
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -413,7 +462,8 @@ export default function GarageStatementsPayments({
     pdf.line(margin, yPosition, pageWidth - margin, yPosition);
 
     yPosition += 5;
-    let runningBalance = statement.opening_balance;
+    const n = (v: any) => Number(v);
+    let runningBalance = n(statement.opening_balance);
 
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
@@ -431,33 +481,26 @@ export default function GarageStatementsPayments({
 
     const allTransactions: Transaction[] = [];
 
-    statementInvoices.forEach(inv => {
-      allTransactions.push({
-        type: 'invoice',
-        date: inv.transaction_date,
-        data: inv
-      });
+    invoices.forEach(inv => {
+      allTransactions.push({ type: 'invoice', date: inv.transaction_date, data: inv });
     });
 
-    statementPayments.forEach(pmt => {
-      allTransactions.push({
-        type: 'payment',
-        date: pmt.payment_date,
-        data: pmt
-      });
+    pmts.forEach(pmt => {
+      allTransactions.push({ type: 'payment', date: pmt.payment_date, data: pmt });
     });
 
     allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     allTransactions.forEach((txn) => {
-      if (yPosition > 260) {
+      if (yPosition > 255) {
         pdf.addPage();
         yPosition = margin + 10;
       }
 
       if (txn.type === 'invoice') {
         const inv = txn.data as Invoice;
-        runningBalance += inv.total_amount;
+        const invTotal = n(inv.total_amount);
+        runningBalance += invTotal;
 
         pdf.setDrawColor(229, 231, 235);
         pdf.setLineWidth(0.2);
@@ -466,37 +509,46 @@ export default function GarageStatementsPayments({
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(17, 24, 39);
-        pdf.text(`${new Date(inv.transaction_date).toLocaleDateString('en-ZA')} - ${inv.invoice_number}`, margin + 5, yPosition);
-        pdf.text(`R ${inv.total_amount.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+        pdf.text(`${new Date(inv.transaction_date).toLocaleDateString('en-ZA')}  ${inv.invoice_number}`, margin + 5, yPosition);
+        pdf.text(`R ${invTotal.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
         yPosition += 4;
 
         pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(55, 65, 81);
-        pdf.text(`Fuel: ${inv.liters.toFixed(2)} L ${inv.fuel_type} @ R${inv.price_per_liter.toFixed(2)}/L = R${(inv.liters * inv.price_per_liter).toFixed(2)}`, margin + 8, yPosition);
-
+        const liters = n(inv.liters);
+        const ppl = n(inv.price_per_liter);
+        pdf.text(
+          `Fuel: ${liters.toFixed(2)} L ${inv.fuel_type} @ R${ppl.toFixed(2)}/L = R${(liters * ppl).toFixed(2)}`,
+          margin + 8, yPosition
+        );
         yPosition += 3.5;
 
         if (inv.oil_type && inv.oil_quantity) {
-          pdf.text(`Oil: ${inv.oil_quantity}x ${inv.oil_type} @ R${inv.oil_unit_price?.toFixed(2) || '0.00'} = R${inv.oil_total_amount?.toFixed(2) || '0.00'}`, margin + 8, yPosition);
+          pdf.text(
+            `Oil: ${inv.oil_quantity}x ${inv.oil_type} @ R${n(inv.oil_unit_price).toFixed(2)} = R${n(inv.oil_total_amount).toFixed(2)}`,
+            margin + 8, yPosition
+          );
           yPosition += 3.5;
         }
 
-        pdf.text(`Driver: ${inv.driver_name} | Vehicle: ${inv.vehicle_registration} | Odometer: ${inv.odometer_reading?.toLocaleString() || 'N/A'} km`, margin + 8, yPosition);
-
+        pdf.text(
+          `Driver: ${inv.driver_name || 'N/A'} | Vehicle: ${inv.vehicle_registration} | Odometer: ${inv.odometer_reading != null ? n(inv.odometer_reading).toLocaleString() : 'N/A'} km`,
+          margin + 8, yPosition
+        );
         yPosition += 4;
 
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(29, 78, 216);
         pdf.text(`Balance: R ${runningBalance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
-
         yPosition += 5;
 
       } else {
         const pmt = txn.data as Payment;
-        runningBalance -= pmt.amount;
+        const pmtAmt = n(pmt.amount);
+        runningBalance -= pmtAmt;
 
         pdf.setDrawColor(229, 231, 235);
         pdf.setLineWidth(0.2);
@@ -505,24 +557,25 @@ export default function GarageStatementsPayments({
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(17, 24, 39);
-        pdf.text(`${new Date(pmt.payment_date).toLocaleDateString('en-ZA')} - ${pmt.payment_number}`, margin + 5, yPosition);
+        pdf.text(`${new Date(pmt.payment_date).toLocaleDateString('en-ZA')}  ${pmt.payment_number}`, margin + 5, yPosition);
         pdf.setTextColor(34, 197, 94);
-        pdf.text(`-R ${pmt.amount.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+        pdf.text(`-R ${pmtAmt.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
         yPosition += 4;
 
         pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(55, 65, 81);
-        pdf.text(`Payment: ${pmt.payment_method.toUpperCase()}${pmt.reference ? ` - ${pmt.reference}` : ''}`, margin + 8, yPosition);
-
+        pdf.text(
+          `Payment received: ${pmt.payment_method.toUpperCase()}${pmt.reference ? `  Ref: ${pmt.reference}` : ''}${pmt.notes ? `  (${pmt.notes})` : ''}`,
+          margin + 8, yPosition
+        );
         yPosition += 4;
 
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(29, 78, 216);
         pdf.text(`Balance: R ${runningBalance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
-
         yPosition += 5;
       }
     });
@@ -541,21 +594,21 @@ export default function GarageStatementsPayments({
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(17, 24, 39);
     pdf.text('Opening Balance:', margin + 5, yPosition);
-    pdf.text(`R ${statement.opening_balance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+    pdf.text(`R ${n(statement.opening_balance).toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
     yPosition += 6;
     pdf.text('Total Invoices:', margin + 5, yPosition);
-    pdf.text(`R ${statement.total_invoices.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+    pdf.text(`R ${n(statement.total_invoices).toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
     yPosition += 6;
     pdf.text('Total Payments:', margin + 5, yPosition);
-    pdf.text(`R ${statement.total_payments.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+    pdf.text(`R ${n(statement.total_payments).toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
     yPosition += 8;
     pdf.setFontSize(12);
     pdf.setTextColor(37, 99, 235);
     pdf.text('CLOSING BALANCE:', margin + 5, yPosition);
-    pdf.text(`R ${statement.closing_balance.toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
+    pdf.text(`R ${n(statement.closing_balance).toFixed(2)}`, margin + contentWidth - 5, yPosition, { align: 'right' });
 
     const pdfBlob = pdf.output('blob');
     const url = URL.createObjectURL(pdfBlob);

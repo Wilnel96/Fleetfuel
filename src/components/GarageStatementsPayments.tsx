@@ -76,6 +76,7 @@ export default function GarageStatementsPayments({
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [selectedStatement, setSelectedStatement] = useState<Statement | null>(null);
   const [viewingStatementDetails, setViewingStatementDetails] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [statementInvoices, setStatementInvoices] = useState<Invoice[]>([]);
   const [statementPayments, setStatementPayments] = useState<Payment[]>([]);
 
@@ -245,8 +246,15 @@ export default function GarageStatementsPayments({
 
   const loadStatementDetails = async (statement: Statement) => {
     try {
+      setLoadingDetails(true);
+      setStatementInvoices([]);
+      setStatementPayments([]);
       setSelectedStatement(statement);
       setViewingStatementDetails(true);
+
+      // period_end is a date string (e.g. "2026-03-31"); append end-of-day time so
+      // timestamps like "2026-03-31 23:59:59+00" are included in the range.
+      const periodEndInclusive = `${statement.period_end}T23:59:59`;
 
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('fuel_transaction_invoices')
@@ -269,14 +277,13 @@ export default function GarageStatementsPayments({
         `)
         .eq('organization_id', organizationId)
         .gte('transaction_date', statement.period_start)
-        .lte('transaction_date', statement.period_end)
+        .lte('transaction_date', periodEndInclusive)
         .order('transaction_date', { ascending: true });
 
       if (invoicesError) throw invoicesError;
 
-      // Keep all invoices in the period for this org — the garage association is
-      // stored on fuel_transactions but can be null for older records. We include
-      // invoices whose linked transaction matches garageId OR has no garage_id.
+      // Include invoices whose linked transaction belongs to this garage,
+      // or where the transaction has no garage set (older records).
       let filteredInvoices = invoicesData || [];
 
       if (filteredInvoices.length > 0) {
@@ -296,7 +303,6 @@ export default function GarageStatementsPayments({
           filteredInvoices = filteredInvoices.filter(inv => {
             if (!inv.fuel_transaction_id) return true;
             const txGarageId = transactionMap.get(inv.fuel_transaction_id);
-            // Include if garage matches, or if transaction has no garage set
             return txGarageId === garageId || txGarageId == null;
           });
         }
@@ -317,6 +323,8 @@ export default function GarageStatementsPayments({
       setStatementPayments(paymentsData || []);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setLoadingDetails(false);
     }
   };
 
@@ -581,168 +589,242 @@ export default function GarageStatementsPayments({
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-lg shadow p-6">
+          {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => {
                 setViewingStatementDetails(false);
                 setSelectedStatement(null);
               }}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
             >
               <ArrowLeft className="w-5 h-5" />
               Back to Statements
             </button>
             <button
               onClick={() => printStatement(selectedStatement)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
             >
               <Printer className="w-4 h-4" />
               Print Statement
             </button>
           </div>
 
-          <div className="border-b-2 border-gray-900 pb-6 mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 text-center">ACCOUNT STATEMENT</h1>
-            <p className="text-center text-gray-600 mt-2 text-base">{garageName}</p>
+          {/* Title */}
+          <div className="border-b-2 border-gray-900 pb-5 mb-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 tracking-wide">ACCOUNT STATEMENT</h1>
+            <p className="text-gray-600 mt-1 font-medium">{garageName}</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Statement Number:</span>
-                  <span className="font-bold">{selectedStatement.statement_number}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Statement Date:</span>
-                  <span className="font-bold">{new Date(selectedStatement.statement_date).toLocaleDateString('en-ZA')}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Period:</span>
-                  <span className="font-bold">
-                    {new Date(selectedStatement.period_start).toLocaleDateString('en-ZA')} to {new Date(selectedStatement.period_end).toLocaleDateString('en-ZA')}
-                  </span>
-                </div>
+          {/* Statement meta + balance summary */}
+          <div className="grid md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Statement Number</span>
+                <span className="font-semibold text-gray-900">{selectedStatement.statement_number}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Statement Date</span>
+                <span className="font-semibold text-gray-900">{new Date(selectedStatement.statement_date).toLocaleDateString('en-ZA')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Period</span>
+                <span className="font-semibold text-gray-900">
+                  {new Date(selectedStatement.period_start).toLocaleDateString('en-ZA')} – {new Date(selectedStatement.period_end).toLocaleDateString('en-ZA')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Account</span>
+                <span className="font-semibold text-gray-900">{organizationName}</span>
               </div>
             </div>
 
-            <div>
-              <div className="bg-blue-50 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Opening Balance:</span>
-                  <span className="font-bold">R {selectedStatement.opening_balance.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Invoices:</span>
-                  <span className="font-bold text-red-600">R {selectedStatement.total_invoices.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Total Payments:</span>
-                  <span className="font-bold text-green-600">R {selectedStatement.total_payments.toFixed(2)}</span>
-                </div>
-                <div className="border-t-2 border-blue-200 pt-2 mt-2 flex justify-between">
-                  <span className="text-lg font-bold text-blue-900">Closing Balance:</span>
-                  <span className="text-lg font-bold text-blue-900">R {selectedStatement.closing_balance.toFixed(2)}</span>
-                </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Opening Balance</span>
+                <span className="font-semibold text-gray-900">R {Number(selectedStatement.opening_balance).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Invoices</span>
+                <span className="font-semibold text-red-600">R {Number(selectedStatement.total_invoices).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Total Payments</span>
+                <span className="font-semibold text-green-600">– R {Number(selectedStatement.total_payments).toFixed(2)}</span>
+              </div>
+              <div className="border-t border-blue-200 pt-2 flex justify-between items-center">
+                <span className="font-bold text-blue-900">Closing Balance</span>
+                <span className="text-lg font-bold text-blue-900">R {Number(selectedStatement.closing_balance).toFixed(2)}</span>
               </div>
             </div>
           </div>
 
-          <div className="mb-6">
-            <h3 className="text-lg font-bold mb-4">Invoices ({statementInvoices.length})</h3>
-            {statementInvoices.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No invoices in this period</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Driver / Vehicle</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fuel Details</th>
-                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Oil Details</th>
-                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {statementInvoices.map((inv) => {
-                      const fuelAmount = inv.liters * inv.price_per_liter;
-                      return (
-                        <tr key={inv.id} className="hover:bg-gray-50">
-                          <td className="px-3 py-3 whitespace-nowrap">{new Date(inv.transaction_date).toLocaleDateString('en-ZA')}</td>
-                          <td className="px-3 py-3 font-medium whitespace-nowrap">{inv.invoice_number}</td>
-                          <td className="px-3 py-3">
-                            <div className="space-y-0.5">
-                              <div className="font-medium text-gray-900">{inv.driver_name}</div>
-                              <div className="text-xs text-gray-600">{inv.vehicle_registration}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            <div className="space-y-0.5">
-                              <div className="font-medium text-gray-900">{inv.fuel_type}: {inv.liters.toFixed(2)}L @ R{inv.price_per_liter.toFixed(2)}</div>
-                              <div className="text-xs text-gray-600">Odometer: {inv.odometer_reading?.toLocaleString() || '-'} km • Amount: R{fuelAmount.toFixed(2)}</div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-3">
-                            {inv.oil_type ? (
-                              <div className="space-y-0.5">
-                                <div className="font-medium text-gray-900">{inv.oil_quantity}x {inv.oil_type}</div>
-                                <div className="text-xs text-gray-600">Amount: R{inv.oil_total_amount?.toFixed(2) || '0.00'}</div>
-                              </div>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3 text-right font-bold text-blue-600">R {inv.total_amount.toFixed(2)}</td>
+          {/* Loading state */}
+          {loadingDetails ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                <p className="text-gray-500 text-sm">Loading transaction details...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Invoices section */}
+              <div className="mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <Fuel className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-base font-bold text-gray-900">
+                    Fuel Purchases &amp; Invoices
+                    <span className="ml-2 text-sm font-normal text-gray-500">({statementInvoices.length})</span>
+                  </h3>
+                </div>
+
+                {statementInvoices.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 py-10 text-center text-gray-400 text-sm">
+                    No invoices recorded in this period
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Invoice #</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Driver / Vehicle</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Fuel</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Oil / Other</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="bg-gray-50 border-t-2">
-                    <tr>
-                      <td colSpan={5} className="px-3 py-3 text-right font-bold">Total Invoices:</td>
-                      <td className="px-3 py-3 text-right font-bold text-blue-600">
-                        R {statementInvoices.reduce((sum, inv) => sum + inv.total_amount, 0).toFixed(2)}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {statementInvoices.map((inv) => {
+                          const fuelAmt = Number(inv.liters) * Number(inv.price_per_liter);
+                          return (
+                            <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                                {new Date(inv.transaction_date).toLocaleDateString('en-ZA')}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap font-medium text-gray-900">
+                                {inv.invoice_number}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-gray-900">{inv.driver_name || '—'}</div>
+                                <div className="text-xs text-gray-500 mt-0.5">{inv.vehicle_registration}</div>
+                                {inv.odometer_reading != null && (
+                                  <div className="text-xs text-gray-400">{Number(inv.odometer_reading).toLocaleString()} km</div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-gray-900">
+                                  {inv.fuel_type}: {Number(inv.liters).toFixed(2)} L
+                                </div>
+                                <div className="text-xs text-gray-500 mt-0.5">
+                                  @ R{Number(inv.price_per_liter).toFixed(2)}/L = <span className="font-semibold text-gray-700">R{fuelAmt.toFixed(2)}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                {inv.oil_type && inv.oil_quantity ? (
+                                  <div>
+                                    <div className="font-medium text-gray-900">
+                                      {inv.oil_quantity}× {inv.oil_type}
+                                    </div>
+                                    <div className="text-xs text-gray-500 mt-0.5">
+                                      @ R{Number(inv.oil_unit_price ?? 0).toFixed(2)} = <span className="font-semibold text-gray-700">R{Number(inv.oil_total_amount ?? 0).toFixed(2)}</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-300">—</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className="font-bold text-gray-900">R {Number(inv.total_amount).toFixed(2)}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-50 border-t-2 border-gray-200">
+                          <td colSpan={5} className="px-4 py-3 text-right text-sm font-bold text-gray-700">
+                            Total Invoices
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-900">
+                            R {statementInvoices.reduce((s, inv) => s + Number(inv.total_amount), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div>
-            <h3 className="text-lg font-bold mb-4">Payments ({statementPayments.length})</h3>
-            {statementPayments.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No payments in this period</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment #</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Method</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reference</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {statementPayments.map((pmt) => (
-                      <tr key={pmt.id}>
-                        <td className="px-4 py-3 text-sm">{new Date(pmt.payment_date).toLocaleDateString('en-ZA')}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{pmt.payment_number}</td>
-                        <td className="px-4 py-3 text-sm uppercase">{pmt.payment_method}</td>
-                        <td className="px-4 py-3 text-sm">{pmt.reference || '-'}</td>
-                        <td className="px-4 py-3 text-sm text-right font-semibold text-green-600">R {pmt.amount.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* Payments section */}
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <CreditCard className="w-5 h-5 text-green-600" />
+                  <h3 className="text-base font-bold text-gray-900">
+                    Payments Received
+                    <span className="ml-2 text-sm font-normal text-gray-500">({statementPayments.length})</span>
+                  </h3>
+                </div>
+
+                {statementPayments.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 py-10 text-center text-gray-400 text-sm">
+                    No payments recorded in this period
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-50 border-b border-gray-200">
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date Received</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment #</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Method</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference / Notes</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {statementPayments.map((pmt) => (
+                          <tr key={pmt.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-4 py-3 whitespace-nowrap text-gray-700">
+                              {new Date(pmt.payment_date).toLocaleDateString('en-ZA')}
+                            </td>
+                            <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                              {pmt.payment_number}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 uppercase">
+                                {pmt.payment_method}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-600">
+                              {pmt.reference && <div className="font-medium">{pmt.reference}</div>}
+                              {pmt.notes && <div className="text-xs text-gray-400 mt-0.5">{pmt.notes}</div>}
+                              {!pmt.reference && !pmt.notes && <span className="text-gray-300">—</span>}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="font-bold text-green-600">R {Number(pmt.amount).toFixed(2)}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-50 border-t-2 border-gray-200">
+                          <td colSpan={4} className="px-4 py-3 text-right text-sm font-bold text-gray-700">
+                            Total Payments
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-green-600">
+                            R {statementPayments.reduce((s, p) => s + Number(p.amount), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     );

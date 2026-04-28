@@ -247,80 +247,32 @@ export default function GarageStatementsPayments({
   const loadStatementDetails = async (statement: Statement) => {
     try {
       setLoadingDetails(true);
+      setError('');
       setStatementInvoices([]);
       setStatementPayments([]);
       setSelectedStatement(statement);
       setViewingStatementDetails(true);
 
-      // period_end is a date string (e.g. "2026-03-31"); append end-of-day time so
-      // timestamps like "2026-03-31 23:59:59+00" are included in the range.
-      const periodEndInclusive = `${statement.period_end}T23:59:59`;
+      const [invoicesResult, paymentsResult] = await Promise.all([
+        supabase.rpc('get_statement_invoices', {
+          p_garage_id: garageId,
+          p_organization_id: organizationId,
+          p_period_start: statement.period_start,
+          p_period_end: statement.period_end,
+        }),
+        supabase.rpc('get_statement_payments', {
+          p_garage_id: garageId,
+          p_organization_id: organizationId,
+          p_period_start: statement.period_start,
+          p_period_end: statement.period_end,
+        }),
+      ]);
 
-      const { data: invoicesData, error: invoicesError } = await supabase
-        .from('fuel_transaction_invoices')
-        .select(`
-          id,
-          invoice_number,
-          transaction_date,
-          vehicle_registration,
-          driver_name,
-          fuel_type,
-          liters,
-          price_per_liter,
-          total_amount,
-          odometer_reading,
-          oil_type,
-          oil_quantity,
-          oil_unit_price,
-          oil_total_amount,
-          fuel_transaction_id
-        `)
-        .eq('organization_id', organizationId)
-        .gte('transaction_date', statement.period_start)
-        .lte('transaction_date', periodEndInclusive)
-        .order('transaction_date', { ascending: true });
+      if (invoicesResult.error) throw invoicesResult.error;
+      if (paymentsResult.error) throw paymentsResult.error;
 
-      if (invoicesError) throw invoicesError;
-
-      // Include invoices whose linked transaction belongs to this garage,
-      // or where the transaction has no garage set (older records).
-      let filteredInvoices = invoicesData || [];
-
-      if (filteredInvoices.length > 0) {
-        const transactionIds = filteredInvoices
-          .map(inv => inv.fuel_transaction_id)
-          .filter(id => id != null);
-
-        if (transactionIds.length > 0) {
-          const { data: transactionsData, error: transactionsError } = await supabase
-            .from('fuel_transactions')
-            .select('id, garage_id')
-            .in('id', transactionIds);
-
-          if (transactionsError) throw transactionsError;
-
-          const transactionMap = new Map((transactionsData || []).map(t => [t.id, t.garage_id]));
-          filteredInvoices = filteredInvoices.filter(inv => {
-            if (!inv.fuel_transaction_id) return true;
-            const txGarageId = transactionMap.get(inv.fuel_transaction_id);
-            return txGarageId === garageId || txGarageId == null;
-          });
-        }
-      }
-
-      const { data: paymentsData, error: paymentsError } = await supabase
-        .from('garage_client_payments')
-        .select('*')
-        .eq('garage_id', garageId)
-        .eq('organization_id', organizationId)
-        .gte('payment_date', statement.period_start)
-        .lte('payment_date', statement.period_end)
-        .order('payment_date', { ascending: true });
-
-      if (paymentsError) throw paymentsError;
-
-      setStatementInvoices(filteredInvoices);
-      setStatementPayments(paymentsData || []);
+      setStatementInvoices(invoicesResult.data || []);
+      setStatementPayments(paymentsResult.data || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -329,53 +281,27 @@ export default function GarageStatementsPayments({
   };
 
   const printStatement = async (statement: Statement) => {
-    // Always fetch fresh data so printing from the list works correctly
-    let invoices: Invoice[] = statementInvoices;
-    let pmts: Payment[] = statementPayments;
+    // Use already-loaded data if this statement is currently open, otherwise fetch fresh
+    let invoices: Invoice[] = (selectedStatement?.id === statement.id) ? statementInvoices : [];
+    let pmts: Payment[] = (selectedStatement?.id === statement.id) ? statementPayments : [];
 
-    if (!selectedStatement || selectedStatement.id !== statement.id) {
-      const periodEndInclusive = `${statement.period_end}T23:59:59`;
-
-      const { data: invoicesData } = await supabase
-        .from('fuel_transaction_invoices')
-        .select(`
-          id, invoice_number, transaction_date, vehicle_registration, driver_name,
-          fuel_type, liters, price_per_liter, total_amount, odometer_reading,
-          oil_type, oil_quantity, oil_unit_price, oil_total_amount, fuel_transaction_id
-        `)
-        .eq('organization_id', organizationId)
-        .gte('transaction_date', statement.period_start)
-        .lte('transaction_date', periodEndInclusive)
-        .order('transaction_date', { ascending: true });
-
-      invoices = invoicesData || [];
-
-      if (invoices.length > 0) {
-        const txIds = invoices.map(inv => inv.fuel_transaction_id).filter(Boolean);
-        if (txIds.length > 0) {
-          const { data: txData } = await supabase
-            .from('fuel_transactions')
-            .select('id, garage_id')
-            .in('id', txIds);
-          const txMap = new Map((txData || []).map(t => [t.id, t.garage_id]));
-          invoices = invoices.filter(inv => {
-            if (!inv.fuel_transaction_id) return true;
-            const gid = txMap.get(inv.fuel_transaction_id);
-            return gid === garageId || gid == null;
-          });
-        }
-      }
-
-      const { data: pmtsData } = await supabase
-        .from('garage_client_payments')
-        .select('*')
-        .eq('garage_id', garageId)
-        .eq('organization_id', organizationId)
-        .gte('payment_date', statement.period_start)
-        .lte('payment_date', statement.period_end)
-        .order('payment_date', { ascending: true });
-
-      pmts = pmtsData || [];
+    if (invoices.length === 0 && pmts.length === 0) {
+      const [invRes, pmtRes] = await Promise.all([
+        supabase.rpc('get_statement_invoices', {
+          p_garage_id: garageId,
+          p_organization_id: organizationId,
+          p_period_start: statement.period_start,
+          p_period_end: statement.period_end,
+        }),
+        supabase.rpc('get_statement_payments', {
+          p_garage_id: garageId,
+          p_organization_id: organizationId,
+          p_period_start: statement.period_start,
+          p_period_end: statement.period_end,
+        }),
+      ]);
+      invoices = invRes.data || [];
+      pmts = pmtRes.data || [];
     }
 
     const pdf = new jsPDF({
@@ -662,6 +588,13 @@ export default function GarageStatementsPayments({
               Print Statement
             </button>
           </div>
+
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
 
           {/* Title */}
           <div className="border-b-2 border-gray-900 pb-5 mb-6 text-center">

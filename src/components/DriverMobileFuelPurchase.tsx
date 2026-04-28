@@ -285,52 +285,26 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
   const loadGarages = async () => {
     try {
-      const { data: org } = await supabase
-        .from('organizations')
-        .select('payment_option')
-        .eq('id', driver.organizationId)
-        .maybeSingle();
+      // Load all active garages
+      const { data: allGarages } = await supabase
+        .from('garages')
+        .select('*')
+        .eq('status', 'active')
+        .order('name');
 
-      console.log('[FuelPurchase] Organization payment option:', org?.payment_option);
+      // Also load local account mappings for this org so we can tag garages that have accounts
+      const { data: garageAccounts } = await supabase
+        .from('organization_garage_accounts')
+        .select('garage_id, account_number')
+        .eq('organization_id', driver.organizationId)
+        .eq('is_active', true);
 
-      if (org?.payment_option === 'Local Account') {
-        console.log('[FuelPurchase] Local account payment enabled');
-        setIsLocalAccount(true);
-        const { data: garageAccounts } = await supabase
-          .from('organization_garage_accounts')
-          .select('garage_id, account_number')
-          .eq('organization_id', driver.organizationId)
-          .eq('is_active', true);
-
-        if (garageAccounts && garageAccounts.length > 0) {
-          const garageIds = garageAccounts.map(acc => acc.garage_id);
-          const { data } = await supabase
-            .from('garages')
-            .select('*')
-            .in('id', garageIds)
-            .eq('status', 'active')
-            .order('name');
-
-          if (data) {
-            const garagesWithAccounts = data.map(garage => ({
-              ...garage,
-              accountNumber: garageAccounts.find(acc => acc.garage_id === garage.id)?.account_number || null
-            }));
-            setGarages(garagesWithAccounts);
-          }
-        } else {
-          setGarages([]);
-          setError('No authorized garages found. Please contact your administrator to set up garage accounts.');
-        }
-      } else {
-        setIsLocalAccount(false);
-        const { data } = await supabase
-          .from('garages')
-          .select('*')
-          .eq('status', 'active')
-          .order('name');
-
-        if (data) setGarages(data);
+      if (allGarages) {
+        const garagesWithAccounts = allGarages.map(garage => ({
+          ...garage,
+          accountNumber: garageAccounts?.find(acc => acc.garage_id === garage.id)?.account_number || null
+        }));
+        setGarages(garagesWithAccounts);
       }
     } catch (err: any) {
       console.error('Error loading garages:', err);
@@ -401,7 +375,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       const orgPaymentOption = organization.payment_option || 'Card Payment';
       console.log('[FuelPurchase] Organization payment option:', orgPaymentOption);
 
-      // Check if this garage has a local account for this organization (only needed for Local Account option)
+      // Always check if this garage has a local account for this organization
       const { data: garageAccount, error: garageAccountError } = await supabase
         .from('organization_garage_accounts')
         .select('monthly_spend_limit, account_number')
@@ -414,21 +388,19 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         console.error('Error fetching garage account:', garageAccountError);
       }
 
-      // Determine payment flow based ONLY on organization's payment_option
-      if (orgPaymentOption === 'Local Account') {
-        // Local Account: Always use PIN + NFC with local account number
-        if (!garageAccount) {
-          setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
-          setCurrentStep('garage_selection');
-          return;
-        }
+      // Prioritize local account if one exists for this garage, regardless of org-level payment option
+      if (garageAccount) {
         setPaymentOption('Local Account');
         setIsLocalAccount(true);
         setGarageAccountNumber(garageAccount.account_number);
         console.log('[FuelPurchase] Payment flow: Local Account (PIN + NFC + Account Number)');
-      } else if (orgPaymentOption === 'Card Payment') {
-        // Card Payment: Always use PIN + NFC with encrypted card details
-        // Fetch the organization's payment card
+      } else if (orgPaymentOption === 'Local Account') {
+        // Org is configured for local accounts but this garage has none set up
+        setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
+        setCurrentStep('garage_selection');
+        return;
+      } else {
+        // No local account — fall back to card payment
         const { data: paymentCard, error: cardError } = await supabase
           .from('organization_payment_cards')
           .select('*')

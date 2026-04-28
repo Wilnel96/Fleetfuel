@@ -6,9 +6,11 @@ interface AuthProps {
   onBack?: () => void;
   onSignup?: () => void;
   onPasswordReset?: () => void;
+  portalError?: string;
+  portalLabel?: string;
 }
 
-export default function Auth({ onBack, onSignup, onPasswordReset }: AuthProps = {}) {
+export default function Auth({ onBack, onSignup, onPasswordReset, portalError, portalLabel }: AuthProps = {}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -79,7 +81,7 @@ export default function Auth({ onBack, onSignup, onPasswordReset }: AuthProps = 
             <Fuel className="w-10 h-10" />
             <h1 className="text-2xl font-bold">FleetFuel</h1>
           </div>
-          <p className="text-blue-100 text-sm">Mobile Fuel Management</p>
+          <p className="text-blue-100 text-sm">{portalLabel ?? 'Mobile Fuel Management'}</p>
         </div>
 
         <form onSubmit={handleAuth} className="p-6 space-y-4">
@@ -96,6 +98,16 @@ export default function Auth({ onBack, onSignup, onPasswordReset }: AuthProps = 
           <h2 className="text-xl font-semibold text-gray-900 text-center mb-6">
             Sign In
           </h2>
+
+          {portalError && (
+            <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-red-900 text-sm font-semibold mb-0.5">Access Denied</p>
+                <p className="text-red-800 text-sm">{portalError}</p>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">

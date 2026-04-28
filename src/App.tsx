@@ -71,6 +71,9 @@ function App() {
   const [showGarageSignup, setShowGarageSignup] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [userRole, setUserRole] = useState<string>('admin');
+  // 'client' = Client Portal login, 'system_admin' = System Admin login
+  const [loginPortal, setLoginPortal] = useState<'client' | 'system_admin' | null>(null);
+  const [portalError, setPortalError] = useState<string>('');
   const [paymentOption, setPaymentOption] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string>('');
   const [organizationName, setOrganizationName] = useState<string>('');
@@ -254,6 +257,36 @@ function App() {
             const effectiveRole = isManagementUser ? 'super_admin' : profile.role;
 
             console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
+
+            // Portal access validation — only enforce during an active sign-in (not token refresh or page reload)
+            if (_event === 'SIGNED_IN' && loginPortal) {
+              const isClientRole = !isManagementUser && effectiveRole !== 'garage_user' && effectiveRole !== 'super_admin';
+              const isAdminRole = isManagementUser || effectiveRole === 'super_admin';
+
+              if (loginPortal === 'client' && !isClientRole) {
+                // Wrong portal — sign out and show error
+                const msg = effectiveRole === 'garage_user'
+                  ? 'Garage accounts must sign in via the Garage Portal.'
+                  : 'System administrators must sign in via the System Admin portal.';
+                supabase.auth.signOut();
+                setPortalError(msg);
+                setSession(null);
+                setUserMode('admin');
+                setShowModeSelection(false);
+                setLoading(false);
+                return;
+              }
+
+              if (loginPortal === 'system_admin' && !isAdminRole) {
+                supabase.auth.signOut();
+                setPortalError('This account does not have System Admin access. Please use the Client Portal.');
+                setSession(null);
+                setUserMode('admin');
+                setShowModeSelection(false);
+                setLoading(false);
+                return;
+              }
+            }
 
             setUserRole(effectiveRole);
             setUserMode('admin');
@@ -475,6 +508,8 @@ function App() {
       setGaragePassword(null);
       setUserMode(null);
       setClientPortalType(null);
+      setLoginPortal(null);
+      setPortalError('');
       setUserRole('admin');
       setCurrentView(null);
       setShowModeSelection(true);
@@ -491,6 +526,8 @@ function App() {
       setGaragePassword(null);
       setUserMode(null);
       setClientPortalType(null);
+      setLoginPortal(null);
+      setPortalError('');
       setUserRole('admin');
       setCurrentView(null);
       setShowModeSelection(true);
@@ -621,6 +658,8 @@ function App() {
             <button
               onClick={() => {
                 setUserMode('admin');
+                setLoginPortal('client');
+                setPortalError('');
                 setShowModeSelection(false);
               }}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg"
@@ -653,6 +692,8 @@ function App() {
             <button
               onClick={() => {
                 setUserMode('admin');
+                setLoginPortal('system_admin');
+                setPortalError('');
                 setShowModeSelection(false);
               }}
               className="w-full bg-gradient-to-r from-gray-700 to-gray-800 text-white py-3 px-4 rounded-lg font-semibold hover:from-gray-800 hover:to-gray-900 transition-all shadow-md hover:shadow-lg"
@@ -781,11 +822,14 @@ function App() {
       onBack={() => {
         setUserMode(null);
         setClientPortalType(null);
+        setLoginPortal(null);
+        setPortalError('');
         setShowModeSelection(true);
-        setShowPortalSelection(false);
         setShowPortalSelection(false);
       }}
       onPasswordReset={() => setShowPasswordReset(true)}
+      portalError={portalError}
+      portalLabel={loginPortal === 'client' ? 'Client Portal' : loginPortal === 'system_admin' ? 'System Admin' : undefined}
     />;
   }
 

@@ -103,66 +103,33 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
 
       console.log('[Signup] User created:', authData.user.id);
 
-      console.log('[Signup] Fetching created organization...');
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', authData.user.id)
-        .single();
+      // Use SECURITY DEFINER RPC to update org data — avoids RLS timing issues
+      // that occur because the session may not be active yet after signUp()
+      console.log('[Signup] Saving organization details via RPC...');
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('complete_client_signup', {
+        p_user_id: authData.user.id,
+        p_registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
+        p_vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
+        p_email: accountType === 'individual' ? userData.email : orgData.email,
+        p_phone_number: accountType === 'individual' ? (userData.phone_number || null) : (orgData.phone_number || null),
+        p_address_line_1: accountType === 'individual' ? null : (orgData.address_line_1 || null),
+        p_address_line_2: accountType === 'individual' ? null : (orgData.address_line_2 || null),
+        p_city: accountType === 'individual' ? null : (orgData.city || null),
+        p_province: accountType === 'individual' ? null : (orgData.province || null),
+        p_postal_code: accountType === 'individual' ? null : (orgData.postal_code || null),
+        p_payment_option: paymentOption,
+        p_mobile_phone: userData.phone_number || null,
+        p_id_number: accountType === 'individual' ? userData.id_number : null,
+      });
 
-      if (profileError || !profile?.organization_id) {
-        console.error('[Signup] Profile fetch error:', profileError);
-        throw new Error('Failed to fetch user profile');
+      if (rpcError) {
+        console.error('[Signup] RPC error:', rpcError);
+        throw new Error(`Failed to save organization details: ${rpcError.message}`);
       }
 
-      console.log('[Signup] Updating organization details...');
-      const { error: orgUpdateError } = await supabase
-        .from('organizations')
-        .update({
-          registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
-          vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
-          email: accountType === 'individual' ? userData.email : orgData.email,
-          phone_number: accountType === 'individual' ? (userData.phone_number || null) : (orgData.phone_number || null),
-          address_line_1: accountType === 'individual' ? null : (orgData.address_line_1 || null),
-          address_line_2: accountType === 'individual' ? null : (orgData.address_line_2 || null),
-          city: accountType === 'individual' ? null : (orgData.city || null),
-          province: accountType === 'individual' ? null : (orgData.province || null),
-          postal_code: accountType === 'individual' ? null : (orgData.postal_code || null),
-          payment_option: paymentOption,
-          is_management_org: false,
-          organization_type: 'client',
-        })
-        .eq('id', profile.organization_id);
-
-      if (orgUpdateError) {
-        console.error('[Signup] Organization update error:', orgUpdateError);
-        throw new Error(`Failed to update organization: ${orgUpdateError.message}`);
-      }
-
-      console.log('[Signup] Updating organization user details...');
-      const { error: orgUserUpdateError } = await supabase
-        .from('organization_users')
-        .update({
-          mobile_phone: userData.phone_number || null,
-          id_number: accountType === 'individual' ? userData.id_number : null,
-        })
-        .eq('user_id', authData.user.id)
-        .eq('organization_id', profile.organization_id);
-
-      if (orgUserUpdateError) {
-        console.error('[Signup] Organization user update error:', orgUserUpdateError);
-      }
-
-      console.log('[Signup] Updating profile details...');
-      const { error: profileUpdateError } = await supabase
-        .from('profiles')
-        .update({
-          id_number: accountType === 'individual' ? userData.id_number : null,
-        })
-        .eq('id', authData.user.id);
-
-      if (profileUpdateError) {
-        console.error('[Signup] Profile update error:', profileUpdateError);
+      if (rpcResult && !rpcResult.success) {
+        console.error('[Signup] RPC returned failure:', rpcResult.error);
+        throw new Error(rpcResult.error || 'Failed to save organization details');
       }
 
       console.log('[Signup] Signup complete!');

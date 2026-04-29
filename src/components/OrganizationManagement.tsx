@@ -164,7 +164,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 onClick={onBack}
                 className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 px-2 py-1"
               >
-                ← Back to Management Organization Info
+                ← Back
               </button>
             )
           )}

@@ -73,6 +73,12 @@ function App() {
   const [userRole, setUserRole] = useState<string>('admin');
   // 'client' = Client Portal login, 'system_admin' = System Admin login
   const [loginPortal, setLoginPortal] = useState<'client' | 'system_admin' | null>(null);
+  // Ref mirrors loginPortal so the async onAuthStateChange closure always reads the current value
+  const loginPortalRef = useRef<'client' | 'system_admin' | null>(null);
+  const setLoginPortalWithRef = (val: 'client' | 'system_admin' | null) => {
+    loginPortalRef.current = val;
+    setLoginPortal(val);
+  };
   const [portalError, setPortalError] = useState<string>('');
   const [paymentOption, setPaymentOption] = useState<string | null>(null);
   const [organizationId, setOrganizationId] = useState<string>('');
@@ -205,6 +211,18 @@ function App() {
             // Check if this is a garage user (check both profile and organization_users)
             const isGarageUser = profile.role === 'garage_user' || orgUser?.role === 'garage_user';
 
+            // Reject garage users attempting to log in via client or system_admin portal
+            if (isGarageUser && _event === 'SIGNED_IN' && loginPortalRef.current) {
+              supabase.auth.signOut();
+              setPortalError('Garage accounts must sign in via the Garage Portal.');
+              setSession(null);
+              setLoginPortalWithRef(null);
+              setUserMode('admin');
+              setShowModeSelection(true);
+              setLoading(false);
+              return;
+            }
+
             if (isGarageUser) {
               console.log('Auth state - Garage user detected, loading garage details');
 
@@ -258,30 +276,30 @@ function App() {
 
             console.log('Auth state - Effective role:', effectiveRole, 'Is management org:', isManagementUser);
 
-            // Portal access validation — only enforce during an active sign-in (not token refresh or page reload)
-            if (_event === 'SIGNED_IN' && loginPortal) {
+            // Portal access validation — use ref so the async closure always reads current value
+            if (_event === 'SIGNED_IN' && loginPortalRef.current) {
               const isClientRole = !isManagementUser && effectiveRole !== 'garage_user' && effectiveRole !== 'super_admin';
               const isAdminRole = isManagementUser || effectiveRole === 'super_admin';
 
-              if (loginPortal === 'client' && !isClientRole) {
+              if (loginPortalRef.current === 'client' && !isClientRole) {
                 const msg = effectiveRole === 'garage_user'
                   ? 'Garage accounts must sign in via the Garage Portal.'
                   : 'System administrators must sign in via the System Admin portal.';
                 supabase.auth.signOut();
                 setPortalError(msg);
                 setSession(null);
-                setLoginPortal(null);
+                setLoginPortalWithRef(null);
                 setUserMode('admin');
                 setShowModeSelection(true);
                 setLoading(false);
                 return;
               }
 
-              if (loginPortal === 'system_admin' && !isAdminRole) {
+              if (loginPortalRef.current === 'system_admin' && !isAdminRole) {
                 supabase.auth.signOut();
                 setPortalError('This account does not have System Admin access. Please use the Client Portal.');
                 setSession(null);
-                setLoginPortal(null);
+                setLoginPortalWithRef(null);
                 setUserMode('admin');
                 setShowModeSelection(true);
                 setLoading(false);
@@ -509,7 +527,7 @@ function App() {
       setGaragePassword(null);
       setUserMode(null);
       setClientPortalType(null);
-      setLoginPortal(null);
+      setLoginPortalWithRef(null);
       setPortalError('');
       setUserRole('admin');
       setCurrentView(null);
@@ -527,7 +545,7 @@ function App() {
       setGaragePassword(null);
       setUserMode(null);
       setClientPortalType(null);
-      setLoginPortal(null);
+      setLoginPortalWithRef(null);
       setPortalError('');
       setUserRole('admin');
       setCurrentView(null);
@@ -666,7 +684,7 @@ function App() {
             <button
               onClick={() => {
                 setUserMode('admin');
-                setLoginPortal('client');
+                setLoginPortalWithRef('client');
                 setPortalError('');
                 setShowModeSelection(false);
               }}
@@ -700,7 +718,7 @@ function App() {
             <button
               onClick={() => {
                 setUserMode('admin');
-                setLoginPortal('system_admin');
+                setLoginPortalWithRef('system_admin');
                 setPortalError('');
                 setShowModeSelection(false);
               }}
@@ -830,7 +848,7 @@ function App() {
       onBack={() => {
         setUserMode(null);
         setClientPortalType(null);
-        setLoginPortal(null);
+        setLoginPortalWithRef(null);
         setPortalError('');
         setShowModeSelection(true);
         setShowPortalSelection(false);

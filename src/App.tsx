@@ -36,7 +36,7 @@ import ClientInvoices from './components/ClientInvoices';
 import InvoiceManagement from './components/InvoiceManagement';
 import ClientFuelInvoices from './components/ClientFuelInvoices';
 import AdminPasswordReset from './components/AdminPasswordReset';
-import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, CreditCard as Edit3, ArrowLeft, UserPlus } from 'lucide-react';
+import { Truck, Store, DollarSign, Fuel, LogOut, X, Users, Building2, BarChart3, FileText, Settings, CreditCard as Edit3, ArrowLeft, UserPlus, AlertCircle } from 'lucide-react';
 import { DriverData } from './components/DriverAuth';
 
 type UserMode = 'admin' | 'driver' | 'garage' | null;
@@ -264,15 +264,15 @@ function App() {
               const isAdminRole = isManagementUser || effectiveRole === 'super_admin';
 
               if (loginPortal === 'client' && !isClientRole) {
-                // Wrong portal — sign out and show error
                 const msg = effectiveRole === 'garage_user'
                   ? 'Garage accounts must sign in via the Garage Portal.'
                   : 'System administrators must sign in via the System Admin portal.';
                 supabase.auth.signOut();
                 setPortalError(msg);
                 setSession(null);
+                setLoginPortal(null);
                 setUserMode('admin');
-                setShowModeSelection(false);
+                setShowModeSelection(true);
                 setLoading(false);
                 return;
               }
@@ -281,8 +281,9 @@ function App() {
                 supabase.auth.signOut();
                 setPortalError('This account does not have System Admin access. Please use the Client Portal.');
                 setSession(null);
+                setLoginPortal(null);
                 setUserMode('admin');
-                setShowModeSelection(false);
+                setShowModeSelection(true);
                 setLoading(false);
                 return;
               }
@@ -638,6 +639,13 @@ function App() {
             <h2 className="text-base font-semibold text-gray-900 text-center mb-3">
               Select Login Type
             </h2>
+
+            {portalError && (
+              <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm text-red-700">{portalError}</p>
+              </div>
+            )}
 
             <button
               onClick={() => {

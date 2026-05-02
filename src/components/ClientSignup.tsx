@@ -120,6 +120,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         p_payment_option: paymentOption,
         p_mobile_phone: userData.phone_number || null,
         p_id_number: accountType === 'individual' ? userData.id_number : null,
+        p_account_type: accountType === 'individual' ? 'individual' : 'company',
       });
 
       if (rpcError) {

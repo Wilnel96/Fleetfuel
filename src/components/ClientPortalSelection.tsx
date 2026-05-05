@@ -10,7 +10,7 @@ export default function ClientPortalSelection({ onSelectPortal, onBack }: Client
     <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
         <div className="bg-blue-600 text-white p-8 text-center">
-          <h1 className="text-3xl font-bold mb-2">MyFuel</h1>
+          <h1 className="text-3xl font-bold mb-2">MyFuelApp</h1>
           <p className="text-blue-100">Select Your Fuel Management System</p>
         </div>
 
@@ -33,7 +33,7 @@ export default function ClientPortalSelection({ onSelectPortal, onBack }: Client
                   <CreditCard className="w-12 h-12 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">MyFuel Card</h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">MyFuelApp Card</h2>
                   <p className="text-sm text-gray-700 leading-relaxed">
                     Pay for fuel with credit or debit cards. Perfect for individuals and fleets wanting better control over fuel spending.
                   </p>
@@ -58,7 +58,7 @@ export default function ClientPortalSelection({ onSelectPortal, onBack }: Client
                   <Building2 className="w-12 h-12 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 mb-2">MyFuel Accounts</h2>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">MyFuelApp Account</h2>
                   <p className="text-sm text-gray-700 leading-relaxed">
                     Open local accounts at specific garages. Enhanced security for fleet operators and garage local account holders.
                   </p>

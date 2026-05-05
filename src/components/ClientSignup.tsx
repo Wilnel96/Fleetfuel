@@ -175,7 +175,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
     }
   };
 
-  const portalTitle = portalType === 'card' ? 'MyFuel Card' : 'MyFuel Accounts';
+  const portalTitle = portalType === 'card' ? 'MyFuelApp Card' : 'MyFuelApp Accounts';
   const portalColor = portalType === 'card' ? 'blue' : 'amber';
 
   return (

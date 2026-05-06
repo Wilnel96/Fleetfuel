@@ -535,7 +535,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   <div className="pt-2">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                       <MapPin className="w-4 h-4" />
-                      Physical Address
+                      Address
                     </h4>
                     <div className="space-y-3">
                       <div>

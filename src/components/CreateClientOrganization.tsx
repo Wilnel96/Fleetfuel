@@ -42,6 +42,9 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     }
   };
 
+  const [individualName, setIndividualName] = useState('');
+  const [individualSurname, setIndividualSurname] = useState('');
+
   const [formData, setFormData] = useState({
     name: '',
     company_registration_number: '',
@@ -204,6 +207,13 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
       if (!parentOrg) throw new Error('Parent organization not found');
       if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
         throw new Error('Only management organization can create client organizations');
+      }
+
+      // For individuals, build the org name from name + surname fields
+      if (accountType === 'individual') {
+        const fullName = `${individualName.trim()} ${individualSurname.trim()}`.trim().toUpperCase();
+        if (!fullName) throw new Error('Name and Surname are required');
+        formData.name = fullName;
       }
 
       // Sanitize formData - convert empty strings to null for optional fields
@@ -533,19 +543,50 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             {accountType === 'organization' ? 'Organization Details' : 'Individual Details'}
           </h3>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-0.5">
-                {accountType === 'organization' ? 'Organization Name' : 'Account Name'} <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => safeSetFormData({ ...formData, name: e.target.value.toUpperCase().trim() })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
-                placeholder={accountType === 'organization' ? 'e.g., ACME TRANSPORT LTD' : 'e.g., JOHN SMITH'}
-              />
-            </div>
+            {accountType === 'individual' ? (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={individualName}
+                    onChange={(e) => setIndividualName(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g., John"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Surname <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={individualSurname}
+                    onChange={(e) => setIndividualSurname(e.target.value)}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g., Smith"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Organization Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => safeSetFormData({ ...formData, name: e.target.value.toUpperCase().trim() })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                  placeholder="e.g., ACME TRANSPORT LTD"
+                />
+              </div>
+            )}
             {accountType === 'organization' ? (
               <>
                 <div>
@@ -599,7 +640,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
         <div className="border-t pt-3">
           <h3 className="text-base font-semibold text-gray-900 mb-2">
-            {accountType === 'organization' ? 'Organization Address' : 'Residential Address'}
+            {accountType === 'organization' ? 'Organization Address' : 'Address'}
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>

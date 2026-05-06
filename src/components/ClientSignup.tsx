@@ -119,7 +119,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
       const { error: orgUpdateError } = await supabase
         .from('organizations')
         .update({
-          registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
+          company_registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
           vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
           email: accountType === 'individual' ? userData.email : orgData.email,
           phone_number: accountType === 'individual' ? (userData.phone_number || null) : (orgData.phone_number || null),
@@ -128,6 +128,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
           city: accountType === 'individual' ? null : (orgData.city || null),
           province: accountType === 'individual' ? null : (orgData.province || null),
           postal_code: accountType === 'individual' ? null : (orgData.postal_code || null),
+          account_type: accountType,
           payment_option: paymentOption,
           is_management_org: false,
           organization_type: 'client',
@@ -143,7 +144,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
       const { error: orgUserUpdateError } = await supabase
         .from('organization_users')
         .update({
-          mobile_phone: userData.phone_number || null,
+          phone_mobile: userData.phone_number || null,
           id_number: accountType === 'individual' ? userData.id_number : null,
         })
         .eq('user_id', authData.user.id)

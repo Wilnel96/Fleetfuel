@@ -15,6 +15,7 @@ interface Organization {
   country: string;
   company_registration_number: string;
   vat_number: string;
+  account_type: string;
 }
 
 interface OrganizationManagementProps {
@@ -189,9 +190,10 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
         <div className="bg-white border border-gray-200 rounded-lg p-6">
         {isEditing ? (
           <div className="space-y-4">
+            {(() => { const isIndividual = editForm.account_type === 'individual'; return (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{isIndividual ? 'Full Name' : 'Organization Name'}</label>
                 <input
                   type="text"
                   value={editForm.name || ''}
@@ -201,26 +203,30 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <p className="text-xs text-gray-500 mt-1">Cannot be changed</p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Email Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                 <input
                   type="email"
                   value={editForm.billing_contact_email || ''}
                   onChange={(e) => setEditForm({ ...editForm, billing_contact_email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  placeholder="info@company.com"
+                  placeholder={isIndividual ? 'your@email.com' : 'info@company.com'}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{isIndividual ? 'ID Number' : 'Registration Number'}</label>
                 <input
                   type="text"
                   value={editForm.company_registration_number || ''}
                   onChange={(e) => setEditForm({ ...editForm, company_registration_number: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  placeholder={isIndividual ? '13-digit SA ID number' : ''}
+                  maxLength={isIndividual ? 13 : undefined}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">VAT Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  VAT Number{isIndividual && <span className="font-normal text-gray-400 ml-1">(Optional)</span>}
+                </label>
                 <input
                   type="text"
                   value={editForm.vat_number || ''}
@@ -229,7 +235,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{isIndividual ? 'Mobile Number' : 'Office Number'}</label>
                 <input
                   type="text"
                   value={editForm.phone_number || ''}
@@ -302,6 +308,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 />
               </div>
             </div>
+            ); })()}
           </div>
         ) : (
           <div className="space-y-4">
@@ -316,21 +323,22 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
               </button>
             </div>
 
+            {(() => { const isIndividual = organization.account_type === 'individual'; return (
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">Company Email Address</p>
+                <p className="text-sm font-medium text-gray-500">Email Address</p>
                 <p className="text-gray-900">{organization.billing_contact_email || '-'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Office Number</p>
+                <p className="text-sm font-medium text-gray-500">{isIndividual ? 'Mobile Number' : 'Office Number'}</p>
                 <p className="text-gray-900">{organization.phone_number || '-'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Registration Number</p>
+                <p className="text-sm font-medium text-gray-500">{isIndividual ? 'ID Number' : 'Registration Number'}</p>
                 <p className="text-gray-900">{organization.company_registration_number || '-'}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">VAT Number</p>
+                <p className="text-sm font-medium text-gray-500">VAT Number{isIndividual ? <span className="font-normal text-gray-400"> (Optional)</span> : ''}</p>
                 <p className="text-gray-900">{organization.vat_number || '-'}</p>
               </div>
               <div>
@@ -358,6 +366,7 @@ export default function OrganizationManagement({ onBack }: OrganizationManagemen
                 <p className="text-gray-900">{organization.country || '-'}</p>
               </div>
             </div>
+            ); })()}
           </div>
         )}
       </div>

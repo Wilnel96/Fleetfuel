@@ -47,6 +47,8 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
 
   const [formData, setFormData] = useState({
     name: '',
+    entity_type: '',
+    entity_type_other: '',
     company_registration_number: '',
     vat_number: '',
     address_line_1: '',
@@ -216,9 +218,19 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         formData.name = fullName;
       }
 
+      // Validate entity type for organizations
+      if (accountType === 'organization') {
+        if (!formData.entity_type) throw new Error('Please select an entity type');
+        if (formData.entity_type === 'Other' && !formData.entity_type_other.trim()) {
+          throw new Error('Please describe the entity type');
+        }
+      }
+
       // Sanitize formData - convert empty strings to null for optional fields
       const sanitizedFormData = {
         ...formData,
+        entity_type: accountType === 'organization' ? formData.entity_type || null : null,
+        entity_type_other: (accountType === 'organization' && formData.entity_type === 'Other') ? formData.entity_type_other.trim() || null : null,
         payment_option: formData.payment_option || null,
         fuel_payment_terms: formData.fuel_payment_terms || null,
         fuel_payment_interest_rate: formData.fuel_payment_interest_rate || null,
@@ -589,6 +601,39 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             )}
             {accountType === 'organization' ? (
               <>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                    Entity Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    required
+                    value={formData.entity_type}
+                    onChange={(e) => safeSetFormData({ ...formData, entity_type: e.target.value, entity_type_other: '' })}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  >
+                    <option value="">-- Select Entity Type --</option>
+                    <option value="Company">Company</option>
+                    <option value="Closed Corporation">Closed Corporation</option>
+                    <option value="Trust">Trust</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                {formData.entity_type === 'Other' && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Please Specify <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.entity_type_other}
+                      onChange={(e) => safeSetFormData({ ...formData, entity_type_other: e.target.value })}
+                      className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="e.g., Non-profit Organisation"
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-0.5">
                     Registration Number

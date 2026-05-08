@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { getFuelTypeDisplayName } from '../lib/fuelTypes';
 import { BarChart3, Download, Calendar, TrendingUp, AlertTriangle, FileText, ArrowLeft, Wrench, AlertCircle, MapPin, CheckCircle, TruckIcon } from 'lucide-react';
 import DailyTripReport from './DailyTripReport';
+import UnreturnedVehiclesReport from './UnreturnedVehiclesReport';
 
 interface ReportType {
   id: string;
@@ -40,6 +41,7 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
   const reportTypes: ReportType[] = [
     { id: 'daily-trip-report', name: 'Daily Trip Report', description: 'View daily vehicle usage, KM travelled, and trip descriptions', icon: TruckIcon },
+    { id: 'unreturned-vehicles', name: 'Vehicles Not Returned', description: 'Vehicles drawn on a specific day that were never returned', icon: AlertTriangle },
     { id: 'overview', name: 'Fuel Transactions', description: 'General fuel purchase statistics', icon: BarChart3 },
     { id: 'fuel-theft', name: 'Fuel Theft Alerts', description: 'Anomalies and suspicious patterns', icon: AlertTriangle },
     { id: 'driver', name: 'Driver Reports', description: 'Performance and usage by driver', icon: FileText },
@@ -1068,6 +1070,8 @@ export default function ReportsDashboard({ onNavigate }: ReportsDashboardProps) 
 
         {selectedReport === 'daily-trip-report' ? (
           <DailyTripReport />
+        ) : selectedReport === 'unreturned-vehicles' ? (
+          <UnreturnedVehiclesReport />
         ) : error ? (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800 font-medium">Error loading reports</p>

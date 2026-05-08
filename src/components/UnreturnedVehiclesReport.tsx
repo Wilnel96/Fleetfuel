@@ -45,9 +45,9 @@ export default function UnreturnedVehiclesReport() {
     setGenerated(false);
 
     try {
-      // All draw transactions on the chosen date for this org
-      const dayStart = `${reportDate}T00:00:00.000Z`;
-      const dayEnd   = `${reportDate}T23:59:59.999Z`;
+      // All draw transactions created ON OR BEFORE the chosen date (end of that day)
+      // This catches vehicles drawn on earlier days that still haven't been returned.
+      const cutoff = `${reportDate}T23:59:59.999Z`;
 
       const { data: draws, error: drawErr } = await supabase
         .from('vehicle_transactions')
@@ -64,8 +64,7 @@ export default function UnreturnedVehiclesReport() {
         `)
         .eq('organization_id', orgId)
         .eq('transaction_type', 'draw')
-        .gte('created_at', dayStart)
-        .lte('created_at', dayEnd)
+        .lte('created_at', cutoff)
         .order('created_at', { ascending: true });
 
       if (drawErr) throw drawErr;
@@ -76,22 +75,22 @@ export default function UnreturnedVehiclesReport() {
         return;
       }
 
-      // Filter: no linked return transaction exists
+      // Filter: no return transaction linked to this draw exists on or before the chosen date
       const unreturned: UnreturnedRow[] = [];
-      const now = Date.now();
+      const reportEndMs = new Date(cutoff).getTime();
 
       for (const draw of draws) {
-        // Check whether a return transaction references this draw
         const { data: ret } = await supabase
           .from('vehicle_transactions')
           .select('id')
           .eq('related_transaction_id', draw.id)
           .eq('transaction_type', 'return')
+          .lte('created_at', cutoff)
           .maybeSingle();
 
         if (!ret) {
           const drawnAt = new Date(draw.created_at);
-          const hoursOut = Math.floor((now - drawnAt.getTime()) / (1000 * 60 * 60));
+          const hoursOut = Math.floor((reportEndMs - drawnAt.getTime()) / (1000 * 60 * 60));
 
           const v = draw.vehicles as any;
           const d = draw.drivers as any;
@@ -191,12 +190,12 @@ export default function UnreturnedVehiclesReport() {
             <div>
               <p className={`font-semibold text-lg ${rows.length > 0 ? 'text-orange-900' : 'text-green-900'}`}>
                 {rows.length > 0
-                  ? `${rows.length} vehicle${rows.length > 1 ? 's' : ''} not returned on ${new Date(reportDate + 'T12:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'long', year: 'numeric' })}`
-                  : `All vehicles were returned on ${new Date(reportDate + 'T12:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'long', year: 'numeric' })}`}
+                  ? `${rows.length} vehicle${rows.length > 1 ? 's' : ''} still out as of ${new Date(reportDate + 'T12:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'long', year: 'numeric' })}`
+                  : `All vehicles were returned by end of ${new Date(reportDate + 'T12:00:00').toLocaleDateString('en-ZA', { day: '2-digit', month: 'long', year: 'numeric' })}`}
               </p>
               {rows.length > 0 && (
                 <p className="text-orange-700 text-sm mt-0.5">
-                  Showing vehicles drawn on this date for which no return transaction has been recorded.
+                  Showing all draws with no return recorded on or before this date, regardless of when they were drawn.
                 </p>
               )}
             </div>

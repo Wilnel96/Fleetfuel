@@ -13,6 +13,8 @@ interface ClientOrganization {
   province: string | null;
   postal_code: string | null;
   country: string | null;
+  entity_type: string | null;
+  entity_type_other: string | null;
   website: string | null;
   status: string | null;
   payment_option: string | null;
@@ -170,6 +172,8 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
         .from('organizations')
         .update({
           name: editForm.name,
+          entity_type: editForm.entity_type || null,
+          entity_type_other: editForm.entity_type === 'Other' ? (editForm.entity_type_other || null) : null,
           company_registration_number: editForm.company_registration_number,
           vat_number: editForm.vat_number,
           address_line_1: editForm.address_line_1,
@@ -318,6 +322,33 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Entity Type</label>
+                    <select
+                      value={editForm.entity_type || ''}
+                      onChange={(e) => setEditForm({ ...editForm, entity_type: e.target.value, entity_type_other: '' })}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    >
+                      <option value="">-- Select --</option>
+                      <option value="Company">Company</option>
+                      <option value="Closed Corporation">Closed Corporation</option>
+                      <option value="Trust">Trust</option>
+                      <option value="Partnership">Partnership</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  {editForm.entity_type === 'Other' && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-0.5">Please Specify</label>
+                      <input
+                        type="text"
+                        value={editForm.entity_type_other || ''}
+                        onChange={(e) => setEditForm({ ...editForm, entity_type_other: e.target.value })}
+                        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                        placeholder="e.g., Non-profit Organisation"
+                      />
+                    </div>
+                  )}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">Registration Number</label>
                     <input
@@ -631,6 +662,16 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">Organization Name</label>
                         <p className="text-gray-900">{org.name}</p>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-0.5">Entity Type</label>
+                        <p className="text-gray-900">
+                          {org.entity_type
+                            ? org.entity_type === 'Other'
+                              ? `Other${org.entity_type_other ? ` — ${org.entity_type_other}` : ''}`
+                              : org.entity_type
+                            : 'N/A'}
+                        </p>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-0.5">Registration Number</label>

@@ -18,6 +18,8 @@ interface ClientOrganization {
   province: string | null;
   postal_code: string | null;
   country: string | null;
+  entity_type: string | null;
+  entity_type_other: string | null;
   billing_email: string | null;
   website: string | null;
   status: string | null;
@@ -40,6 +42,8 @@ interface ClientOrganization {
 
 interface FormData {
   name: string;
+  entity_type: string;
+  entity_type_other: string;
   company_registration_number: string;
   vat_number: string;
   contact_person: string;
@@ -130,6 +134,8 @@ export default function ClientOrganizations() {
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
+    entity_type: '',
+    entity_type_other: '',
     company_registration_number: '',
     vat_number: '',
     contact_person: '',
@@ -259,6 +265,8 @@ export default function ClientOrganizations() {
     try {
       const orgData = {
         name: formData.name,
+        entity_type: formData.entity_type || null,
+        entity_type_other: formData.entity_type === 'Other' ? (formData.entity_type_other || null) : null,
         company_registration_number: formData.company_registration_number || null,
         vat_number: formData.vat_number || null,
         address_line_1: formData.address_line_1 || null,
@@ -526,6 +534,8 @@ export default function ClientOrganizations() {
 
       setFormData({
         name: orgToUse.name,
+        entity_type: orgToUse.entity_type || '',
+        entity_type_other: orgToUse.entity_type_other || '',
         company_registration_number: orgToUse.company_registration_number || '',
         vat_number: orgToUse.vat_number || '',
         contact_person: orgToUse.contact_person || '',
@@ -780,6 +790,40 @@ export default function ClientOrganizations() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Entity Type
+                  </label>
+                  <select
+                    value={formData.entity_type}
+                    onChange={(e) => setFormData({ ...formData, entity_type: e.target.value, entity_type_other: '' })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="Company">Company</option>
+                    <option value="Closed Corporation">Closed Corporation</option>
+                    <option value="Trust">Trust</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                {formData.entity_type === 'Other' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Please Specify
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.entity_type_other}
+                      onChange={(e) => setFormData({ ...formData, entity_type_other: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                      placeholder="e.g., Non-profit Organisation"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

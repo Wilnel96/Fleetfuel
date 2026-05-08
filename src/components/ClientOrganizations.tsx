@@ -779,17 +779,30 @@ export default function ClientOrganizations() {
               </button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Organization Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Company Registration Number
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company_registration_number}
+                    onChange={(e) => setFormData({ ...formData, company_registration_number: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -810,7 +823,7 @@ export default function ClientOrganizations() {
                     <option value="Other">Other</option>
                   </select>
                 </div>
-                {formData.entity_type === 'Other' && (
+                {formData.entity_type === 'Other' ? (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Please Specify
@@ -823,22 +836,10 @@ export default function ClientOrganizations() {
                       placeholder="e.g., Non-profit Organisation"
                     />
                   </div>
-                )}
+                ) : <div />}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Registration Number
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.company_registration_number}
-                    onChange={(e) => setFormData({ ...formData, company_registration_number: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     VAT Number

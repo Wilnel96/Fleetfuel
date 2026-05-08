@@ -323,6 +323,15 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Registration Number</label>
+                    <input
+                      type="text"
+                      value={editForm.company_registration_number || ''}
+                      onChange={(e) => setEditForm({ ...editForm, company_registration_number: e.target.value })}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">Entity Type</label>
                     <select
                       value={editForm.entity_type || ''}
@@ -337,7 +346,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                       <option value="Other">Other</option>
                     </select>
                   </div>
-                  {editForm.entity_type === 'Other' && (
+                  {editForm.entity_type === 'Other' ? (
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">Please Specify</label>
                       <input
@@ -348,16 +357,7 @@ export default function ClientOrgInfo({ onNavigate }: ClientOrgInfoProps) {
                         placeholder="e.g., Non-profit Organisation"
                       />
                     </div>
-                  )}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-0.5">Registration Number</label>
-                    <input
-                      type="text"
-                      value={editForm.company_registration_number || ''}
-                      onChange={(e) => setEditForm({ ...editForm, company_registration_number: e.target.value })}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
-                    />
-                  </div>
+                  ) : <div />}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">VAT Number</label>
                     <input

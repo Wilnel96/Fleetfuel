@@ -48,6 +48,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [saved, setSaved] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editForm, setEditForm] = useState<Partial<Organization>>({});
 
@@ -98,6 +99,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditForm({});
+    setSaved(false);
   };
 
   const handleSave = async () => {
@@ -142,9 +144,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       if (updateError) throw updateError;
 
       setSuccess('Financial information updated successfully');
-      setTimeout(() => setSuccess(''), 3000);
-      setEditingId(null);
-      setEditForm({});
+      setSaved(true);
       loadOrganizations();
     } catch (err: any) {
       setError(err.message);
@@ -178,15 +178,17 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                   className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <X className="w-5 h-5" />
-                  Cancel
+                  {saved ? 'Close' : 'Discard Changes'}
                 </button>
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                  <Save className="w-5 h-5" />
-                  Save Changes
-                </button>
+                {!saved && (
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    <Save className="w-5 h-5" />
+                    Save Changes
+                  </button>
+                )}
               </>
             ) : (
               onNavigate && (

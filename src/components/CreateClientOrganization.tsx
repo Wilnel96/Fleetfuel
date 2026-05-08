@@ -141,6 +141,20 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           return;
         }
 
+        // Load global default monthly fee
+        const { data: feeSetting } = await supabase
+          .from('global_settings')
+          .select('value')
+          .eq('key', 'monthly_fee_per_vehicle')
+          .maybeSingle();
+
+        if (feeSetting?.value) {
+          const defaultFee = parseFloat(feeSetting.value);
+          if (!isNaN(defaultFee)) {
+            safeSetFormData((prev: any) => ({ ...prev, monthly_fee_per_vehicle: defaultFee }));
+          }
+        }
+
         console.log('[CreateClient] Permissions check passed');
       } catch (err: any) {
         console.error('[CreateClient] Error checking permissions:', err);

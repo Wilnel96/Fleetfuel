@@ -1,4 +1,4 @@
-import { Building2, Store, Truck, Users, FileText, BarChart3, Database, DollarSign } from 'lucide-react';
+import { Building2, Store, Truck, Users, FileText, BarChart3, Database, DollarSign, Car } from 'lucide-react';
 
 interface SuperAdminDashboardProps {
   onNavigate: (view: string) => void;
@@ -54,6 +54,13 @@ export default function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardP
       description: 'Build custom reports from any table',
       icon: FileText,
       color: 'violet',
+    },
+    {
+      id: 'monthly-vehicle-fees',
+      title: 'Monthly Vehicle Fees',
+      description: 'Set the standard rate charged per active vehicle each month',
+      icon: Car,
+      color: 'teal',
     },
     {
       id: 'backoffice',

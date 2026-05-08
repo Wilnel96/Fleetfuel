@@ -120,6 +120,14 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         throw new Error('Failed to fetch user profile');
       }
 
+      // Fetch global default monthly fee for new signups
+      const { data: feeSetting } = await supabase
+        .from('global_settings')
+        .select('value')
+        .eq('key', 'monthly_fee_per_vehicle')
+        .maybeSingle();
+      const defaultMonthlyFee = feeSetting?.value ? parseFloat(feeSetting.value) : 10;
+
       console.log('[Signup] Updating organization details...');
       const { error: orgUpdateError } = await supabase
         .from('organizations')
@@ -137,6 +145,7 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
           payment_option: paymentOption,
           is_management_org: false,
           organization_type: 'client',
+          monthly_fee_per_vehicle: defaultMonthlyFee,
         })
         .eq('id', profile.organization_id);
 

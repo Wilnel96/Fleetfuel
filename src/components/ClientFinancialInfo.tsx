@@ -437,7 +437,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                       >
                         <option value="">-- Select --</option>
                         <option value="Client Pay">Client Pay</option>
-                        <option value="Direct Debit">Direct Debit</option>
+                        <option value="Debit Order">Debit Order</option>
                         <option value="EFT">EFT</option>
                       </select>
                     </div>

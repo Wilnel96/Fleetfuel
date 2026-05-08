@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Users, DollarSign, CreditCard, TrendingUp, Fuel, FileText, Store } from 'lucide-react';
+import { Building2, Users, DollarSign, CreditCard, TrendingUp, Fuel, FileText, Store, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import OrganizationManagement from './OrganizationManagement';
 import UserManagement from './UserManagement';
@@ -10,6 +10,7 @@ import FuelPriceUpdate from './FuelPriceUpdate';
 import InvoiceManagement from './InvoiceManagement';
 import ClientGarageAccounts from './ClientGarageAccounts';
 import { OrganizationPaymentCard } from './OrganizationPaymentCard';
+import ClientStandardSettings from './ClientStandardSettings';
 
 interface BackOfficeProps {
   userRole?: string;
@@ -17,7 +18,7 @@ interface BackOfficeProps {
   onNavigateToMain?: () => void;
 }
 
-type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card';
+type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'eft-processing' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card' | 'client-standard-settings';
 
 export default function BackOffice({ userRole, paymentOption, onNavigateToMain }: BackOfficeProps) {
   const [currentView, setCurrentView] = useState<BackOfficeView>('menu');
@@ -212,6 +213,10 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
     );
   }
 
+  if (currentView === 'client-standard-settings') {
+    return <ClientStandardSettings onBack={() => setCurrentView('menu')} />;
+  }
+
   if (currentView === 'invoice-management') {
     return (
       <div className="space-y-4">
@@ -287,6 +292,12 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
       color: 'amber',
     }] : []),
     ...(userRole === 'super_admin' ? [{
+      id: 'client-standard-settings',
+      title: 'Client Standard Financial Settings',
+      description: 'Set default payment method, terms, dates and fees applied to all clients',
+      icon: Settings,
+      color: 'slate',
+    }, {
       id: 'invoice-management',
       title: 'Invoice Management',
       description: 'Generate and manage client invoices',
@@ -328,6 +339,11 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain }
         bg: 'bg-amber-50',
         hover: 'hover:bg-amber-100 hover:border-amber-300',
         icon: 'text-amber-600',
+      },
+      slate: {
+        bg: 'bg-slate-50',
+        hover: 'hover:bg-slate-100 hover:border-slate-300',
+        icon: 'text-slate-600',
       },
     };
     return colors[color] || colors.blue;

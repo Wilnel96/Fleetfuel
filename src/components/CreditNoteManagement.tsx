@@ -107,7 +107,7 @@ const statusBadge = (status: CreditNote['status']) => {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function CreditNoteManagement({ onBack }: Props) {
+function CreditNoteManagement({ onBack }: Props) {
   const [view, setView] = useState<'list' | 'create' | 'detail'>('list');
 
   // list state

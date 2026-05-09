@@ -124,10 +124,12 @@ Deno.serve(async (req: Request) => {
           continue;
         }
 
-        // Calculate amounts
-        const subtotal = activeVehicles * org.monthly_fee_per_vehicle;
-        const vatAmount = subtotal * VAT_RATE;
-        const totalAmount = subtotal + vatAmount;
+        // Calculate amounts — round to 2dp at each step to satisfy the
+        // valid_amounts check constraint (total_amount = subtotal + vat_amount)
+        const feePerVehicle = parseFloat(String(org.monthly_fee_per_vehicle));
+        const subtotal = Math.round(activeVehicles * feePerVehicle * 100) / 100;
+        const vatAmount = Math.round(subtotal * VAT_RATE * 100) / 100;
+        const totalAmount = Math.round((subtotal + vatAmount) * 100) / 100;
 
         // Get next invoice number from global sequence
         const { data: invoiceNumberData, error: seqError } = await supabase

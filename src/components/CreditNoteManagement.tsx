@@ -800,5 +800,3 @@ function CreditNoteManagement({ onBack }: Props) {
 
 
 export default CreditNoteManagement
-
-export default CreditNoteManagement

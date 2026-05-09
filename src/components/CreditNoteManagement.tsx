@@ -255,7 +255,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
     try {
       setSaving(true);
 
-      // Get next CN number
       const { data: cnNum, error: seqErr } = await supabase.rpc('get_next_credit_note_number');
       if (seqErr) throw seqErr;
 
@@ -298,9 +297,7 @@ export default function CreditNoteManagement({ onBack }: Props) {
         if (liErr) throw liErr;
       }
 
-      // Reload and navigate to the new note
       await loadCreditNotes();
-      // Re-fetch with org join for detail view
       const { data: full } = await supabase
         .from('credit_notes')
         .select(`*, organization:organizations(name, vat_number, address_line_1, address_line_2, city, province, postal_code, country, company_registration_number), invoice:invoices!credit_notes_invoice_id_fkey(invoice_number, invoice_date, total_amount, billing_period_start, billing_period_end)`)
@@ -369,7 +366,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
   if (view === 'create') {
     return (
       <div className="space-y-6 max-w-3xl">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => { resetForm(); setView('list'); }} className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
@@ -394,7 +390,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
           </div>
         )}
 
-        {/* Core fields */}
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm divide-y divide-gray-100">
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -455,7 +450,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
             </div>
           </div>
 
-          {/* Line items */}
           <div className="p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-gray-800">Line Items</h3>
@@ -514,7 +508,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
               ))}
             </div>
 
-            {/* Totals */}
             <div className="mt-4 pt-4 border-t border-gray-100 space-y-1 text-sm">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
@@ -547,7 +540,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
         `}</style>
 
         <div className="space-y-4">
-          {/* Toolbar */}
           <div className="flex items-center justify-between no-print">
             <button onClick={() => setView('list')} className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
               <ArrowLeft className="w-4 h-4" /> Back to Credit Notes
@@ -578,9 +570,7 @@ export default function CreditNoteManagement({ onBack }: Props) {
             </div>
           </div>
 
-          {/* Credit note document */}
           <div className="bg-white rounded-lg shadow-md overflow-hidden" id="cn-detail">
-            {/* Issuer header */}
             {managementOrg && (
               <div className="p-8 border-b border-gray-300">
                 <div className="flex justify-between items-start">
@@ -614,7 +604,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
             )}
 
             <div className="p-8 space-y-6">
-              {/* Bill to / linked invoice */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">Credit Issued To</p>
@@ -642,7 +631,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
                 </div>
               </div>
 
-              {/* Line items */}
               <div>
                 <table className="w-full text-sm border-collapse">
                   <thead>
@@ -666,7 +654,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
                 </table>
               </div>
 
-              {/* Totals */}
               <div className="flex justify-end">
                 <div className="w-64 space-y-1 text-sm">
                   <div className="flex justify-between text-gray-600">
@@ -692,7 +679,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 no-print">
@@ -720,7 +706,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
         </div>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="flex-1 min-w-48">
           <div className="relative">
@@ -748,7 +733,6 @@ export default function CreditNoteManagement({ onBack }: Props) {
         </select>
       </div>
 
-      {/* Table */}
       {!selectedOrgId ? (
         <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
           <Search className="w-10 h-10 text-gray-300 mx-auto mb-3" />

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { DollarSign, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
+import { FileText, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, CreditCard } from 'lucide-react';
 import { OrganizationPaymentCardReadOnly } from './OrganizationPaymentCardReadOnly';
 import ClientGarageAccounts from './ClientGarageAccounts';
 
@@ -177,7 +177,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       <div className="sticky top-0 z-10 bg-white -mx-4 px-4 py-6 pb-4 border-b border-gray-200 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <DollarSign className="w-6 h-6 text-emerald-600" />
+            <FileText className="w-6 h-6 text-emerald-600" />
             <div>
               <h2 className="text-lg font-bold text-gray-900">
                 {editingId ? 'Changing Client Financial Info' : 'Client Financial Info'}

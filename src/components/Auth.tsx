@@ -35,36 +35,18 @@ export default function Auth({ onBack, onSignup, onPasswordReset, portalError, p
         throw error;
       }
 
-      console.log('[Auth] Login successful:', data.user?.email);
-      console.log('[Auth] Session:', data.session ? 'Created' : 'No session');
-      console.log('[Auth] User ID:', data.user?.id);
-      console.log('[Auth] Access token:', data.session?.access_token ? 'Present' : 'Missing');
-
-      // Check profile immediately to catch issues
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('[Auth] Profile check error:', profileError);
-        throw new Error(`Profile check failed: ${profileError.message}`);
+      if (!data.session) {
+        throw new Error('Login failed — no session returned. Please try again.');
       }
-
-      if (!profile) {
-        console.error('[Auth] No profile found for user');
-        throw new Error('No profile found. Please contact your administrator.');
-      }
-
-      console.log('[Auth] Profile verified:', profile.role);
 
       // Clear any stale flags
       localStorage.removeItem('pendingGarageLogin');
 
-      // Login successful - the auth state listener in App.tsx will handle the rest
-      console.log('[Auth] Login complete, waiting for auth state change');
-      setLoading(false);
+      // onAuthStateChange in App.tsx fires SIGNED_IN and handles navigation.
+      // Keep loading=true so the button stays disabled until the component unmounts.
+      // If the component somehow stays mounted (e.g. RLS blocks profile load),
+      // the 10-second emergency timeout in App.tsx will recover.
+      // Nothing more to do here — do NOT call setLoading(false).
 
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);

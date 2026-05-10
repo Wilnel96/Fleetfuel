@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Building2, CheckCircle, XCircle, Loader2, CreditCard as Edit2, Save, X, AlertCircle, Search, Plus, Ban, Power, MapPin, Phone, Mail, User, CreditCard, FileText, Calendar, Download, Send, ChevronDown, ChevronRight, Receipt, ArrowLeft } from 'lucide-react';
 import GarageStatementsPayments from './GarageStatementsPayments';
+import GarageClientSignup from './GarageClientSignup';
 
 interface Organization {
   id: string;
@@ -93,6 +94,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [accountLimitInput, setAccountLimitInput] = useState('');
   const [depositInput, setDepositInput] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showGarageClientSignup, setShowGarageClientSignup] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState<Organization | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [notesInput, setNotesInput] = useState('');
@@ -568,6 +570,50 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         onBack={() => {
           setViewingStatementsOrgId(null);
           setViewingStatementsOrgName('');
+        }}
+      />
+    );
+  }
+
+  if (showGarageClientSignup) {
+    return (
+      <GarageClientSignup
+        garageId={garageId}
+        garageName={garageName}
+        garageEmail={garageEmail}
+        garagePassword={garagePassword}
+        linkedOrgIds={localAccounts.map((a) => a.organization_id)}
+        onBack={() => setShowGarageClientSignup(false)}
+        onLinked={async (orgId, accountNumber, monthlyLimit, notes) => {
+          const { data: { session } } = await supabase.auth.getSession();
+          const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
+          const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-local-accounts`;
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({
+              action: 'create',
+              garageEmail,
+              garagePassword,
+              accountData: {
+                organization_id: orgId,
+                is_active: true,
+                account_number: accountNumber,
+                monthly_spend_limit: monthlyLimit,
+                notes,
+              },
+            }),
+          });
+          if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.error || 'Failed to create account');
+          }
+          await loadData();
+          setShowGarageClientSignup(false);
+        }}
+        onNewClientCreated={() => {
+          loadData();
+          setShowGarageClientSignup(false);
         }}
       />
     );
@@ -1368,49 +1414,19 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
 
           {(initialView === 'add-client' || initialView === 'all') && (
           <div>
-            <h3 className="text-sm font-medium text-gray-900 mb-3">Add New Client</h3>
-            <div className="max-h-60 overflow-y-auto border border-gray-300 rounded-lg">
-              {filteredOrganizations.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">
-                  {searchTerm ? 'No organizations found matching your search' : 'No organizations available'}
-                </div>
-              ) : (
-                <div className="divide-y divide-gray-200">
-                  {filteredOrganizations
-                    .filter(org => !localAccounts.find(a => a.organization_id === org.id))
-                    .map((org) => {
-                      const isSaving = saving === org.id;
-                      return (
-                        <div
-                          key={org.id}
-                          className="p-3 hover:bg-gray-50 cursor-pointer"
-                          onClick={() => !isSaving && openAddModal(org)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3 flex-1">
-                              <Building2 className="w-4 h-4 text-gray-400" />
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">{org.name}</p>
-                                <p className="text-xs text-gray-500">
-                                  {org.city || 'City not specified'}
-                                  {org.vat_number && ` • VAT: ${org.vat_number}`}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center">
-                              {isSaving ? (
-                                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                              ) : (
-                                <Plus className="w-4 h-4 text-gray-400" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </div>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Add Client to Local Account</h3>
+            <button
+              onClick={() => setShowGarageClientSignup(true)}
+              className="w-full flex items-center gap-3 bg-white border-2 border-green-200 rounded-xl p-4 hover:border-green-400 hover:bg-green-50 transition-all group"
+            >
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors flex-shrink-0">
+                <Plus className="w-5 h-5 text-green-600" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 text-sm">Add New or Existing Client</p>
+                <p className="text-xs text-gray-500 mt-0.5">Search existing clients or register a new one</p>
+              </div>
+            </button>
           </div>
           )}
 

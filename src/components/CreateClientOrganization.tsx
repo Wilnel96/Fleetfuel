@@ -6,9 +6,11 @@ interface CreateClientOrganizationProps {
   onNavigate?: (view: string) => void;
   /** When true: no login required, calls the public client-self-signup edge function */
   publicMode?: boolean;
+  /** When set, pre-locks the payment option to this value and hides the selector */
+  lockedPaymentOption?: 'Card Payment' | 'Local Account';
 }
 
-export default function CreateClientOrganization({ onNavigate, publicMode = false }: CreateClientOrganizationProps) {
+export default function CreateClientOrganization({ onNavigate, publicMode = false, lockedPaymentOption }: CreateClientOrganizationProps) {
   const [step, setStep] = useState<'type-selection' | 'details'>('type-selection');
   const [accountType, setAccountType] = useState<'organization' | 'individual' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -140,6 +142,9 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
           if (dFeeSetting.data?.value) {
             const d = parseFloat(dFeeSetting.data.value);
             if (!isNaN(d)) updates.monthly_fee_per_driver = d;
+          }
+          if (lockedPaymentOption) {
+            updates.payment_option = lockedPaymentOption;
           }
           return { ...prev, ...updates };
         });
@@ -717,23 +722,30 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               <label className="block text-xs font-medium text-gray-700 mb-0.5">
                 Fuel Payment Option <span className="text-red-500">*</span>
               </label>
-              <select
-                required
-                value={formData.payment_option || ''}
-                onChange={(e) => safeSetFormData({
-                  ...formData,
-                  payment_option: e.target.value || null as any,
-                  fuel_payment_terms: null,
-                  fuel_payment_interest_rate: null,
-                })}
-                className={`w-full px-2.5 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                  !formData.payment_option ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-              >
-                <option value="">-- Select Payment Option --</option>
-                <option value="Card Payment">Credit/Debit Card Payment</option>
-                <option value="Local Account">Local Account</option>
-              </select>
+              {lockedPaymentOption ? (
+                <div className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700 flex items-center gap-2">
+                  <span className="font-medium">{lockedPaymentOption}</span>
+                  <span className="text-xs text-gray-500">(fixed for local account clients)</span>
+                </div>
+              ) : (
+                <select
+                  required
+                  value={formData.payment_option || ''}
+                  onChange={(e) => safeSetFormData({
+                    ...formData,
+                    payment_option: e.target.value || null as any,
+                    fuel_payment_terms: null,
+                    fuel_payment_interest_rate: null,
+                  })}
+                  className={`w-full px-2.5 py-1.5 text-sm border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    !formData.payment_option ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">-- Select Payment Option --</option>
+                  <option value="Card Payment">Credit/Debit Card Payment</option>
+                  <option value="Local Account">Local Account</option>
+                </select>
+              )}
             </div>
 
             {formData.payment_option === 'Card Payment' && (

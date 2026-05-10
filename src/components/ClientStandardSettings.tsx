@@ -14,6 +14,7 @@ interface ClientStandardSettingsProps {
 
 const SETTING_KEYS = [
   'standard_monthly_fee_per_vehicle',
+  'standard_monthly_fee_per_driver',
   'standard_payment_method',
   'standard_payment_terms',
   'standard_payment_date',
@@ -23,6 +24,7 @@ const SETTING_KEYS = [
 
 const LABELS: Record<string, string> = {
   standard_monthly_fee_per_vehicle:    'Monthly Fee per Vehicle (R)',
+  standard_monthly_fee_per_driver:     'Monthly Fee per Driver (R)',
   standard_payment_method:             'Payment Method',
   standard_payment_terms:              'Payment Terms',
   standard_payment_date:               'Payment Date (Day of Month)',
@@ -174,7 +176,7 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
         </div>
 
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm divide-y divide-gray-100">
-          {/* Monthly fee */}
+          {/* Monthly fee per vehicle */}
           <div className="p-5 space-y-1.5">
             <label className="block text-sm font-semibold text-gray-800">
               {LABELS['standard_monthly_fee_per_vehicle']}
@@ -186,6 +188,21 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
               onChange={(e) => { setForm({ ...form, standard_monthly_fee_per_vehicle: e.target.value }); setSaved(false); }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="e.g. 10.00"
+            />
+          </div>
+
+          {/* Monthly fee per driver */}
+          <div className="p-5 space-y-1.5">
+            <label className="block text-sm font-semibold text-gray-800">
+              {LABELS['standard_monthly_fee_per_driver']}
+            </label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={form['standard_monthly_fee_per_driver'] ?? ''}
+              onChange={(e) => { setForm({ ...form, standard_monthly_fee_per_driver: e.target.value }); setSaved(false); }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g. 5.00"
             />
           </div>
 

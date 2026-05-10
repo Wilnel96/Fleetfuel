@@ -8,6 +8,7 @@ interface Organization {
   id: string;
   name: string;
   monthly_fee_per_vehicle: number | null;
+  monthly_fee_per_driver: number | null;
   daily_spending_limit: number | null;
   monthly_spending_limit: number | null;
   month_end_day: number | null;
@@ -75,7 +76,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       setLoading(true);
       const { data: orgs, error: orgsError } = await supabase
         .from('organizations')
-        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
+        .select('id, name, monthly_fee_per_vehicle, monthly_fee_per_driver, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
         .eq('organization_type', 'client')
         .neq('name', 'My Organization')
         .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
@@ -114,6 +115,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
         .from('organizations')
         .update({
           monthly_fee_per_vehicle: editForm.monthly_fee_per_vehicle,
+          monthly_fee_per_driver: editForm.monthly_fee_per_driver,
           daily_spending_limit: editForm.daily_spending_limit,
           monthly_spending_limit: editForm.monthly_spending_limit,
           month_end_day: editForm.month_end_day,
@@ -152,7 +154,7 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
       // Refresh list in background without triggering the loading spinner
       const { data: orgs } = await supabase
         .from('organizations')
-        .select('id, name, monthly_fee_per_vehicle, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
+        .select('id, name, monthly_fee_per_vehicle, monthly_fee_per_driver, daily_spending_limit, monthly_spending_limit, month_end_day, year_end_month, year_end_day, bank_name, bank_account_holder, bank_account_number, bank_branch_code, bank_account_type, bank_name_2, bank_account_holder_2, bank_account_number_2, bank_branch_code_2, bank_account_type_2, payment_method, payment_terms, payment_date, debit_order_lead_days, late_payment_interest_rate, enable_prorata_billing, vat_reporting_basis, credit_control_enabled, suspend_services_after_days, payment_option, fuel_payment_terms, fuel_payment_interest_rate')
         .eq('organization_type', 'client')
         .neq('name', 'My Organization')
         .neq('name', 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD')
@@ -266,9 +268,23 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                     <input
                       type="number"
                       step="0.01"
-                      value={editForm.monthly_fee_per_vehicle || 0}
+                      value={editForm.monthly_fee_per_vehicle ?? 0}
                       onChange={(e) =>
                         setEditForm({ ...editForm, monthly_fee_per_vehicle: parseFloat(e.target.value) })
+                      }
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                      Monthly Fee Per Driver (R)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editForm.monthly_fee_per_driver ?? 0}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, monthly_fee_per_driver: parseFloat(e.target.value) })
                       }
                       className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
                     />
@@ -644,7 +660,8 @@ export default function ClientFinancialInfo({ onNavigate }: ClientFinancialInfoP
                   <h3 className="text-base font-semibold text-gray-900">{org.name}</h3>
                   <div className="text-xs text-gray-600 mt-1 space-y-1">
                     <p>
-                      <span className="font-medium">Fee:</span> R{org.monthly_fee_per_vehicle?.toFixed(2) || '0.00'}/vehicle •
+                      <span className="font-medium">Vehicle Fee:</span> R{org.monthly_fee_per_vehicle?.toFixed(2) || '0.00'}/vehicle •
+                      <span className="font-medium"> Driver Fee:</span> R{org.monthly_fee_per_driver?.toFixed(2) || '0.00'}/driver •
                       <span className="font-medium"> Month End:</span> {org.month_end_day || 'N/A'}
                     </p>
                     <p>

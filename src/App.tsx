@@ -85,6 +85,7 @@ function App() {
   const [organizationName, setOrganizationName] = useState<string>('');
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loginPortalRef = useRef<'client' | 'system_admin' | null>(null);
+  const pendingViewRef = useRef<typeof currentView>(null);
 
   useEffect(() => {
     const emergencyTimeout = setTimeout(() => {
@@ -310,7 +311,9 @@ function App() {
 
             // Only reset currentView on initial sign-in, not on token refresh
             if (_event === 'SIGNED_IN') {
-              setCurrentView(null);
+              const pending = pendingViewRef.current;
+              pendingViewRef.current = null;
+              setCurrentView(pending ?? null);
             }
 
             // Set payment option and derive portal type if organization data is available
@@ -525,6 +528,7 @@ function App() {
       setUserMode(null);
       setClientPortalType(null);
       setLoginPortalWithRef(null);
+      pendingViewRef.current = null;
       setPortalError('');
       setUserRole('admin');
       setCurrentView(null);
@@ -543,6 +547,7 @@ function App() {
       setUserMode(null);
       setClientPortalType(null);
       setLoginPortalWithRef(null);
+      pendingViewRef.current = null;
       setPortalError('');
       setUserRole('admin');
       setCurrentView(null);
@@ -725,9 +730,11 @@ function App() {
 
             <button
               onClick={() => {
+                pendingViewRef.current = 'create-client-org';
                 setUserMode('admin');
+                setLoginPortalWithRef('system_admin');
+                setPortalError('');
                 setShowModeSelection(false);
-                setShowPortalSelection(true);
               }}
               className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-teal-700 hover:to-teal-800 transition-all shadow-md hover:shadow-lg"
             >
@@ -839,6 +846,7 @@ function App() {
         setUserMode(null);
         setClientPortalType(null);
         setLoginPortalWithRef(null);
+        pendingViewRef.current = null;
         setPortalError('');
         setShowModeSelection(true);
         setShowPortalSelection(false);

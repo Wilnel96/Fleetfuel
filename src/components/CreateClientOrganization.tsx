@@ -4,9 +4,11 @@ import { Building2, Save, AlertCircle, CheckCircle, Copy } from 'lucide-react';
 
 interface CreateClientOrganizationProps {
   onNavigate?: (view: string) => void;
+  /** When true: no login required, calls the public client-self-signup edge function */
+  publicMode?: boolean;
 }
 
-export default function CreateClientOrganization({ onNavigate }: CreateClientOrganizationProps) {
+export default function CreateClientOrganization({ onNavigate, publicMode = false }: CreateClientOrganizationProps) {
   const [step, setStep] = useState<'type-selection' | 'details'>('type-selection');
   const [accountType, setAccountType] = useState<'organization' | 'individual' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -102,47 +104,28 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
   });
 
   useEffect(() => {
-    const checkPermissions = async () => {
+    const init = async () => {
       try {
-        console.log('[CreateClient] Checking permissions...');
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          console.error('[CreateClient] Not authenticated');
-          setComponentError('Not authenticated');
-          return;
+        if (!publicMode) {
+          // Admin mode: verify caller is from the management org
+          console.log('[CreateClient] Checking permissions...');
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) { setComponentError('Not authenticated'); return; }
+
+          const { data: profile } = await supabase
+            .from('profiles').select('organization_id').eq('id', user.id).maybeSingle();
+          if (!profile?.organization_id) { setComponentError('No organization found'); return; }
+
+          const { data: parentOrg } = await supabase
+            .from('organizations').select('id, name').eq('id', profile.organization_id).maybeSingle();
+          if (!parentOrg) { setComponentError('Parent organization not found'); return; }
+          if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
+            setComponentError('Only management organization can create client organizations');
+            return;
+          }
         }
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (!profile?.organization_id) {
-          console.error('[CreateClient] No organization found');
-          setComponentError('No organization found');
-          return;
-        }
-
-        const { data: parentOrg } = await supabase
-          .from('organizations')
-          .select('id, name')
-          .eq('id', profile.organization_id)
-          .maybeSingle();
-
-        if (!parentOrg) {
-          console.error('[CreateClient] Parent organization not found');
-          setComponentError('Parent organization not found');
-          return;
-        }
-
-        if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
-          console.error('[CreateClient] Not management organization');
-          setComponentError('Only management organization can create client organizations');
-          return;
-        }
-
-        // Load global default monthly fees
+        // Load global default monthly fees (works anonymously)
         const [vFeeSetting, dFeeSetting] = await Promise.all([
           supabase.from('global_settings').select('value').eq('key', 'monthly_fee_per_vehicle').maybeSingle(),
           supabase.from('global_settings').select('value').eq('key', 'monthly_fee_per_driver').maybeSingle(),
@@ -161,15 +144,15 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           return { ...prev, ...updates };
         });
 
-        console.log('[CreateClient] Permissions check passed');
+        console.log('[CreateClient] Init complete');
       } catch (err: any) {
-        console.error('[CreateClient] Error checking permissions:', err);
-        setComponentError(err.message || 'Failed to verify permissions');
+        console.error('[CreateClient] Init error:', err);
+        setComponentError(err.message || 'Failed to initialise');
       }
     };
 
-    checkPermissions();
-  }, []);
+    init();
+  }, [publicMode]);
 
   // Global error boundary
   useEffect(() => {
@@ -202,6 +185,74 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     }
   };
 
+  const buildOrgAndUsers = () => {
+    // Build org name
+    const orgName = accountType === 'individual'
+      ? `${individualName.trim()} ${individualSurname.trim()}`.trim().toUpperCase()
+      : formData.name.toUpperCase().trim();
+
+    const organization = {
+      ...formData,
+      name: orgName,
+      monthly_fee_per_driver: formData.monthly_fee_per_driver,
+      entity_type: accountType === 'organization' ? formData.entity_type || null : null,
+      entity_type_other: (accountType === 'organization' && formData.entity_type === 'Other') ? formData.entity_type_other.trim() || null : null,
+      payment_option: formData.payment_option || null,
+      fuel_payment_terms: formData.fuel_payment_terms || null,
+      fuel_payment_interest_rate: formData.fuel_payment_interest_rate || null,
+      daily_spending_limit: formData.daily_spending_limit || null,
+      monthly_spending_limit: formData.monthly_spending_limit || null,
+      website: formData.website || null,
+      address_line_2: formData.address_line_2 || null,
+      organization_type: 'client',
+      is_management_org: false,
+      status: 'active',
+    };
+
+    const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
+
+    const mainUserPayload = {
+      email: mainUser.email,
+      password: mainUser.password,
+      name: mainUser.name,
+      surname: mainUser.surname,
+      phone_office: mainUser.phone_office || null,
+      phone_mobile: mainUser.phone_mobile || null,
+      is_main_user: true,
+      role: 'admin',
+    };
+
+    const users = isSameUser ? [mainUserPayload] : [
+      mainUserPayload,
+      {
+        email: billingContact.email,
+        password: billingContact.password,
+        name: billingContact.name,
+        surname: billingContact.surname,
+        title: 'Billing User',
+        phone_office: billingContact.phone_office || null,
+        phone_mobile: billingContact.phone_mobile || null,
+        is_main_user: false,
+        role: 'user',
+        can_add_vehicles: billingContact.can_add_vehicles,
+        can_edit_vehicles: billingContact.can_edit_vehicles,
+        can_delete_vehicles: billingContact.can_delete_vehicles,
+        can_add_drivers: billingContact.can_add_drivers,
+        can_edit_drivers: billingContact.can_edit_drivers,
+        can_delete_drivers: billingContact.can_delete_drivers,
+        can_view_reports: billingContact.can_view_reports,
+        can_edit_organization_info: billingContact.can_edit_organization_info,
+        can_view_fuel_transactions: billingContact.can_view_fuel_transactions,
+        can_create_reports: billingContact.can_create_reports,
+        can_view_custom_reports: billingContact.can_view_custom_reports,
+        can_manage_users: billingContact.can_manage_users,
+        can_view_financial_data: billingContact.can_view_financial_data,
+      },
+    ];
+
+    return { organization, users, isSameUser };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -209,36 +260,11 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
     setSuccess('');
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!profile?.organization_id) throw new Error('No organization found');
-
-      const { data: parentOrg } = await supabase
-        .from('organizations')
-        .select('id, name')
-        .eq('id', profile.organization_id)
-        .maybeSingle();
-
-      if (!parentOrg) throw new Error('Parent organization not found');
-      if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
-        throw new Error('Only management organization can create client organizations');
-      }
-
-      // For individuals, build the org name from name + surname fields
+      // Validate account type specific fields
       if (accountType === 'individual') {
-        const fullName = `${individualName.trim()} ${individualSurname.trim()}`.trim().toUpperCase();
+        const fullName = `${individualName.trim()} ${individualSurname.trim()}`.trim();
         if (!fullName) throw new Error('Name and Surname are required');
-        formData.name = fullName;
       }
-
-      // Validate entity type for organizations
       if (accountType === 'organization') {
         if (!formData.entity_type) throw new Error('Please select an entity type');
         if (formData.entity_type === 'Other' && !formData.entity_type_other.trim()) {
@@ -246,174 +272,80 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
         }
       }
 
-      // Sanitize formData - convert empty strings to null for optional fields
-      const sanitizedFormData = {
-        ...formData,
-        monthly_fee_per_driver: formData.monthly_fee_per_driver,
-        entity_type: accountType === 'organization' ? formData.entity_type || null : null,
-        entity_type_other: (accountType === 'organization' && formData.entity_type === 'Other') ? formData.entity_type_other.trim() || null : null,
-        payment_option: formData.payment_option || null,
-        fuel_payment_terms: formData.fuel_payment_terms || null,
-        fuel_payment_interest_rate: formData.fuel_payment_interest_rate || null,
-        daily_spending_limit: formData.daily_spending_limit || null,
-        monthly_spending_limit: formData.monthly_spending_limit || null,
-        website: formData.website || null,
-        address_line_2: formData.address_line_2 || null,
-      };
+      const { organization, users, isSameUser } = buildOrgAndUsers();
 
-      // Check if organization name already exists
-      const { data: existingOrg } = await supabase
-        .from('organizations')
-        .select('id, name')
-        .eq('name', formData.name.toUpperCase().trim())
-        .maybeSingle();
-
-      if (existingOrg) {
-        throw new Error(`An organization with the name "${formData.name}" already exists. Please use a different name.`);
-      }
-
-      // Create the organization (billing user will be stored in organization_users table)
-      const { data: newOrg, error: insertError } = await supabase
-        .from('organizations')
-        .insert({
-          ...sanitizedFormData,
-          name: formData.name.toUpperCase().trim(),
-          organization_type: 'client',
-          is_management_org: false,
-          status: 'active',
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        if (insertError.code === '23505' && insertError.message.includes('organizations_name_key')) {
-          throw new Error(`An organization with the name "${formData.name}" already exists. Please use a different name.`);
-        }
-        throw insertError;
-      }
-      if (!newOrg) throw new Error('Failed to create organization');
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No session found');
-
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization-users`;
-
-      // Check if main user and billing user are the same person (same email)
-      const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
-
-      // NOTE: Billing user info is stored ONLY in organization_users table
-      // - If same person: Create 1 user (main user with is_main_user=true)
-      //   They can also be given "Billing User" title if needed
-      // - If different: Create 2 users (main user + separate billing user with title "Billing User")
-
-      if (isSameUser) {
-        // Create only one user (main user who is also the billing user)
-        // Give them "Main User" title since they're the primary contact
+      if (publicMode) {
+        // Public self-signup: call the public edge function (no auth token needed)
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/client-self-signup`;
         const response = await fetch(apiUrl, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            organization_id: newOrg.id,
-            users: [{
-              email: mainUser.email,
-              password: mainUser.password,
-              name: mainUser.name,
-              surname: mainUser.surname,
-              phone_office: mainUser.phone_office || null,
-              phone_mobile: mainUser.phone_mobile || null,
-              is_main_user: true,
-              role: 'admin',
-            }],
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ organization, users }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create user');
-        }
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Signup failed');
       } else {
-        // Create main user
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            organization_id: newOrg.id,
-            users: [{
-              email: mainUser.email,
-              password: mainUser.password,
-              name: mainUser.name,
-              surname: mainUser.surname,
-              phone_office: mainUser.phone_office || null,
-              phone_mobile: mainUser.phone_mobile || null,
-              is_main_user: true,
-              role: 'admin',
-            }],
-          }),
-        });
+        // Admin mode: requires session + super_admin role
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to create main user');
+        const { data: profile } = await supabase
+          .from('profiles').select('organization_id').eq('id', user.id).maybeSingle();
+        if (!profile?.organization_id) throw new Error('No organization found');
+
+        const { data: parentOrg } = await supabase
+          .from('organizations').select('id, name').eq('id', profile.organization_id).maybeSingle();
+        if (!parentOrg) throw new Error('Parent organization not found');
+        if (parentOrg.name !== 'FUEL EMPOWERMENT SYSTEMS (PTY) LTD') {
+          throw new Error('Only management organization can create client organizations');
         }
 
-        // Create billing user (separate person)
-        const billingResponse = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            organization_id: newOrg.id,
-            users: [{
-              email: billingContact.email,
-              password: billingContact.password,
-              name: billingContact.name,
-              surname: billingContact.surname,
-              title: 'Billing User',
-              phone_office: billingContact.phone_office || null,
-              phone_mobile: billingContact.phone_mobile || null,
-              is_main_user: false,
-              role: 'user',
-              can_add_vehicles: billingContact.can_add_vehicles,
-              can_edit_vehicles: billingContact.can_edit_vehicles,
-              can_delete_vehicles: billingContact.can_delete_vehicles,
-              can_add_drivers: billingContact.can_add_drivers,
-              can_edit_drivers: billingContact.can_edit_drivers,
-              can_delete_drivers: billingContact.can_delete_drivers,
-              can_view_reports: billingContact.can_view_reports,
-              can_edit_organization_info: billingContact.can_edit_organization_info,
-              can_view_fuel_transactions: billingContact.can_view_fuel_transactions,
-              can_create_reports: billingContact.can_create_reports,
-              can_view_custom_reports: billingContact.can_view_custom_reports,
-              can_manage_users: billingContact.can_manage_users,
-              can_view_financial_data: billingContact.can_view_financial_data,
-            }],
-          }),
-        });
+        // Check duplicate org name
+        const { data: existingOrg } = await supabase
+          .from('organizations').select('id').eq('name', organization.name).maybeSingle();
+        if (existingOrg) {
+          throw new Error(`An organization with the name "${organization.name}" already exists. Please use a different name.`);
+        }
 
-        if (!billingResponse.ok) {
-          const errorData = await billingResponse.json();
-          throw new Error(errorData.error || 'Failed to create billing user');
+        const { data: newOrg, error: insertError } = await supabase
+          .from('organizations').insert(organization).select().single();
+        if (insertError) {
+          if (insertError.code === '23505') throw new Error(`An organization with that name already exists.`);
+          throw insertError;
+        }
+        if (!newOrg) throw new Error('Failed to create organization');
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('No session found');
+
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-organization-users`;
+        for (const userBatch of isSameUser ? [users] : [[users[0]], [users[1]]]) {
+          const resp = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ organization_id: newOrg.id, users: userBatch }),
+          });
+          if (!resp.ok) {
+            const err = await resp.json();
+            throw new Error(err.error || 'Failed to create user');
+          }
         }
       }
 
-      if (isSameUser) {
-        setSuccess('Client organization and main user created successfully!');
-      } else {
-        setSuccess('Client organization, main user, and billing user created successfully!');
-      }
+      setSuccess(
+        isSameUser
+          ? 'Account created successfully!'
+          : 'Account created successfully with main user and billing user!'
+      );
+
       setTimeout(() => {
-        if (onNavigate) {
-          onNavigate('client-organizations-menu');
+        if (publicMode) {
+          // Return to main menu after public signup
+          if (onNavigate) onNavigate('back-to-home');
+        } else {
+          if (onNavigate) onNavigate('client-organizations-menu');
         }
-      }, 2000);
+      }, 2500);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -431,11 +363,13 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             <div className="max-w-4xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-green-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Create New Client</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {publicMode ? 'New Client Signup' : 'Create New Client'}
+                </h2>
               </div>
               <button
                 type="button"
-                onClick={() => onNavigate && onNavigate('client-organizations-menu')}
+                onClick={() => onNavigate && onNavigate(publicMode ? 'back-to-home' : 'client-organizations-menu')}
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
               >
                 Cancel
@@ -501,7 +435,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-green-600" />
             <h2 className="text-lg font-semibold text-gray-900">
-              Create New Client - {accountType === 'organization' ? 'Organization' : 'Individual'}
+              {publicMode ? 'New Client Signup' : 'Create New Client'} - {accountType === 'organization' ? 'Organization' : 'Individual'}
             </h2>
           </div>
           <div className="flex items-center gap-3">
@@ -517,7 +451,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
             </button>
             <button
               type="button"
-              onClick={() => onNavigate && onNavigate('client-organizations-menu')}
+              onClick={() => onNavigate && onNavigate(publicMode ? 'back-to-home' : 'client-organizations-menu')}
               className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 font-medium"
             >
               Cancel
@@ -529,7 +463,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-1.5"
             >
               <Save className="w-4 h-4" />
-              {loading ? 'Creating...' : 'Create Client'}
+              {loading ? 'Creating...' : (publicMode ? 'Sign Up' : 'Create Client')}
             </button>
           </div>
         </div>
@@ -545,7 +479,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
                 <h3 className="text-red-800 font-semibold mb-1">Access Denied</h3>
                 <p className="text-red-700 text-sm">{componentError}</p>
                 <button
-                  onClick={() => onNavigate && onNavigate('client-organizations-menu')}
+                  onClick={() => onNavigate && onNavigate(publicMode ? 'back-to-home' : 'client-organizations-menu')}
                   className="mt-3 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
                 >
                   Go Back
@@ -1308,7 +1242,7 @@ export default function CreateClientOrganization({ onNavigate }: CreateClientOrg
               <button
                 onClick={() => {
                   console.log('[CreateClient] Navigating back after render error');
-                  if (onNavigate) onNavigate('client-organizations-menu');
+                  if (onNavigate) onNavigate(publicMode ? 'back-to-home' : 'client-organizations-menu');
                 }}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm font-medium"
               >

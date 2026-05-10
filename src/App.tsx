@@ -69,6 +69,7 @@ function App() {
   const [showModeSelection, setShowModeSelection] = useState(true);
   const [showPortalSelection, setShowPortalSelection] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showPublicSignup, setShowPublicSignup] = useState(false);
   const [showGarageSignup, setShowGarageSignup] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [userRole, setUserRole] = useState<string>('admin');
@@ -730,11 +731,8 @@ function App() {
 
             <button
               onClick={() => {
-                pendingViewRef.current = 'create-client-org';
-                setUserMode('admin');
-                setLoginPortalWithRef('system_admin');
-                setPortalError('');
                 setShowModeSelection(false);
+                setShowPublicSignup(true);
               }}
               className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white py-3 px-4 rounded-lg font-semibold hover:from-teal-700 hover:to-teal-800 transition-all shadow-md hover:shadow-lg"
             >
@@ -759,6 +757,20 @@ function App() {
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (showPublicSignup) {
+    return (
+      <CreateClientOrganization
+        publicMode={true}
+        onNavigate={(view) => {
+          if (view === 'back-to-home') {
+            setShowPublicSignup(false);
+            setShowModeSelection(true);
+          }
+        }}
+      />
     );
   }
 

@@ -56,13 +56,6 @@ export default function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardP
       color: 'violet',
     },
     {
-      id: 'monthly-vehicle-fees',
-      title: 'Standard Monthly Fees',
-      description: 'Set the standard rates charged per active vehicle and driver each month',
-      icon: DollarSign,
-      color: 'teal',
-    },
-    {
       id: 'backoffice',
       title: 'Back Office',
       description: 'System settings and EFT processing',

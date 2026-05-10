@@ -318,9 +318,10 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
       }
 
       // 2. Save fee keys (both families) to global_settings
+      // Round to 2dp to avoid floating-point drift (e.g. 3 → 2.9999...)
       if (vChanged) {
         if (isNaN(parsedNewV) || parsedNewV < 0) throw new Error('Enter a valid vehicle fee amount');
-        const vStr = parsedNewV.toString();
+        const vStr = Math.round(parsedNewV * 100) / 100 + '';
         await Promise.all([
           supabase.from('global_settings').update({ value: vStr, updated_at: now, updated_by: user.id }).eq('key', 'monthly_fee_per_vehicle'),
           supabase.from('global_settings').update({ value: vStr, updated_at: now, updated_by: user.id }).eq('key', 'standard_monthly_fee_per_vehicle'),
@@ -328,7 +329,7 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
       }
       if (dChanged) {
         if (isNaN(parsedNewD) || parsedNewD < 0) throw new Error('Enter a valid driver fee amount');
-        const dStr = parsedNewD.toString();
+        const dStr = Math.round(parsedNewD * 100) / 100 + '';
         await Promise.all([
           supabase.from('global_settings').update({ value: dStr, updated_at: now, updated_by: user.id }).eq('key', 'monthly_fee_per_driver'),
           supabase.from('global_settings').update({ value: dStr, updated_at: now, updated_by: user.id }).eq('key', 'standard_monthly_fee_per_driver'),
@@ -339,16 +340,20 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
       const msgs: string[] = ['Standard settings saved.'];
 
       if (vChanged && !isNaN(parsedNewV)) {
-        const r = await applyToOrgs('monthly_fee_per_vehicle', parsedNewV, excludedV);
+        const roundedV = Math.round(parsedNewV * 100) / 100;
+        const r = await applyToOrgs('monthly_fee_per_vehicle', roundedV, excludedV);
         if (r.updated > 0 || r.excluded > 0)
           msgs.push(`Vehicle fee: ${r.updated} client(s) updated${r.excluded > 0 ? `, ${r.excluded} excluded` : ''}.`);
-        setGlobalV(parsedNewV.toString());
+        setGlobalV(roundedV.toString());
+        setNewV(roundedV.toString());
       }
       if (dChanged && !isNaN(parsedNewD)) {
-        const r = await applyToOrgs('monthly_fee_per_driver', parsedNewD, excludedD);
+        const roundedD = Math.round(parsedNewD * 100) / 100;
+        const r = await applyToOrgs('monthly_fee_per_driver', roundedD, excludedD);
         if (r.updated > 0 || r.excluded > 0)
           msgs.push(`Driver fee: ${r.updated} client(s) updated${r.excluded > 0 ? `, ${r.excluded} excluded` : ''}.`);
-        setGlobalD(parsedNewD.toString());
+        setGlobalD(roundedD.toString());
+        setNewD(roundedD.toString());
       }
 
       // 4. Apply billing field changes to existing orgs (with exclusions)
@@ -357,7 +362,7 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
         { key: 'standard_payment_terms',              col: 'payment_terms',              excluded: excludedPT,    label: 'Payment terms',       parse: (v) => v },
         { key: 'standard_payment_date',               col: 'payment_date',               excluded: excludedPDate, label: 'Payment date',        parse: (v) => parseInt(v) },
         { key: 'standard_debit_order_lead_days',      col: 'debit_order_lead_days',      excluded: excludedDO,    label: 'Debit order lead',    parse: (v) => parseInt(v) },
-        { key: 'standard_late_payment_interest_rate', col: 'late_payment_interest_rate', excluded: excludedInt,   label: 'Interest rate',       parse: (v) => parseFloat(v) },
+        { key: 'standard_late_payment_interest_rate', col: 'late_payment_interest_rate', excluded: excludedInt,   label: 'Interest rate',       parse: (v) => Math.round(parseFloat(v) * 100) / 100 },
       ];
 
       for (const f of billingFields) {
@@ -483,7 +488,7 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
             <div className="flex items-center gap-3">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium pointer-events-none">R</span>
-                <input type="number" min="0" step="0.01" value={newV}
+                <input type="text" inputMode="decimal" value={newV}
                   onChange={(e) => { setNewV(e.target.value); setSaved(false); }}
                   onFocus={(e) => e.target.select()}
                   className="pl-7 pr-3 py-2 w-36 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
@@ -523,7 +528,7 @@ export default function ClientStandardSettings({ onBack }: ClientStandardSetting
             <div className="flex items-center gap-3">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium pointer-events-none">R</span>
-                <input type="number" min="0" step="0.01" value={newD}
+                <input type="text" inputMode="decimal" value={newD}
                   onChange={(e) => { setNewD(e.target.value); setSaved(false); }}
                   onFocus={(e) => e.target.select()}
                   className="pl-7 pr-3 py-2 w-36 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"

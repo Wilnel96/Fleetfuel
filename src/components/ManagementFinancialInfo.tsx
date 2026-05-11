@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { DollarSign, Save, AlertCircle, CheckCircle, User, ArrowLeft, Edit, X } from 'lucide-react';
+import { DollarSign, Save, AlertCircle, CheckCircle, ArrowLeft, Edit, X } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -18,15 +18,6 @@ interface Organization {
   bank_account_type_2: string;
 }
 
-interface BillingUser {
-  id: string;
-  first_name: string;
-  surname: string;
-  email: string;
-  phone_office: string | null;
-  phone_mobile: string | null;
-}
-
 interface ManagementFinancialInfoProps {
   onNavigate?: (view: string) => void;
 }
@@ -34,17 +25,14 @@ interface ManagementFinancialInfoProps {
 export default function ManagementFinancialInfo({ onNavigate }: ManagementFinancialInfoProps = {}) {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [originalOrganization, setOriginalOrganization] = useState<Organization | null>(null);
-  const [billingUser, setBillingUser] = useState<BillingUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [billingPassword, setBillingPassword] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     loadOrganization();
-    loadBillingUser();
   }, []);
 
   const loadOrganization = async () => {
@@ -80,40 +68,6 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
     }
   };
 
-  const loadBillingUser = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('id', user.id)
-        .maybeSingle();
-
-      if (!profile?.organization_id) return;
-
-      const { data, error: fetchError } = await supabase
-        .from('organization_users')
-        .select('id, first_name, surname, email, phone_office, phone_mobile')
-        .eq('organization_id', profile.organization_id)
-        .eq('title', 'Billing User')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error('Error loading billing user:', fetchError);
-        return;
-      }
-
-      if (data) {
-        setBillingUser(data);
-      }
-    } catch (err: any) {
-      console.error('Error loading billing user:', err);
-    }
-  };
-
   const handleEdit = () => {
     setIsEditing(true);
     setError('');
@@ -124,7 +78,6 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
     if (originalOrganization) {
       setOrganization(originalOrganization);
     }
-    setBillingPassword('');
     setIsEditing(false);
     setError('');
     setSuccess('');
@@ -336,55 +289,6 @@ export default function ManagementFinancialInfo({ onNavigate }: ManagementFinanc
               )}
             </div>
           </div>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Billing User Information
-          </h3>
-          {billingUser ? (
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {billingUser.first_name}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Surname</label>
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {billingUser.surname}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {billingUser.email}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Office Number</label>
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {billingUser.phone_office || 'Not set'}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-                <div className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-900">
-                  {billingUser.phone_mobile || 'Not set'}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-amber-800 text-sm font-medium">No billing user assigned</p>
-                <p className="text-amber-700 text-sm mt-1">Create a user with the "Billing User" title in User Management to assign a billing user to this organization.</p>
-              </div>
-            </div>
-          )}
         </div>
 
         <div>

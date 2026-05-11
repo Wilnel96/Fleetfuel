@@ -32,6 +32,16 @@ interface OrganizationUser {
   can_manage_users: boolean;
   can_view_financial_data: boolean;
   is_active: boolean;
+  // Management org Back Office permissions
+  can_access_back_office: boolean;
+  can_view_org_info: boolean;
+  can_edit_org_info: boolean;
+  can_view_client_settings: boolean;
+  can_edit_client_settings: boolean;
+  can_view_invoice_management: boolean;
+  can_edit_invoice_management: boolean;
+  can_view_fuel_price_update: boolean;
+  can_edit_fuel_price_update: boolean;
 }
 
 interface UserManagementProps {
@@ -99,6 +109,15 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
     can_view_custom_reports: false,
     can_manage_users: false,
     can_view_financial_data: false,
+    can_access_back_office: false,
+    can_view_org_info: false,
+    can_edit_org_info: false,
+    can_view_client_settings: false,
+    can_edit_client_settings: false,
+    can_view_invoice_management: false,
+    can_edit_invoice_management: false,
+    can_view_fuel_price_update: false,
+    can_edit_fuel_price_update: false,
   });
 
   const permissionTemplates = {
@@ -443,6 +462,15 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
             can_view_custom_reports: newUser.can_view_custom_reports,
             can_manage_users: newUser.can_manage_users,
             can_view_financial_data: newUser.can_view_financial_data,
+            can_access_back_office: newUser.can_access_back_office,
+            can_view_org_info: newUser.can_view_org_info,
+            can_edit_org_info: newUser.can_edit_org_info,
+            can_view_client_settings: newUser.can_view_client_settings,
+            can_edit_client_settings: newUser.can_edit_client_settings,
+            can_view_invoice_management: newUser.can_view_invoice_management,
+            can_edit_invoice_management: newUser.can_edit_invoice_management,
+            can_view_fuel_price_update: newUser.can_view_fuel_price_update,
+            can_edit_fuel_price_update: newUser.can_edit_fuel_price_update,
           }],
         };
       } else {
@@ -511,6 +539,15 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
         can_view_custom_reports: false,
         can_manage_users: false,
         can_view_financial_data: false,
+        can_access_back_office: false,
+        can_view_org_info: false,
+        can_edit_org_info: false,
+        can_view_client_settings: false,
+        can_edit_client_settings: false,
+        can_view_invoice_management: false,
+        can_edit_invoice_management: false,
+        can_view_fuel_price_update: false,
+        can_edit_fuel_price_update: false,
       });
       loadUsers();
       setTimeout(() => setSuccess(''), 5000);
@@ -653,6 +690,15 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
           can_view_custom_reports: editingUser.can_view_custom_reports,
           can_manage_users: editingUser.can_manage_users,
           can_view_financial_data: editingUser.can_view_financial_data,
+          can_access_back_office: editingUser.can_access_back_office,
+          can_view_org_info: editingUser.can_view_org_info,
+          can_edit_org_info: editingUser.can_edit_org_info,
+          can_view_client_settings: editingUser.can_view_client_settings,
+          can_edit_client_settings: editingUser.can_edit_client_settings,
+          can_view_invoice_management: editingUser.can_view_invoice_management,
+          can_edit_invoice_management: editingUser.can_edit_invoice_management,
+          can_view_fuel_price_update: editingUser.can_view_fuel_price_update,
+          can_edit_fuel_price_update: editingUser.can_edit_fuel_price_update,
           is_active: editingUser.is_active,
         })
         .eq('id', editingUser.id);
@@ -1349,6 +1395,51 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                       </label>
                     </div>
                   </div>
+
+                  {managementMode && (
+                    <div className="border border-blue-200 bg-blue-50 rounded-lg p-3">
+                      <h5 className="text-xs font-semibold text-blue-900 mb-1">Back Office Access</h5>
+                      <p className="text-xs text-blue-700 mb-2">Controls what this user can access in the Back Office.</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer col-span-2">
+                          <input type="checkbox" checked={newUser.can_access_back_office} onChange={(e) => setNewUser({ ...newUser, can_access_back_office: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs font-medium text-gray-800">Can Access Back Office</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_view_org_info} onChange={(e) => setNewUser({ ...newUser, can_view_org_info: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">View Management Org Info</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_edit_org_info} onChange={(e) => setNewUser({ ...newUser, can_edit_org_info: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">Edit Management Org Info</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_view_client_settings} onChange={(e) => setNewUser({ ...newUser, can_view_client_settings: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">View Client Financial Settings</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_edit_client_settings} onChange={(e) => setNewUser({ ...newUser, can_edit_client_settings: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">Edit Client Financial Settings</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_view_invoice_management} onChange={(e) => setNewUser({ ...newUser, can_view_invoice_management: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">View Invoice Management</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_edit_invoice_management} onChange={(e) => setNewUser({ ...newUser, can_edit_invoice_management: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">Edit Invoice Management</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_view_fuel_price_update} onChange={(e) => setNewUser({ ...newUser, can_view_fuel_price_update: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">View Fuel Price Update</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={newUser.can_edit_fuel_price_update} onChange={(e) => setNewUser({ ...newUser, can_edit_fuel_price_update: e.target.checked })} className="rounded border-gray-300 text-green-600 focus:ring-green-500" />
+                          <span className="text-xs text-gray-700">Perform Fuel Price Update</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1709,6 +1800,96 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                     </label>
                   </div>
                 </div>
+
+                {managementMode && (
+                  <div className="col-span-2 border border-blue-200 bg-blue-50 rounded p-2">
+                    <h5 className="text-xs font-semibold text-blue-900 mb-1">Back Office Access</h5>
+                    <p className="text-xs text-blue-700 mb-2">Controls what this user can access in the Back Office. Main User and Secondary Main User always have full access.</p>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <label className="flex items-center gap-2 cursor-pointer col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_access_back_office}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_access_back_office: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs font-medium text-gray-800">Can Access Back Office</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_view_org_info}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_view_org_info: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">View Management Org Info</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_edit_org_info}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_edit_org_info: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">Edit Management Org Info</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_view_client_settings}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_view_client_settings: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">View Client Financial Settings</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_edit_client_settings}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_edit_client_settings: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">Edit Client Financial Settings</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_view_invoice_management}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_view_invoice_management: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">View Invoice Management</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_edit_invoice_management}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_edit_invoice_management: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">Edit Invoice Management</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_view_fuel_price_update}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_view_fuel_price_update: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">View Fuel Price Update</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={editingUser.can_edit_fuel_price_update}
+                          onChange={(e) => setEditingUser({ ...editingUser, can_edit_fuel_price_update: e.target.checked })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5"
+                        />
+                        <span className="text-xs text-gray-700">Perform Fuel Price Update</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
               )}
             </div>

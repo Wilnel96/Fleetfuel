@@ -8,7 +8,6 @@ import DriverMobileApp from './components/DriverMobileApp';
 import MobileFuelPurchase from './components/MobileFuelPurchase';
 import VehicleManagement from './components/VehicleManagement';
 import GarageManagement from './components/GarageManagement';
-import EFTBatchProcessing from './components/EFTBatchProcessing';
 import DriverManagement from './components/DriverManagement';
 import OrganizationManagement from './components/OrganizationManagement';
 import ClientOrganizations from './components/ClientOrganizations';

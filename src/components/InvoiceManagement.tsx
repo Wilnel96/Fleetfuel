@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft, Search, CreditCard, FileX } from 'lucide-react';
+import { FileText, Plus, Filter, Eye, CheckCircle, XCircle, Calendar, DollarSign, Building2, Download, AlertCircle, Printer, FileSpreadsheet, Fuel, ArrowLeft, Search, CreditCard, FileX, Repeat } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import BulkInvoicePayment from './BulkInvoicePayment';
 import CreditNoteManagement from './CreditNoteManagement';
+import DebitOrderRun from './DebitOrderRun';
 
 interface Invoice {
   id: string;
@@ -55,7 +56,7 @@ interface ManagementOrganization {
 }
 
 export default function InvoiceManagement() {
-  const [currentView, setCurrentView] = useState<'menu' | 'fee' | 'fuel' | 'bulk-payment' | 'credit-notes'>('menu');
+  const [currentView, setCurrentView] = useState<'menu' | 'fee' | 'fuel' | 'bulk-payment' | 'credit-notes' | 'debit-order-run'>('menu');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -780,16 +781,31 @@ export default function InvoiceManagement() {
           </button>
 
           <button
+            onClick={() => setCurrentView('debit-order-run')}
+            className="w-full bg-white hover:bg-blue-50 border-2 border-blue-300 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Repeat className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Debit Order Run</h3>
+                <p className="text-sm text-gray-600">Process monthly debit orders — all clients pre-selected, deselect exceptions</p>
+              </div>
+            </div>
+          </button>
+
+          <button
             onClick={() => setCurrentView('bulk-payment')}
-            className="w-full bg-white hover:bg-gray-50 border border-green-200 rounded-lg p-4 text-left transition-colors border-2"
+            className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
           >
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-50 rounded-lg">
                 <CreditCard className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Bulk Invoice Payment</h3>
-                <p className="text-sm text-gray-600">Mark multiple invoices as paid at once</p>
+                <h3 className="font-semibold text-gray-900">Manual Payment Processing</h3>
+                <p className="text-sm text-gray-600">Mark EFT and ad-hoc payments as paid</p>
               </div>
             </div>
           </button>
@@ -815,6 +831,10 @@ export default function InvoiceManagement() {
 
   if (currentView === 'credit-notes') {
     return <CreditNoteManagement onBack={() => setCurrentView('menu')} />;
+  }
+
+  if (currentView === 'debit-order-run') {
+    return <DebitOrderRun onBack={() => setCurrentView('menu')} />;
   }
 
   if (currentView === 'bulk-payment') {

@@ -368,20 +368,20 @@ function CreditNoteManagement({ onBack }: Props) {
     return (
       <div className="space-y-6 max-w-3xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => { resetForm(); setView('list'); }} className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+          <h2 className="text-lg font-bold text-gray-900">New Credit Note</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleCreate}
+              disabled={saving}
+              className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Saving...' : 'Issue Credit Note'}
+            </button>
+            <button onClick={() => { resetForm(); setView('list'); }} className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium">
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
-            <h2 className="text-lg font-bold text-gray-900">New Credit Note</h2>
           </div>
-          <button
-            onClick={handleCreate}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm font-medium"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Issue Credit Note'}
-          </button>
         </div>
 
         {formError && (
@@ -548,10 +548,11 @@ function CreditNoteManagement({ onBack }: Props) {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between no-print">
-            <button onClick={() => setView('list')} className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" /> Back to Credit Notes
-            </button>
+            <span />
             <div className="flex gap-2">
+              <button onClick={() => setView('list')} className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium">
+                <ArrowLeft className="w-4 h-4" /> Back to Credit Notes
+              </button>
               <button
                 onClick={() => window.print()}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -688,9 +689,6 @@ function CreditNoteManagement({ onBack }: Props) {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 no-print">
-            <ArrowLeft className="w-4 h-4" /> Back
-          </button>
           <div>
             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
               <FileX className="w-5 h-5 text-green-600" />
@@ -699,12 +697,17 @@ function CreditNoteManagement({ onBack }: Props) {
             <p className="text-sm text-gray-500">Issue and manage credit notes for client organizations</p>
           </div>
         </div>
-        <button
-          onClick={() => { resetForm(); setView('create'); }}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" /> New Credit Note
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { resetForm(); setView('create'); }}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" /> New Credit Note
+          </button>
+          <button onClick={onBack} className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors no-print">
+            <ArrowLeft className="w-4 h-4" /> Back
+          </button>
+        </div>
       </div>
 
       {error && (

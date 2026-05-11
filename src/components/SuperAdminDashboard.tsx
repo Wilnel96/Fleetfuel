@@ -1,4 +1,4 @@
-import { Building2, Store, Truck, Users, FileText, BarChart3, Database } from 'lucide-react';
+import { Building2, Store, Truck, Users, FileText, BarChart3, Database, Fuel } from 'lucide-react';
 
 interface SuperAdminDashboardProps {
   onNavigate: (view: string) => void;
@@ -33,6 +33,13 @@ export default function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardP
       description: 'View all client drivers',
       icon: Users,
       color: 'cyan',
+    },
+    {
+      id: 'fuel-invoices',
+      title: 'Fuel Invoices',
+      description: 'Review client fuel transaction invoices',
+      icon: Fuel,
+      color: 'orange',
     },
     {
       id: 'reports',

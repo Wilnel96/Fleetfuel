@@ -156,26 +156,34 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          garageEmail,
-          garagePassword,
-          garageId,
-          updateData,
-        }),
-      });
+      if (session?.access_token) {
+        const { error: updateError } = await supabase
+          .from('garages')
+          .update(updateData)
+          .eq('id', garageId);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update garage information');
+        if (updateError) throw updateError;
+      } else {
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            garageEmail,
+            garagePassword,
+            garageId,
+            updateData,
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update garage information');
+        }
       }
 
       setSuccess('Garage information updated successfully!');
@@ -196,31 +204,43 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({
-          garageEmail,
-          garagePassword,
-          garageId,
-          updateData: {
-            fuel_types: fuelTypes,
-            fuel_prices: fuelPrices,
-            other_offerings: otherOfferings,
-            contact_persons: contactPersons,
+      const updateData = {
+        fuel_types: fuelTypes,
+        fuel_prices: fuelPrices,
+        other_offerings: otherOfferings,
+        contact_persons: contactPersons,
+      };
+
+      if (session?.access_token) {
+        // Authenticated via Supabase Auth — use direct client (RLS allows garage_user to update own garage)
+        const { error: updateError } = await supabase
+          .from('garages')
+          .update(updateData)
+          .eq('id', garageId);
+
+        if (updateError) throw updateError;
+      } else {
+        // Password-based garage login — route through edge function
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/garage-update`;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           },
-        }),
-      });
+          body: JSON.stringify({
+            garageEmail,
+            garagePassword,
+            garageId,
+            updateData,
+          }),
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update garage information');
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update garage information');
+        }
       }
 
       setSuccess('Changes saved successfully!');

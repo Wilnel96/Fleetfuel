@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, CreditCard as Edit2, Trash2, Star, X, Check, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, CreditCard as Edit2, Trash2, Star, X, Check } from 'lucide-react';
 
 interface ContactPerson {
   name: string;
@@ -7,7 +7,6 @@ interface ContactPerson {
   email: string;
   phone: string;
   mobile_phone: string;
-  password: string;
   is_primary: boolean;
 }
 
@@ -19,21 +18,19 @@ interface GarageContactManagementProps {
 export default function GarageContactManagement({ contacts, onUpdate }: GarageContactManagementProps) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [addingNew, setAddingNew] = useState(false);
-  const [showPasswords, setShowPasswords] = useState<Record<number, boolean>>({});
   const [newContact, setNewContact] = useState<ContactPerson>({
     name: '',
     surname: '',
     email: '',
     phone: '',
     mobile_phone: '',
-    password: '',
     is_primary: false
   });
   const [editContact, setEditContact] = useState<ContactPerson | null>(null);
 
   const handleAddContact = () => {
-    if (!newContact.name || !newContact.surname || !newContact.email || !newContact.password) {
-      alert('Please fill in name, surname, email, and password');
+    if (!newContact.name || !newContact.surname || !newContact.email) {
+      alert('Please fill in name, surname, and email');
       return;
     }
 
@@ -44,15 +41,15 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
     }
 
     onUpdate([...contacts, newContact]);
-    setNewContact({ name: '', surname: '', email: '', phone: '', mobile_phone: '', password: '', is_primary: false });
+    setNewContact({ name: '', surname: '', email: '', phone: '', mobile_phone: '', is_primary: false });
     setAddingNew(false);
   };
 
   const handleUpdateContact = (index: number) => {
     if (!editContact) return;
 
-    if (!editContact.name || !editContact.surname || !editContact.email || !editContact.password) {
-      alert('Please fill in name, surname, email, and password');
+    if (!editContact.name || !editContact.surname || !editContact.email) {
+      alert('Please fill in name, surname, and email');
       return;
     }
 
@@ -96,13 +93,6 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
     onUpdate(updatedContacts);
   };
 
-  const togglePasswordVisibility = (index: number) => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
-
   const startEdit = (index: number) => {
     setEditContact({ ...contacts[index] });
     setEditingIndex(index);
@@ -130,7 +120,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
       </div>
 
       <p className="text-sm text-gray-600 mb-4">
-        Manage contact persons who can login and update garage information. At least one contact is required.
+        Manage contact persons for this garage. At least one contact is required.
       </p>
 
       {addingNew && (
@@ -142,7 +132,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                 type="button"
                 onClick={() => {
                   setAddingNew(false);
-                  setNewContact({ name: '', surname: '', email: '', phone: '', mobile_phone: '', password: '', is_primary: false });
+                  setNewContact({ name: '', surname: '', email: '', phone: '', mobile_phone: '', is_primary: false });
                 }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
@@ -183,7 +173,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                 <input
                   type="tel"
                   value={newContact.mobile_phone}
@@ -202,16 +192,6 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                   placeholder="0123456789 (optional)"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-                <input
-                  type="text"
-                  value={newContact.password}
-                  onChange={(e) => setNewContact({ ...newContact, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter password"
-                />
-              </div>
             </div>
             <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center gap-3">
               <button
@@ -226,7 +206,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                 type="button"
                 onClick={() => {
                   setAddingNew(false);
-                  setNewContact({ name: '', surname: '', email: '', phone: '', mobile_phone: '', password: '', is_primary: false });
+                  setNewContact({ name: '', surname: '', email: '', phone: '', mobile_phone: '', is_primary: false });
                 }}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
@@ -278,7 +258,7 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
                   <input
                     type="tel"
                     value={editContact.mobile_phone}
@@ -295,15 +275,6 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                     onChange={(e) => setEditContact({ ...editContact, phone: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="0123456789 (optional)"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <input
-                    type="text"
-                    value={editContact.password}
-                    onChange={(e) => setEditContact({ ...editContact, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -345,22 +316,6 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
                     {contact.phone && (
                       <p className="text-sm text-gray-600">Office: {contact.phone}</p>
                     )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <p className="text-xs text-gray-500">
-                        Password: {showPasswords[index] ? contact.password : '••••••••'}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => togglePasswordVisibility(index)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        {showPasswords[index] ? (
-                          <EyeOff className="w-3 h-3" />
-                        ) : (
-                          <Eye className="w-3 h-3" />
-                        )}
-                      </button>
-                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {!contact.is_primary && (
@@ -401,7 +356,6 @@ export default function GarageContactManagement({ contacts, onUpdate }: GarageCo
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
         <p className="text-blue-900 text-sm font-medium mb-2">Contact Management Guidelines:</p>
         <ul className="text-blue-800 text-sm space-y-1 list-disc list-inside">
-          <li>All contacts can login using their email and password</li>
           <li>The primary contact is displayed in garage directories</li>
           <li>At least one contact person is required</li>
           <li>Each email must be unique</li>

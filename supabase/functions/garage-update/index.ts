@@ -20,93 +20,71 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const authHeader = req.headers.get('Authorization');
-    const { garageEmail, garagePassword, garageId, updateData } = await req.json();
-
-    let authenticatedGarage = null;
-
-    // First, check if user is authenticated via Supabase Auth
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-      if (user && !userError) {
-        // User is authenticated - check if they're a garage user
-        const { data: orgUser } = await supabase
-          .from('organization_users')
-          .select('organization_id, role')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-          .maybeSingle();
-
-        if (orgUser && orgUser.role === 'garage_user') {
-          // Get the garage for this organization
-          const { data: garage, error: garageError } = await supabase
-            .from('garages')
-            .select('id, name, status')
-            .eq('organization_id', orgUser.organization_id)
-            .eq('status', 'active')
-            .maybeSingle();
-
-          if (garage && !garageError) {
-            authenticatedGarage = garage;
-          }
-        }
-      }
-    }
-
-    // If not authenticated via Auth, try password-based authentication
-    if (!authenticatedGarage && garageEmail && garagePassword) {
-      const { data: garages, error: garageError } = await supabase
-        .from('garages')
-        .select('id, name, contact_persons, status');
-
-      if (garageError) throw garageError;
-
-      for (const garage of garages || []) {
-        if (garage.status !== 'active') continue;
-
-        const contactPersons = garage.contact_persons as Array<{
-          email: string;
-          password: string;
-        }>;
-
-        if (!contactPersons) continue;
-
-        const matchedContact = contactPersons.find(
-          (contact: any) =>
-            contact.email?.toLowerCase() === garageEmail?.toLowerCase() &&
-            contact.password === garagePassword
-        );
-
-        if (matchedContact) {
-          authenticatedGarage = garage;
-          break;
-        }
-      }
-    }
-
-    if (!authenticatedGarage) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
-        JSON.stringify({ error: 'Invalid garage credentials' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify the garage is updating their own data
-    if (authenticatedGarage.id !== garageId) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    if (!user || userError) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized: Cannot update another garage' }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        JSON.stringify({ error: 'Invalid or expired session' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Update the garage
+    const { garageId, updateData } = await req.json();
+
+    // Verify the user is an active garage_user
+    const { data: orgUser } = await supabase
+      .from('organization_users')
+      .select('organization_id, role')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!orgUser || orgUser.role !== 'garage_user') {
+      return new Response(
+        JSON.stringify({ error: 'Access denied: garage user role required' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Get the garage for this organization
+    const { data: garage, error: garageError } = await supabase
+      .from('garages')
+      .select('id, name, status')
+      .eq('organization_id', orgUser.organization_id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (!garage || garageError) {
+      return new Response(
+        JSON.stringify({ error: 'No active garage found for this account' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verify the garage matches the authenticated user's garage
+    if (garage.id !== garageId) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: cannot update another garage' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Strip any password fields from contact_persons for security
+    if (updateData.contact_persons) {
+      updateData.contact_persons = updateData.contact_persons.map((c: any) => {
+        const { password, ...rest } = c;
+        return rest;
+      });
+    }
+
     const { data, error } = await supabase
       .from('garages')
       .update(updateData)

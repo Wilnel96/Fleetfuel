@@ -30,7 +30,6 @@ interface ContactPerson {
   email: string;
   phone: string;
   mobile_phone: string;
-  password: string;
   is_primary: boolean;
 }
 

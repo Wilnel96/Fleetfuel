@@ -121,6 +121,15 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
   const [paymentReference, setPaymentReference] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [savingPayment, setSavingPayment] = useState(false);
+  const [paymentsMode, setPaymentsMode] = useState<'capture' | 'search'>('capture');
+  const [searchPayments, setSearchPayments] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchFilterOrg, setSearchFilterOrg] = useState('');
+  const [searchFilterFrom, setSearchFilterFrom] = useState(() => {
+    const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().split('T')[0];
+  });
+  const [searchFilterTo, setSearchFilterTo] = useState(() => new Date().toISOString().split('T')[0]);
+  const [searchFilterMethod, setSearchFilterMethod] = useState('');
   const isDraggingRef = useRef(false);
 
   useEffect(() => {
@@ -1706,10 +1715,11 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
               </div>
             ) : financialSubView === 'payments' ? (
               <div className="bg-white border border-gray-200 rounded-lg p-4">
+                {/* Header */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-5 h-5 text-emerald-600" />
-                    <h3 className="text-sm font-semibold text-gray-900">Capture Payment</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">Payments</h3>
                   </div>
                   <button
                     onClick={() => {
@@ -1721,6 +1731,8 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                       setPaymentMethod('eft');
                       setPaymentReference('');
                       setPaymentNotes('');
+                      setPaymentsMode('capture');
+                      setSearchPayments([]);
                     }}
                     className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
                   >
@@ -1729,134 +1741,196 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                   </button>
                 </div>
 
-                {/* Client Selection for Payment */}
-                {!capturingPaymentOrgId ? (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      Select Client to Capture Payment
-                    </label>
-                    <select
-                      onChange={(e) => {
-                        const orgId = e.target.value;
-                        if (orgId) {
-                          const org = organizations.find(o => o.id === orgId);
-                          if (org) {
-                            setCapturingPaymentOrgId(orgId);
-                            setCapturingPaymentOrgName(org.name);
+                {/* Mode toggle tabs */}
+                <div className="flex gap-1 mb-5 bg-gray-100 rounded-lg p-1 w-fit">
+                  <button
+                    onClick={() => setPaymentsMode('capture')}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      paymentsMode === 'capture'
+                        ? 'bg-white text-emerald-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Capture Payment
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setPaymentsMode('search');
+                      setSearchLoading(true);
+                      try {
+                        const from = searchFilterFrom;
+                        const to = searchFilterTo;
+                        let query = supabase
+                          .from('garage_debtor_payments')
+                          .select('*')
+                          .eq('garage_id', garageId)
+                          .gte('payment_date', from)
+                          .lte('payment_date', to)
+                          .order('payment_date', { ascending: false });
+                        if (searchFilterOrg) query = query.eq('organization_id', searchFilterOrg);
+                        if (searchFilterMethod) query = query.eq('payment_method', searchFilterMethod);
+                        const { data, error: qErr } = await query;
+                        if (qErr) throw qErr;
+                        setSearchPayments(data || []);
+                      } catch (err: any) {
+                        setError(err.message);
+                      } finally {
+                        setSearchLoading(false);
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      paymentsMode === 'search'
+                        ? 'bg-white text-blue-700 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    <Search className="w-4 h-4" />
+                    Search Payments
+                  </button>
+                </div>
+
+                {/* Capture Payment mode */}
+                {paymentsMode === 'capture' && (
+                  !capturingPaymentOrgId ? (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-2">
+                        Select Client to Capture Payment
+                      </label>
+                      <select
+                        onChange={(e) => {
+                          const orgId = e.target.value;
+                          if (orgId) {
+                            const org = organizations.find(o => o.id === orgId);
+                            if (org) {
+                              setCapturingPaymentOrgId(orgId);
+                              setCapturingPaymentOrgName(org.name);
+                            }
                           }
-                        }
-                      }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    >
-                      <option value="">-- Select a local account client --</option>
-                      {activeAccounts.map((account) => {
-                        const org = organizations.find(o => o.id === account.organization_id);
-                        if (!org) return null;
-                        return (
-                          <option key={account.id} value={org.id}>
-                            {org.name} {account.account_number ? `(Acc: ${account.account_number})` : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-semibold mb-4">Record Payment for {capturingPaymentOrgName}</h4>
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Payment Date</label>
-                        <input
-                          type="date"
-                          value={paymentDate}
-                          onChange={(e) => setPaymentDate(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Amount</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          value={paymentAmount}
-                          onChange={(e) => setPaymentAmount(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Payment Method</label>
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'eft' | 'card' | 'other')}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        >
-                          <option value="eft">EFT</option>
-                          <option value="cash">Cash</option>
-                          <option value="card">Card</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Reference</label>
-                        <input
-                          type="text"
-                          placeholder="Payment reference (optional)"
-                          value={paymentReference}
-                          onChange={(e) => setPaymentReference(e.target.value)}
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        />
-                      </div>
+                        }}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="">-- Select a local account client --</option>
+                        {activeAccounts.map((account) => {
+                          const org = organizations.find(o => o.id === account.organization_id);
+                          if (!org) return null;
+                          return (
+                            <option key={account.id} value={org.id}>
+                              {org.name} {account.account_number ? `(Acc: ${account.account_number})` : ''}
+                            </option>
+                          );
+                        })}
+                      </select>
                     </div>
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-1">Notes</label>
-                      <textarea
-                        placeholder="Additional notes (optional)"
-                        value={paymentNotes}
-                        onChange={(e) => setPaymentNotes(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                        rows={2}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={async () => {
-                          if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-                            setError('Please enter a valid payment amount');
-                            return;
-                          }
-
-                          try {
-                            setSavingPayment(true);
-                            setError('');
-
-                            const { data: paymentNumber, error: numberError } = await supabase.rpc('generate_payment_number', {
-                              p_garage_id: garageId,
-                              p_organization_id: capturingPaymentOrgId
-                            });
-
-                            if (numberError) throw numberError;
-
-                            const { error: insertError } = await supabase
-                              .from('garage_debtor_payments')
-                              .insert({
-                                garage_id: garageId,
-                                organization_id: capturingPaymentOrgId,
-                                payment_number: paymentNumber,
-                                payment_date: paymentDate,
-                                amount: parseFloat(paymentAmount),
-                                payment_method: paymentMethod,
-                                reference: paymentReference || null,
-                                notes: paymentNotes || null
+                  ) : (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <h4 className="font-semibold mb-4">Record Payment for {capturingPaymentOrgName}</h4>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Payment Date</label>
+                          <input
+                            type="date"
+                            value={paymentDate}
+                            onChange={(e) => setPaymentDate(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Amount</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Payment Method</label>
+                          <select
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value as 'cash' | 'eft' | 'card' | 'other')}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          >
+                            <option value="eft">EFT</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Reference</label>
+                          <input
+                            type="text"
+                            placeholder="Payment reference (optional)"
+                            value={paymentReference}
+                            onChange={(e) => setPaymentReference(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium mb-1">Notes</label>
+                        <textarea
+                          placeholder="Additional notes (optional)"
+                          value={paymentNotes}
+                          onChange={(e) => setPaymentNotes(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                          rows={2}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
+                              setError('Please enter a valid payment amount');
+                              return;
+                            }
+                            try {
+                              setSavingPayment(true);
+                              setError('');
+                              const { data: paymentNumber, error: numberError } = await supabase.rpc('generate_payment_number', {
+                                p_garage_id: garageId,
+                                p_organization_id: capturingPaymentOrgId
                               });
-
-                            if (insertError) throw insertError;
-
-                            setSuccessMessage(`Payment ${paymentNumber} recorded successfully!`);
-                            setTimeout(() => setSuccessMessage(''), 3000);
-
-                            // Reset form
+                              if (numberError) throw numberError;
+                              const { error: insertError } = await supabase
+                                .from('garage_debtor_payments')
+                                .insert({
+                                  garage_id: garageId,
+                                  organization_id: capturingPaymentOrgId,
+                                  payment_number: paymentNumber,
+                                  payment_date: paymentDate,
+                                  amount: parseFloat(paymentAmount),
+                                  payment_method: paymentMethod,
+                                  reference: paymentReference || null,
+                                  notes: paymentNotes || null
+                                });
+                              if (insertError) throw insertError;
+                              setSuccessMessage(`Payment ${paymentNumber} recorded successfully!`);
+                              setTimeout(() => setSuccessMessage(''), 3000);
+                              setCapturingPaymentOrgId(null);
+                              setCapturingPaymentOrgName('');
+                              setPaymentDate(new Date().toISOString().split('T')[0]);
+                              setPaymentAmount('');
+                              setPaymentMethod('eft');
+                              setPaymentReference('');
+                              setPaymentNotes('');
+                            } catch (err: any) {
+                              setError(err.message || 'Failed to record payment');
+                            } finally {
+                              setSavingPayment(false);
+                            }
+                          }}
+                          disabled={savingPayment}
+                          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {savingPayment ? 'Recording...' : 'Record Payment'}
+                        </button>
+                        <button
+                          onClick={() => {
                             setCapturingPaymentOrgId(null);
                             setCapturingPaymentOrgName('');
                             setPaymentDate(new Date().toISOString().split('T')[0]);
@@ -1864,32 +1938,176 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                             setPaymentMethod('eft');
                             setPaymentReference('');
                             setPaymentNotes('');
-                          } catch (err: any) {
-                            setError(err.message || 'Failed to record payment');
-                          } finally {
-                            setSavingPayment(false);
-                          }
-                        }}
-                        disabled={savingPayment}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                      >
-                        {savingPayment ? 'Recording...' : 'Record Payment'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setCapturingPaymentOrgId(null);
-                          setCapturingPaymentOrgName('');
-                          setPaymentDate(new Date().toISOString().split('T')[0]);
-                          setPaymentAmount('');
-                          setPaymentMethod('eft');
-                          setPaymentReference('');
-                          setPaymentNotes('');
-                        }}
-                        className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                      >
-                        Cancel
-                      </button>
+                          }}
+                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
+                  )
+                )}
+
+                {/* Search Payments mode */}
+                {paymentsMode === 'search' && (
+                  <div>
+                    {/* Filter controls */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Client</label>
+                          <select
+                            value={searchFilterOrg}
+                            onChange={(e) => setSearchFilterOrg(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                          >
+                            <option value="">All clients</option>
+                            {activeAccounts.map((account) => {
+                              const org = organizations.find(o => o.id === account.organization_id);
+                              if (!org) return null;
+                              return (
+                                <option key={account.id} value={org.id}>{org.name}</option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+                          <input
+                            type="date"
+                            value={searchFilterFrom}
+                            onChange={(e) => setSearchFilterFrom(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+                          <input
+                            type="date"
+                            value={searchFilterTo}
+                            onChange={(e) => setSearchFilterTo(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Method</label>
+                          <select
+                            value={searchFilterMethod}
+                            onChange={(e) => setSearchFilterMethod(e.target.value)}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+                          >
+                            <option value="">All methods</option>
+                            <option value="eft">EFT</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={async () => {
+                            setSearchLoading(true);
+                            try {
+                              let query = supabase
+                                .from('garage_debtor_payments')
+                                .select('*')
+                                .eq('garage_id', garageId)
+                                .gte('payment_date', searchFilterFrom)
+                                .lte('payment_date', searchFilterTo)
+                                .order('payment_date', { ascending: false });
+                              if (searchFilterOrg) query = query.eq('organization_id', searchFilterOrg);
+                              if (searchFilterMethod) query = query.eq('payment_method', searchFilterMethod);
+                              const { data, error: qErr } = await query;
+                              if (qErr) throw qErr;
+                              setSearchPayments(data || []);
+                            } catch (err: any) {
+                              setError(err.message);
+                            } finally {
+                              setSearchLoading(false);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                        >
+                          <Search className="w-4 h-4" />
+                          Search
+                        </button>
+                        {searchPayments.length > 0 && (
+                          <span className="text-sm text-gray-500">
+                            {searchPayments.length} result{searchPayments.length !== 1 ? 's' : ''}
+                            <span className="ml-2 font-semibold text-green-700">
+                              = R {searchPayments.reduce((s, p) => s + Number(p.amount), 0).toFixed(2)}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Results table */}
+                    {searchLoading ? (
+                      <div className="flex items-center justify-center py-10">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment #</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Client</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Method</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Reference</th>
+                              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {searchPayments.length === 0 ? (
+                              <tr>
+                                <td colSpan={7} className="px-4 py-10 text-center text-gray-400 text-sm">
+                                  No payments found — adjust the filters and click Search
+                                </td>
+                              </tr>
+                            ) : (
+                              searchPayments.map((p) => {
+                                const org = organizations.find(o => o.id === p.organization_id);
+                                return (
+                                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{p.payment_number}</td>
+                                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                                      {new Date(p.payment_date).toLocaleDateString('en-ZA')}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-700">{org?.name || '—'}</td>
+                                    <td className="px-4 py-3">
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 uppercase">
+                                        {p.payment_method}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-600">{p.reference || <span className="text-gray-300">—</span>}</td>
+                                    <td className="px-4 py-3 text-right font-semibold text-green-600 whitespace-nowrap">
+                                      R {Number(p.amount).toFixed(2)}
+                                    </td>
+                                    <td className="px-4 py-3 text-gray-500 text-xs">{p.notes || <span className="text-gray-300">—</span>}</td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                          {searchPayments.length > 0 && (
+                            <tfoot>
+                              <tr className="bg-gray-50 border-t-2 border-gray-200">
+                                <td colSpan={5} className="px-4 py-3 text-sm font-bold text-gray-700 text-right">Total</td>
+                                <td className="px-4 py-3 text-right font-bold text-green-600 whitespace-nowrap">
+                                  R {searchPayments.reduce((s, p) => s + Number(p.amount), 0).toFixed(2)}
+                                </td>
+                                <td />
+                              </tr>
+                            </tfoot>
+                          )}
+                        </table>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

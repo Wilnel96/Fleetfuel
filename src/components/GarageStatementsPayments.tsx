@@ -111,15 +111,20 @@ export default function GarageStatementsPayments({
   }, [initialTab, directPaymentMode]);
 
   useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
     const lastStatement = statements[0];
     if (lastStatement) {
       const nextDay = new Date(lastStatement.period_end);
       nextDay.setDate(nextDay.getDate() + 1);
-      setStatementPeriodStart(nextDay.toISOString().split('T')[0]);
+      const start = nextDay.toISOString().split('T')[0];
+      setStatementPeriodStart(start);
+      // Ensure end is never before start
+      setStatementPeriodEnd(prev => (prev < start ? start : prev));
     } else {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       setStatementPeriodStart(thirtyDaysAgo.toISOString().split('T')[0]);
+      setStatementPeriodEnd(today);
     }
   }, [statements]);
 
@@ -174,6 +179,14 @@ export default function GarageStatementsPayments({
   };
 
   const handleCreateStatement = async () => {
+    if (!statementPeriodStart || !statementPeriodEnd) {
+      setError('Please set both a period start and end date.');
+      return;
+    }
+    if (statementPeriodStart > statementPeriodEnd) {
+      setError('Period start date cannot be after the period end date.');
+      return;
+    }
     try {
       setError('');
       setSaving(true);

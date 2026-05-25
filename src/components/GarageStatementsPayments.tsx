@@ -99,9 +99,23 @@ export default function GarageStatementsPayments({
   const [filterTo, setFilterTo] = useState(() => new Date().toISOString().split('T')[0]);
   const [filterMethod, setFilterMethod] = useState('');
   const [filteredPayments, setFilteredPayments] = useState<Payment[]>([]);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [recalcSuccess, setRecalcSuccess] = useState('');
 
   useEffect(() => {
     loadData();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            if (profile?.role === 'super_admin') setIsSuperAdmin(true);
+          });
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -879,6 +893,13 @@ export default function GarageStatementsPayments({
           </div>
         )}
 
+        {recalcSuccess && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <RefreshCw className="w-5 h-5 text-green-600" />
+            <p className="text-green-800">{recalcSuccess}</p>
+          </div>
+        )}
+
         {!directPaymentMode && !showCreateStatement && !showAddPayment && (
         <div className="border-b border-gray-200 mb-6">
           <div className="flex gap-4">
@@ -1018,26 +1039,25 @@ export default function GarageStatementsPayments({
                             >
                               <Printer className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  setSaving(true);
-                                  const { error: calcError } = await supabase.rpc('calculate_statement_totals', { p_statement_id: statement.id });
-                                  if (calcError) throw calcError;
-                                  await loadData();
-                                  setSuccessMessage('Statement recalculated.');
-                                  setTimeout(() => setSuccessMessage(''), 3000);
-                                } catch (err: any) {
-                                  setError(err.message || 'Recalculation failed');
-                                } finally {
-                                  setSaving(false);
-                                }
-                              }}
-                              className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
-                              title="Recalculate Totals"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const { error: calcError } = await supabase.rpc('calculate_statement_totals', { p_statement_id: statement.id });
+                                    if (calcError) throw calcError;
+                                    await loadData();
+                                    setRecalcSuccess('Statement recalculated.');
+                                    setTimeout(() => setRecalcSuccess(''), 3000);
+                                  } catch (err: any) {
+                                    setError(err.message || 'Recalculation failed');
+                                  }
+                                }}
+                                className="p-1 text-emerald-600 hover:bg-emerald-50 rounded"
+                                title="Recalculate Totals"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

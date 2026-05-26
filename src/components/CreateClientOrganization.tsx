@@ -50,6 +50,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
 
   const [individualName, setIndividualName] = useState('');
   const [individualSurname, setIndividualSurname] = useState('');
+  const [garageAccountNumber, setGarageAccountNumber] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -289,7 +290,11 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ organization, users }),
+          body: JSON.stringify({
+            organization,
+            users,
+            garage_account_number: managingGarageId ? (garageAccountNumber.trim() || null) : undefined,
+          }),
         });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Signup failed');
@@ -1130,6 +1135,25 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             </div>
           </div>
         </div>
+
+        {managingGarageId && (
+          <div className="border-t pt-3">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Garage Account</h3>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                Account Number
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. ACC-0042"
+                value={garageAccountNumber}
+                onChange={(e) => setGarageAccountNumber(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-0.5">The account reference used for this client at your garage. Can be set now or updated later.</p>
+            </div>
+          </div>
+        )}
 
         <div className="border-t pt-3">
           <h3 className="text-base font-semibold text-gray-900 mb-2">Financial Settings</h3>

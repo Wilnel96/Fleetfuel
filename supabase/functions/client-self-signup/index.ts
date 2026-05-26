@@ -64,6 +64,7 @@ interface OrgPayload {
 interface RequestBody {
   organization: OrgPayload;
   users: UserPayload[];
+  garage_account_number?: string | null;
 }
 
 Deno.serve(async (req: Request) => {
@@ -80,7 +81,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Method not allowed');
     }
 
-    const { organization, users }: RequestBody = await req.json();
+    const { organization, users, garage_account_number }: RequestBody = await req.json();
 
     if (!organization?.name) throw new Error('Organization name is required');
     if (!users || users.length === 0) throw new Error('At least one user is required');
@@ -135,6 +136,7 @@ Deno.serve(async (req: Request) => {
           organization_id: newOrg.id,
           garage_id: organization.managing_garage_id,
           is_active: true,
+          account_number: garage_account_number || null,
         });
 
       if (accountError) {

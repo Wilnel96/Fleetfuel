@@ -1534,7 +1534,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           )}
 
           {/* Financial Information Section */}
-          {(initialView === 'view-invoices' || initialView === 'create-statements' || initialView === 'payments' || initialView === 'all') && (
+          {(initialView === 'view-invoices' || initialView === 'create-statements' || initialView === 'payments' || initialView === 'fee-invoices' || initialView === 'all') && (
           <div className="mt-6">
             {financialSubView === 'menu' ? (
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">

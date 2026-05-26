@@ -470,15 +470,6 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             >
               Cancel
             </button>
-            <button
-              type="submit"
-              form="create-client-form"
-              disabled={loading}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-1.5"
-            >
-              <Save className="w-4 h-4" />
-              {loading ? 'Creating...' : (publicMode ? 'Sign Up' : 'Create Client')}
-            </button>
           </div>
         </div>
       </div>
@@ -1260,6 +1251,24 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               />
             </div>
           </div>
+        </div>
+
+        <div className="border-t pt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => onNavigate && onNavigate(publicMode ? 'back-to-home' : 'client-organizations-menu')}
+            className="bg-gray-200 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-300 font-medium"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-green-600 text-white px-6 py-2.5 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            {loading ? 'Creating...' : (publicMode ? 'Sign Up' : 'Create Client')}
+          </button>
         </div>
         </form>
         )}

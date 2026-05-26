@@ -73,8 +73,9 @@ export default function InvoiceManagement() {
   const [billingPeriodStart, setBillingPeriodStart] = useState('');
   const [billingPeriodEnd, setBillingPeriodEnd] = useState('');
 
-  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string }>>([]);
+  const [organizations, setOrganizations] = useState<Array<{ id: string; name: string; is_garage_managed: boolean }>>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
+  const [clientTypeFilter, setClientTypeFilter] = useState<'all' | 'direct' | 'garage-managed'>('all');
   const [billingPeriodSearch, setBillingPeriodSearch] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [totalVehicles, setTotalVehicles] = useState(0);
@@ -150,7 +151,7 @@ export default function InvoiceManagement() {
     try {
       const { data, error: orgsError } = await supabase
         .from('organizations')
-        .select('id, name')
+        .select('id, name, is_garage_managed')
         .eq('is_management_org', false)
         .order('name');
 
@@ -887,6 +888,21 @@ export default function InvoiceManagement() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select Organization
               </label>
+              <div className="flex gap-2 mb-2">
+                {(['all', 'direct', 'garage-managed'] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setClientTypeFilter(f)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      clientTypeFilter === f
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {f === 'all' ? 'All' : f === 'direct' ? 'Direct Clients' : 'Garage-Managed'}
+                  </button>
+                ))}
+              </div>
               <select
                 value={selectedOrgId}
                 onChange={(e) => setSelectedOrgId(e.target.value)}
@@ -894,11 +910,17 @@ export default function InvoiceManagement() {
               >
                 <option value="">Select an organization...</option>
                 <option value="all">All Organizations</option>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
+                {organizations
+                  .filter(org =>
+                    clientTypeFilter === 'all' ? true :
+                    clientTypeFilter === 'direct' ? !org.is_garage_managed :
+                    org.is_garage_managed
+                  )
+                  .map((org) => (
+                    <option key={org.id} value={org.id}>
+                      {org.is_garage_managed ? '[Garage] ' : ''}{org.name}
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="flex-1">

@@ -19,6 +19,8 @@ interface Organization {
   monthly_spending_limit: number | null;
   daily_spending_limit: number | null;
   parent_org_id: string | null;
+  managing_garage_id: string | null;
+  is_garage_managed: boolean;
 }
 
 interface OrgUser {
@@ -149,7 +151,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           address_line_1, address_line_2, postal_code, country,
           phone_number, company_registration_number,
           monthly_spending_limit, daily_spending_limit,
-          parent_org_id
+          parent_org_id, managing_garage_id, is_garage_managed
         `)
         .eq('organization_type', 'client')
         .order('name');
@@ -1190,7 +1192,18 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
                         <div className="flex items-center space-x-3 flex-1">
                           <Building2 className="w-5 h-5 text-green-600" />
                           <div className="flex-1">
-                            <p className="text-sm font-semibold text-gray-900">{org.name}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-gray-900">{org.name}</p>
+                              {org.is_garage_managed && org.managing_garage_id === garageId ? (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-teal-100 text-teal-800">
+                                  Managed Client
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                  External Local Account
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-gray-600">
                               {org.city || 'City not specified'}
                               {org.vat_number && ` • VAT: ${org.vat_number}`}

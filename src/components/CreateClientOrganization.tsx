@@ -8,9 +8,11 @@ interface CreateClientOrganizationProps {
   publicMode?: boolean;
   /** When set, pre-locks the payment option to this value and hides the selector */
   lockedPaymentOption?: 'Card Payment' | 'Local Account';
+  /** When set, the new organization is linked to this garage as a managed client */
+  managingGarageId?: string | null;
 }
 
-export default function CreateClientOrganization({ onNavigate, publicMode = false, lockedPaymentOption }: CreateClientOrganizationProps) {
+export default function CreateClientOrganization({ onNavigate, publicMode = false, lockedPaymentOption, managingGarageId }: CreateClientOrganizationProps) {
   const [step, setStep] = useState<'type-selection' | 'details'>('type-selection');
   const [accountType, setAccountType] = useState<'organization' | 'individual' | null>(null);
   const [loading, setLoading] = useState(false);
@@ -212,6 +214,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       organization_type: 'client',
       is_management_org: false,
       status: 'active',
+      managing_garage_id: managingGarageId || null,
+      is_garage_managed: !!managingGarageId,
     };
 
     const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();

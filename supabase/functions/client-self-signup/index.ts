@@ -57,6 +57,8 @@ interface OrgPayload {
   organization_type: string;
   is_management_org: boolean;
   status: string;
+  managing_garage_id?: string | null;
+  is_garage_managed?: boolean;
 }
 
 interface RequestBody {

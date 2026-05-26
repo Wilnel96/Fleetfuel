@@ -130,6 +130,7 @@ export default function GarageClientSignup({
       <CreateClientOrganization
         publicMode={true}
         lockedPaymentOption="Local Account"
+        managingGarageId={garageId}
         onNavigate={handleNewClientNavigate}
       />
     );

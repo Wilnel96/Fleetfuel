@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Building2, Search, UserPlus, Users, ArrowLeft, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
-import CreateClientOrganization from './CreateClientOrganization';
+import GarageNewClientSetup from './GarageNewClientSetup';
 
 interface Organization {
   id: string;
@@ -117,21 +117,16 @@ export default function GarageClientSignup({
     }
   };
 
-  // ── New client created via CreateClientOrganization ──────────────────────
-  const handleNewClientNavigate = (view: string) => {
-    if (view === 'back-to-home') {
-      onNewClientCreated();
-    }
-  };
-
-  // ── Render: new client form ───────────────────────────────────────────────
+  // ── Render: new client setup wizard ──────────────────────────────────────
   if (step === 'new-client') {
     return (
-      <CreateClientOrganization
-        publicMode={true}
-        lockedPaymentOption="Local Account"
-        managingGarageId={garageId}
-        onNavigate={handleNewClientNavigate}
+      <GarageNewClientSetup
+        garageId={garageId}
+        garageName={garageName}
+        garageEmail={garageEmail}
+        garagePassword={garagePassword}
+        onBack={() => setStep('choose')}
+        onComplete={onNewClientCreated}
       />
     );
   }

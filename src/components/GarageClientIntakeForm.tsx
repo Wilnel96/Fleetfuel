@@ -7,7 +7,7 @@ interface GarageClientIntakeFormProps {
   onClose: () => void;
 }
 
-// ── Print styles injected into <head> ────────────────────────────────────────
+// ── Print styles ──────────────────────────────────────────────────────────────
 
 const PRINT_STYLES = `
 @media print {
@@ -22,17 +22,13 @@ const PRINT_STYLES = `
   }
   @page {
     size: A4 portrait;
-    margin: 12mm 14mm 14mm 14mm;
+    margin: 10mm 12mm 10mm 12mm;
   }
+  /* Suppress browser header/footer */
+  html { margin: 0; }
 }
-#intake-print-root {
-  display: none;
-}
-@media print {
-  #intake-print-root {
-    display: block;
-  }
-}
+#intake-print-root { display: none; }
+@media print { #intake-print-root { display: block; } }
 `;
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -40,7 +36,6 @@ const PRINT_STYLES = `
 export default function GarageClientIntakeForm({ garageName, onClose }: GarageClientIntakeFormProps) {
   const [portalRoot, setPortalRoot] = useState<HTMLDivElement | null>(null);
 
-  // Inject print styles and portal container into <body>
   useEffect(() => {
     const style = document.createElement('style');
     style.textContent = PRINT_STYLES;
@@ -59,17 +54,14 @@ export default function GarageClientIntakeForm({ garageName, onClose }: GarageCl
 
   const handlePrint = () => window.print();
 
-  // Portal content — rendered directly into body so print CSS targets it
   const printPortal = portalRoot
     ? createPortal(<PrintableForm garageName={garageName} />, portalRoot)
     : null;
 
   return (
     <>
-      {/* Screen overlay */}
       <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center overflow-y-auto py-8 px-4">
         <div className="w-full max-w-4xl">
-          {/* Control bar */}
           <div className="bg-white rounded-xl shadow-xl mb-4 px-6 py-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Client Intake Form</h2>
@@ -93,14 +85,12 @@ export default function GarageClientIntakeForm({ garageName, onClose }: GarageCl
             </div>
           </div>
 
-          {/* On-screen preview */}
           <div className="bg-white rounded-xl shadow-xl overflow-hidden">
             <PrintableForm garageName={garageName} />
           </div>
         </div>
       </div>
 
-      {/* Portal — renders into body for correct print targeting */}
       {printPortal}
     </>
   );
@@ -111,45 +101,45 @@ export default function GarageClientIntakeForm({ garageName, onClose }: GarageCl
 function PrintableForm({ garageName }: { garageName?: string }) {
   const today = new Date().toLocaleDateString('en-ZA', { day: '2-digit', month: 'long', year: 'numeric' });
 
-  const doc: React.CSSProperties = {
+  const pageStyle: React.CSSProperties = {
     fontFamily: 'Arial, Helvetica, sans-serif',
-    fontSize: '9pt',
+    fontSize: '8.5pt',
     color: '#111',
-    lineHeight: '1.35',
-    padding: '0',
+    lineHeight: '1.3',
+    width: '100%',
   };
 
   return (
-    <div style={doc}>
+    <div style={pageStyle}>
 
-      {/* ═══════════════════════════════ PAGE 1 ══════════════════════════════ */}
-      <div style={{ padding: '4mm 2mm' }}>
+      {/* ═══════════════════ PAGE 1 — Org / Contact / Account / Declaration ═══════════════════ */}
+      <div style={{ padding: '3mm 2mm', pageBreakAfter: 'always' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '3px solid #0d9488', marginBottom: '10px' }}>
-          <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '44px', width: 'auto' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '5px', borderBottom: '2.5px solid #0d9488', marginBottom: '7px' }}>
+          <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '36px', width: 'auto' }} />
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '15pt', fontWeight: 'bold', color: '#0d9488', letterSpacing: '0.3px' }}>
+            <div style={{ fontSize: '13pt', fontWeight: 'bold', color: '#0d9488', letterSpacing: '0.2px' }}>
               LOCAL ACCOUNT CLIENT INTAKE FORM
             </div>
-            <div style={{ fontSize: '9px', color: '#555', marginTop: '2px' }}>
+            <div style={{ fontSize: '8px', color: '#555', marginTop: '1px' }}>
               Garage-Managed Client Registration — Complete all required fields in block letters
             </div>
             {garageName && (
-              <div style={{ fontSize: '9px', color: '#0d9488', fontWeight: 'bold', marginTop: '3px' }}>
+              <div style={{ fontSize: '8.5px', color: '#0d9488', fontWeight: 'bold', marginTop: '2px' }}>
                 {garageName}
               </div>
             )}
-            <div style={{ fontSize: '8px', color: '#9ca3af', marginTop: '2px' }}>Date: {today}</div>
+            <div style={{ fontSize: '7.5px', color: '#9ca3af', marginTop: '1px' }}>Date: {today}</div>
           </div>
         </div>
 
         {/* Instructions */}
-        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '3px', padding: '5px 9px', marginBottom: '10px', fontSize: '8.5pt', color: '#166534' }}>
+        <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '3px', padding: '3px 8px', marginBottom: '7px', fontSize: '8pt', color: '#166534' }}>
           <strong>Instructions:</strong> Complete all fields marked <span style={{ color: '#dc2626' }}>*</span>. Use block letters. Return this form to the garage to have your account set up. Once loaded, vehicles and drivers can only be updated via the Client Portal.
         </div>
 
-        {/* Section 1 */}
+        {/* Section 1 — Organisation */}
         <Section number="1" title="Organisation Details" subtitle="Legal entity information">
           <Grid cols={2}>
             <F label="Organisation / Trading Name" required wide />
@@ -160,98 +150,93 @@ function PrintableForm({ garageName }: { garageName?: string }) {
             <F label="Website" hint="Optional" />
           </Grid>
           <Divider label="Registered / Physical Address" />
-          <Grid cols={2}>
+          <Grid cols={4}>
             <F label="Address Line 1" required wide />
-            <F label="Address Line 2" wide />
             <F label="City / Town" required />
             <F label="Postal Code" />
           </Grid>
-          <div style={{ marginTop: '5px' }}>
-            <div style={labelStyle}>Province</div>
-            <Row>
-              {['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','Northern Cape','North West','Western Cape'].map(p => (
-                <CB key={p} label={p} />
-              ))}
-            </Row>
-          </div>
+          <Grid cols={4} style={{ marginTop: '4px' }}>
+            <F label="Address Line 2" wide />
+            <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <div style={labelStyle}>Province <span style={{ color: '#dc2626' }}>*</span></div>
+              <Row>
+                {['Eastern Cape','Free State','Gauteng','KwaZulu-Natal','Limpopo','Mpumalanga','N. Cape','North West','Western Cape'].map(p => (
+                  <CB key={p} label={p} />
+                ))}
+              </Row>
+            </div>
+          </Grid>
         </Section>
 
-        {/* Section 2 */}
+        {/* Section 2 — Main Contact */}
         <Section number="2" title="Main Contact Person" subtitle="Will receive the Client Portal login credentials">
-          <Grid cols={2}>
+          <Grid cols={3}>
             <F label="First Name" required />
             <F label="Surname" required />
-            <F label="Email Address" required hint="Used as Client Portal login" />
+            <F label="Job Title / Position" />
+            <F label="Email Address" required hint="Client Portal login" />
             <F label="Mobile Number" required />
             <F label="Office / Direct Number" />
-            <F label="Job Title / Position" />
           </Grid>
           <Note>The garage will set an initial password. The client can change it after first login.</Note>
         </Section>
 
-        {/* Section 3 */}
+        {/* Section 3 — Account */}
         <Section number="3" title="Local Account Details" subtitle="Fuel account settings at this garage">
-          <Grid cols={3}>
+          <Grid cols={4}>
             <F label="Account Number" required hint="Assigned by garage" />
-            <F label="Monthly Spend Limit (R)" hint="Leave blank for no limit" />
+            <F label="Monthly Spend Limit (R)" hint="Blank = no limit" />
             <F label="Deposit Amount (R)" hint="If applicable" />
-          </Grid>
-          <Grid cols={1} style={{ marginTop: '5px' }}>
-            <F label="Account Notes / Special Instructions" />
+            <F label="Account Notes / Instructions" />
           </Grid>
         </Section>
 
-        {/* Section 6 — Declaration (end of page 1) */}
-        <Section number="6" title="Declaration &amp; Signature">
-          <div style={{ fontSize: '8.5pt', color: '#374151', marginBottom: '10px', lineHeight: '1.55' }}>
+        {/* Section 4 — Declaration */}
+        <Section number="4" title="Declaration &amp; Signature">
+          <div style={{ fontSize: '8pt', color: '#374151', marginBottom: '7px', lineHeight: '1.5' }}>
             I, the undersigned, confirm that the information provided on this form is accurate and complete. I authorise {garageName || 'the garage'} to open a local fuel account on behalf of the organisation named above and to process fuel transactions for the vehicles and drivers listed. I understand that vehicle and driver information can only be updated via the Client Portal and that account number changes require written authorisation from the primary contact.
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '8px' }}>
             <SigBlock label="Signature — Authorised Signatory (Client)" />
             <SigBlock label="Signature — Garage Representative" />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginTop: '10px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
             <SigBlock label="Print Name" short />
             <SigBlock label="Capacity / Title" short />
-            <SigBlock label="Captured By" short />
+            <SigBlock label="Captured By (Garage)" short />
             <SigBlock label="Date" short />
           </div>
         </Section>
 
-        <Footer today={today} page={1} />
+        <Footer today={today} page={1} pages={3} />
       </div>
 
-      {/* ═══════════════════════════════ PAGE 2 ══════════════════════════════ */}
-      <div style={{ pageBreakBefore: 'always', padding: '4mm 2mm' }}>
+      {/* ═══════════════════ PAGE 2 — Vehicles ═══════════════════════════════════ */}
+      <div style={{ pageBreakBefore: 'always', pageBreakAfter: 'always', padding: '3mm 2mm' }}>
+        <MiniHeader garageName={garageName} subtitle="Vehicles — Page 2 of 3" today={today} />
 
-        {/* Page 2 header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '6px', borderBottom: '2px solid #0d9488', marginBottom: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '28px', width: 'auto' }} />
-            <div style={{ fontSize: '11pt', fontWeight: 'bold', color: '#0d9488' }}>LOCAL ACCOUNT CLIENT INTAKE FORM</div>
-          </div>
-          <div style={{ textAlign: 'right', fontSize: '8px', color: '#9ca3af' }}>
-            {garageName && <div style={{ color: '#0d9488', fontWeight: 'bold', fontSize: '9px' }}>{garageName}</div>}
-            Vehicles &amp; Drivers — Page 2
-          </div>
-        </div>
-
-        {/* Section 4 — Vehicles */}
-        <Section number="4" title="Vehicles" subtitle="Complete one block per vehicle. Photocopy this page for additional vehicles.">
-          <TemplateNote>Template — one block per vehicle. Attach photocopied pages for additional vehicles.</TemplateNote>
+        <Section number="5" title="Vehicles" subtitle="Complete one block per vehicle. Photocopy this page for additional vehicles.">
+          <TemplateNote>Template — one block per vehicle. Photocopy this page if you have more than 3 vehicles.</TemplateNote>
           <VehicleBlock index={1} />
           <VehicleBlock index={2} />
           <VehicleBlock index={3} />
         </Section>
 
-        {/* Section 5 — Drivers */}
-        <Section number="5" title="Drivers" subtitle="Complete one block per driver. Photocopy this page for additional drivers.">
-          <TemplateNote>Template — one block per driver. Attach photocopied pages for additional drivers.</TemplateNote>
+        <Footer today={today} page={2} pages={3} />
+      </div>
+
+      {/* ═══════════════════ PAGE 3 — Drivers ═══════════════════════════════════ */}
+      <div style={{ pageBreakBefore: 'always', padding: '3mm 2mm' }}>
+        <MiniHeader garageName={garageName} subtitle="Drivers — Page 3 of 3" today={today} />
+
+        <Section number="6" title="Drivers" subtitle="Complete one block per driver. Photocopy this page for additional drivers.">
+          <TemplateNote>Template — one block per driver. Photocopy this page if you have more than 3 drivers.</TemplateNote>
           <DriverBlock index={1} />
           <DriverBlock index={2} />
+          <DriverBlock index={3} />
         </Section>
 
-        <Footer today={today} page={2} />
+        <Footer today={today} page={3} pages={3} />
       </div>
 
     </div>
@@ -261,7 +246,7 @@ function PrintableForm({ garageName }: { garageName?: string }) {
 // ── Layout helpers ────────────────────────────────────────────────────────────
 
 const labelStyle: React.CSSProperties = {
-  fontSize: '7.5pt',
+  fontSize: '7pt',
   fontWeight: 'bold',
   color: '#374151',
   textTransform: 'uppercase',
@@ -269,21 +254,37 @@ const labelStyle: React.CSSProperties = {
   marginBottom: '2px',
 };
 
+function MiniHeader({ garageName, subtitle, today }: { garageName?: string; subtitle: string; today: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '5px', borderBottom: '2px solid #0d9488', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '26px', width: 'auto' }} />
+        <div style={{ fontSize: '10.5pt', fontWeight: 'bold', color: '#0d9488' }}>LOCAL ACCOUNT CLIENT INTAKE FORM</div>
+      </div>
+      <div style={{ textAlign: 'right', fontSize: '7.5px', color: '#9ca3af' }}>
+        {garageName && <div style={{ color: '#0d9488', fontWeight: 'bold', fontSize: '8.5px' }}>{garageName}</div>}
+        <div>{subtitle}</div>
+        <div>{today}</div>
+      </div>
+    </div>
+  );
+}
+
 function Section({ number, title, subtitle, children }: {
   number: string; title: string; subtitle?: string; children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: '10px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', background: '#0d9488', color: 'white', padding: '4px 9px', borderRadius: '3px 3px 0 0', marginBottom: '7px' }}>
-        <div style={{ background: 'white', color: '#0d9488', borderRadius: '50%', width: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '9px', flexShrink: 0 }}>
+    <div style={{ marginBottom: '8px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#0d9488', color: 'white', padding: '3px 8px', borderRadius: '3px 3px 0 0', marginBottom: '5px' }}>
+        <div style={{ background: 'white', color: '#0d9488', borderRadius: '50%', width: '15px', height: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '8px', flexShrink: 0 }}>
           {number}
         </div>
         <div>
-          <div style={{ fontSize: '10pt', fontWeight: 'bold' }}>{title}</div>
-          {subtitle && <div style={{ fontSize: '7.5pt', opacity: 0.85 }}>{subtitle}</div>}
+          <div style={{ fontSize: '9.5pt', fontWeight: 'bold' }}>{title}</div>
+          {subtitle && <div style={{ fontSize: '7pt', opacity: 0.85 }}>{subtitle}</div>}
         </div>
       </div>
-      <div style={{ padding: '0 3px' }}>{children}</div>
+      <div style={{ padding: '0 2px' }}>{children}</div>
     </div>
   );
 }
@@ -291,7 +292,7 @@ function Section({ number, title, subtitle, children }: {
 function Grid({ cols, children, style }: { cols: 1 | 2 | 3 | 4; children: React.ReactNode; style?: React.CSSProperties }) {
   const templates = { 1: '1fr', 2: '1fr 1fr', 3: '1fr 1fr 1fr', 4: '1fr 1fr 1fr 1fr' };
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: templates[cols], gap: '5px 13px', ...style }}>
+    <div style={{ display: 'grid', gridTemplateColumns: templates[cols], gap: '4px 10px', ...style }}>
       {children}
     </div>
   );
@@ -299,35 +300,35 @@ function Grid({ cols, children, style }: { cols: 1 | 2 | 3 | 4; children: React.
 
 function F({ label, required, wide, hint }: { label: string; required?: boolean; wide?: boolean; hint?: string }) {
   return (
-    <div style={{ gridColumn: wide ? 'span 2' : undefined, display: 'flex', flexDirection: 'column', gap: '2px' }}>
+    <div style={{ gridColumn: wide ? 'span 2' : undefined, display: 'flex', flexDirection: 'column', gap: '1px' }}>
       <div style={labelStyle}>
         {label}
         {required && <span style={{ color: '#dc2626' }}> *</span>}
         {hint && <span style={{ fontWeight: 'normal', textTransform: 'none', color: '#6b7280', letterSpacing: 0 }}> ({hint})</span>}
       </div>
-      <div style={{ borderBottom: '1px solid #9ca3af', height: '13px' }} />
+      <div style={{ borderBottom: '1px solid #9ca3af', height: '12px' }} />
     </div>
   );
 }
 
 function CB({ label }: { label: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '8pt', color: '#374151', flexShrink: 0 }}>
-      <div style={{ width: '9px', height: '9px', border: '1px solid #6b7280', borderRadius: '1.5px', flexShrink: 0 }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '7.5pt', color: '#374151', flexShrink: 0 }}>
+      <div style={{ width: '8px', height: '8px', border: '1px solid #6b7280', borderRadius: '1px', flexShrink: 0 }} />
       <span>{label}</span>
     </div>
   );
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 10px' }}>{children}</div>;
+  return <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 8px' }}>{children}</div>;
 }
 
 function Divider({ label }: { label: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', margin: '6px 0 5px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '4px 0' }}>
       <div style={{ height: '1px', flex: 1, background: '#d1d5db' }} />
-      <span style={{ fontSize: '7.5pt', color: '#6b7280', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: '7pt', color: '#6b7280', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' }}>{label}</span>
       <div style={{ height: '1px', flex: 1, background: '#d1d5db' }} />
     </div>
   );
@@ -335,7 +336,7 @@ function Divider({ label }: { label: string }) {
 
 function Note({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '3px', padding: '4px 8px', fontSize: '8pt', color: '#1e40af', marginTop: '5px' }}>
+    <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '3px', padding: '3px 7px', fontSize: '7.5pt', color: '#1e40af', marginTop: '4px' }}>
       {children}
     </div>
   );
@@ -343,7 +344,7 @@ function Note({ children }: { children: React.ReactNode }) {
 
 function TemplateNote({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: '#fffbeb', border: '1px dashed #f59e0b', borderRadius: '3px', padding: '3px 8px', fontSize: '8pt', color: '#92400e', marginBottom: '7px', textAlign: 'center' }}>
+    <div style={{ background: '#fffbeb', border: '1px dashed #f59e0b', borderRadius: '3px', padding: '3px 8px', fontSize: '7.5pt', color: '#92400e', marginBottom: '5px', textAlign: 'center' }}>
       {children}
     </div>
   );
@@ -351,8 +352,8 @@ function TemplateNote({ children }: { children: React.ReactNode }) {
 
 function VehicleBlock({ index }: { index: number }) {
   return (
-    <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '6px 8px', marginBottom: '7px', pageBreakInside: 'avoid' }}>
-      <div style={{ fontSize: '8pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px', borderBottom: '1px solid #ccfbf1', paddingBottom: '3px' }}>
+    <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '5px 7px', marginBottom: '6px', pageBreakInside: 'avoid' }}>
+      <div style={{ fontSize: '7.5pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px', borderBottom: '1px solid #ccfbf1', paddingBottom: '2px' }}>
         Vehicle {index}
       </div>
       <Grid cols={4}>
@@ -362,10 +363,10 @@ function VehicleBlock({ index }: { index: number }) {
         <F label="Year" hint="e.g. 2022" />
         <F label="VIN Number" />
         <F label="Fleet / Vehicle No." />
-        <F label="Tank Capacity (L)" hint="e.g. 70" />
+        <F label="Tank Capacity (L)" />
         <F label="License Disk Expiry" hint="DD/MM/YYYY" />
       </Grid>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '5px 13px', marginTop: '5px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr 1fr 1fr', gap: '4px 10px', marginTop: '4px' }}>
         <div>
           <div style={labelStyle}>Vehicle Type <span style={{ color: '#dc2626' }}>*</span></div>
           <Row>
@@ -399,14 +400,10 @@ function VehicleBlock({ index }: { index: number }) {
         </div>
         <div>
           <div style={labelStyle}>PrDP Required?</div>
-          <Row>
-            <CB label="Yes" />
-            <CB label="No" />
-          </Row>
-          <div style={{ marginTop: '6px' }} />
-          <Grid cols={1}>
-            <F label="Odometer Reading (km)" />
-          </Grid>
+          <Row><CB label="Yes" /><CB label="No" /></Row>
+          <div style={{ marginTop: '4px' }}>
+            <F label="Odometer (km)" />
+          </div>
         </div>
       </div>
     </div>
@@ -415,8 +412,8 @@ function VehicleBlock({ index }: { index: number }) {
 
 function DriverBlock({ index }: { index: number }) {
   return (
-    <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '6px 8px', marginBottom: '7px', pageBreakInside: 'avoid' }}>
-      <div style={{ fontSize: '8pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px', borderBottom: '1px solid #ccfbf1', paddingBottom: '3px' }}>
+    <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '5px 7px', marginBottom: '6px', pageBreakInside: 'avoid' }}>
+      <div style={{ fontSize: '7.5pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px', borderBottom: '1px solid #ccfbf1', paddingBottom: '2px' }}>
         Driver {index}
       </div>
       <Grid cols={4}>
@@ -429,7 +426,7 @@ function DriverBlock({ index }: { index: number }) {
         <F label="License Number" />
         <F label="License Expiry Date" hint="DD/MM/YYYY" />
       </Grid>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '5px 13px', marginTop: '5px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr', gap: '4px 10px', marginTop: '4px' }}>
         <div>
           <div style={labelStyle}>License Code</div>
           <Row>
@@ -445,57 +442,48 @@ function DriverBlock({ index }: { index: number }) {
           <div style={labelStyle}>Licence Restrictions</div>
           <Row>
             <CB label="None" />
-            <CB label="Glasses / Contacts" />
+            <CB label="Glasses/Contacts" />
             <CB label="Automatic only" />
             <CB label="Other" />
           </Row>
         </div>
         <div>
           <div style={labelStyle}>PrDP Permit?</div>
-          <Row>
-            <CB label="Yes" />
-            <CB label="No" />
-          </Row>
+          <Row><CB label="Yes" /><CB label="No" /></Row>
           <div style={{ marginTop: '3px' }}>
             <div style={labelStyle}>PrDP Type</div>
             <Row>
               <CB label="Passengers" />
               <CB label="Dangerous Goods" />
-              <CB label="Abnormal Loads" />
+              <CB label="Abnormal" />
             </Row>
           </div>
         </div>
         <div>
-          <div style={labelStyle}>Medical Certificate on File?</div>
-          <Row>
-            <CB label="Yes" />
-            <CB label="No" />
-          </Row>
+          <Grid cols={1}>
+            <F label="PrDP Expiry" hint="DD/MM/YYYY" />
+            <F label="Medical Cert on File?" />
+          </Grid>
         </div>
       </div>
-      <Grid cols={3} style={{ marginTop: '5px' }}>
-        <F label="PrDP Expiry Date" hint="DD/MM/YYYY" />
-        <F label="License Issue Date" hint="DD/MM/YYYY" />
-        <F label="Physical Address / City / Province" />
-      </Grid>
     </div>
   );
 }
 
 function SigBlock({ label, short }: { label: string; short?: boolean }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      <div style={{ borderBottom: '1px solid #374151', height: short ? '14px' : '26px' }} />
-      <div style={{ fontSize: '7.5pt', color: '#6b7280' }}>{label}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      <div style={{ borderBottom: '1px solid #374151', height: short ? '13px' : '24px' }} />
+      <div style={{ fontSize: '7pt', color: '#6b7280' }}>{label}</div>
     </div>
   );
 }
 
-function Footer({ today, page }: { today: string; page: number }) {
+function Footer({ today, page, pages }: { today: string; page: number; pages: number }) {
   return (
-    <div style={{ marginTop: '8px', borderTop: '0.5px solid #e5e7eb', paddingTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '7pt', color: '#9ca3af' }}>
+    <div style={{ marginTop: '6px', borderTop: '0.5px solid #e5e7eb', paddingTop: '3px', display: 'flex', justifyContent: 'space-between', fontSize: '6.5pt', color: '#9ca3af' }}>
       <span>MyFuelApp — Local Account Client Intake Form</span>
-      <span>Page {page} of 2 — Confidential</span>
+      <span>Page {page} of {pages} — Confidential</span>
       <span>{today}</span>
     </div>
   );

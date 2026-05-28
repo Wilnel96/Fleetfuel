@@ -828,7 +828,23 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
         </div>
 
         <div className="border-t pt-3">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">Main User & Contact Person</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-base font-semibold text-gray-900">Main User & Contact Person</h3>
+            {accountType === 'individual' && (individualName || individualSurname) && (
+              <button
+                type="button"
+                onClick={() => safeSetMainUser({
+                  ...mainUser,
+                  name: individualName,
+                  surname: individualSurname,
+                })}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <User className="w-3.5 h-3.5" />
+                Use my details as Main User
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-0.5">

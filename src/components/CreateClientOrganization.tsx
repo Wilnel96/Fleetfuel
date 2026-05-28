@@ -427,7 +427,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                     className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
                   >
                     <Printer className="w-4 h-4" />
-                    Print Organisation Intake Form
+                    Print Organisation Setup Form
                   </button>
                 </div>
 
@@ -455,7 +455,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                     className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                   >
                     <Printer className="w-4 h-4" />
-                    Print Individual Intake Form
+                    Print Individual Setup Form
                   </button>
                 </div>
               </div>

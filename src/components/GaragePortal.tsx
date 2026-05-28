@@ -888,7 +888,7 @@ export default function GaragePortal({ garageId, garageName, garageEmail, garage
                     <Printer className="w-6 h-6 text-teal-600 group-hover:text-white transition-colors" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Client Intake Form</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Client Setup Form</h3>
                     <p className="text-sm text-gray-600">Print a blank form for new clients to complete their details, vehicles and drivers</p>
                   </div>
                 </div>

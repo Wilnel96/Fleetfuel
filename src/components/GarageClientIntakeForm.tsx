@@ -62,7 +62,7 @@ export default function GarageClientIntakeForm({ garageName, formType = 'organis
     ? createPortal(<Form garageName={garageName} />, portalRoot)
     : null;
 
-  const title = formType === 'individual' ? 'Individual Client Intake Form' : 'Organisation Client Intake Form';
+  const title = formType === 'individual' ? 'Individual Client Setup Form' : 'Organisation Client Setup Form';
 
   return (
     <>
@@ -341,7 +341,7 @@ function SigBlock({ label, short }: { label: string; short?: boolean }) {
 function Footer({ today, page, pages }: { today: string; page: number; pages: number }) {
   return (
     <div style={{ marginTop: '6px', borderTop: '0.5px solid #e5e7eb', paddingTop: '3px', display: 'flex', justifyContent: 'space-between', fontSize: '6.5pt', color: '#9ca3af' }}>
-      <span>MyFuelApp — Local Account Client Intake Form</span>
+      <span>MyFuelApp — Local Account Client Setup Form</span>
       <span>Page {page} of {pages} — Confidential</span>
       <span>{today}</span>
     </div>
@@ -371,10 +371,10 @@ function OrgPrintableForm({ garageName }: { garageName?: string }) {
           <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '36px', width: 'auto' }} />
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '13pt', fontWeight: 'bold', color: '#0d9488', letterSpacing: '0.2px' }}>
-              LOCAL ACCOUNT — ORGANISATION INTAKE FORM
+              LOCAL ACCOUNT — ORGANISATION SETUP FORM
             </div>
             <div style={{ fontSize: '8px', color: '#555', marginTop: '1px' }}>
-              Garage-Managed Client Registration — Complete all required fields in block letters
+              Garage-Managed Client Setup — Complete all required fields in block letters
             </div>
             {garageName && (
               <div style={{ fontSize: '8.5px', color: '#0d9488', fontWeight: 'bold', marginTop: '2px' }}>{garageName}</div>
@@ -506,10 +506,10 @@ function IndividualPrintableForm({ garageName }: { garageName?: string }) {
           <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '36px', width: 'auto' }} />
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: '13pt', fontWeight: 'bold', color: '#0d9488', letterSpacing: '0.2px' }}>
-              LOCAL ACCOUNT — INDIVIDUAL CLIENT INTAKE FORM
+              LOCAL ACCOUNT — INDIVIDUAL CLIENT SETUP FORM
             </div>
             <div style={{ fontSize: '8px', color: '#555', marginTop: '1px' }}>
-              Personal Account Registration — Complete all required fields in block letters
+              Personal Account Setup — Complete all required fields in block letters
             </div>
             {garageName && (
               <div style={{ fontSize: '8.5px', color: '#0d9488', fontWeight: 'bold', marginTop: '2px' }}>{garageName}</div>

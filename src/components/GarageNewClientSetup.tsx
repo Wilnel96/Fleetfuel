@@ -430,14 +430,14 @@ export default function GarageNewClientSetup({
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  Print Org Form
+                  Print Org Setup Form
                 </button>
                 <button
                   onClick={() => { setIntakeFormType('individual'); setShowIntakeForm(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  Print Individual Form
+                  Print Individual Setup Form
                 </button>
               </div>
             </div>

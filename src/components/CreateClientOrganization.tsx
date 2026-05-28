@@ -791,13 +791,21 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             </div>
 
             {(formData.payment_option === 'Card Payment' || (publicMode && accountType === 'individual')) && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
                 <p className="text-xs text-blue-900 font-medium">
-                  Once your account is created, log in to the Client Portal with your email and password and enter your Credit/Debit card details under Financial Information. Your card is securely stored and used by drivers via PIN + NFC to authorise fuel payments at garages. You pay garages directly via your card. Monthly vehicle and driver management fees are payable to MyFuelApp via debit order.
+                  Once your account is created, log in to the Client Portal with your email and password and enter your Credit/Debit card details under Financial Information. Your card is securely stored and used by drivers via PIN + NFC to authorise fuel payments at garages. You pay garages directly via your card.
+                </p>
+                <p className="text-xs text-blue-900">
+                  <span className="font-semibold">Monthly management fees (payable via debit order):</span>{' '}
+                  R{formData.monthly_fee_per_vehicle > 0 ? formData.monthly_fee_per_vehicle.toFixed(2) : '—'} per vehicle &amp; R{formData.monthly_fee_per_driver > 0 ? formData.monthly_fee_per_driver.toFixed(2) : '—'} per driver per month.
+                  Vehicles and drivers are registered after sign-up in the Client Portal under Fleet Management.
+                </p>
+                <p className="text-xs text-blue-800">
+                  Only registered drivers assigned to a registered vehicle may use the card to pay for fuel at garages.
                 </p>
                 {!publicMode && (
-                  <p className="text-xs text-blue-800 mt-2">
-                    Note: Card will be configured after organisation creation in Financial Info section.
+                  <p className="text-xs text-blue-800 border-t border-blue-200 pt-2">
+                    Note: Card will be configured after organisation creation in the Financial Information section.
                   </p>
                 )}
               </div>

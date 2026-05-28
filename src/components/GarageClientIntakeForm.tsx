@@ -553,56 +553,71 @@ function IndividualPrintableForm({ garageName }: { garageName?: string }) {
           </Grid>
         </Section>
 
-        {/* Section 2 — Vehicle */}
-        <Section number="2" title="Vehicle Details" subtitle="Primary vehicle for this account">
-          <Grid cols={4}>
-            <F label="Registration Number" required />
-            <F label="Make" required hint="e.g. Toyota" />
-            <F label="Model" required hint="e.g. Corolla" />
-            <F label="Year" hint="e.g. 2022" />
-            <F label="VIN Number" />
-            <F label="Tank Capacity (L)" />
-            <F label="License Disk Expiry" hint="DD/MM/YYYY" />
-            <F label="Odometer Reading (km)" />
-          </Grid>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr 1fr 1fr', gap: '4px 10px', marginTop: '4px' }}>
-            <div>
-              <div style={labelStyle}>Vehicle Type <span style={{ color: '#dc2626' }}>*</span></div>
-              <Row>
-                <CB label="ULP (Petrol)" />
-                <CB label="Diesel" />
-                <CB label="Hybrid Petrol" />
-                <CB label="Hybrid Diesel" />
-                <CB label="Electric" />
-              </Row>
+        {/* Section 2 — Vehicles */}
+        <Section number="2" title="Vehicle Details" subtitle="Up to 2 vehicles — complete one block per vehicle">
+          {/* Vehicle 1 */}
+          <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '4px 6px', marginBottom: '5px' }}>
+            <div style={{ fontSize: '7pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '3px', borderBottom: '1px solid #ccfbf1', paddingBottom: '2px' }}>Vehicle 1</div>
+            <Grid cols={4}>
+              <F label="Registration Number" required />
+              <F label="Make" required hint="e.g. Toyota" />
+              <F label="Model" required hint="e.g. Corolla" />
+              <F label="Year" hint="e.g. 2022" />
+              <F label="VIN Number" />
+              <F label="Tank Capacity (L)" />
+              <F label="License Disk Expiry" hint="DD/MM/YYYY" />
+              <F label="Odometer Reading (km)" />
+            </Grid>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr 1fr 1fr', gap: '3px 10px', marginTop: '3px' }}>
+              <div>
+                <div style={labelStyle}>Vehicle Type <span style={{ color: '#dc2626' }}>*</span></div>
+                <Row><CB label="ULP (Petrol)" /><CB label="Diesel" /><CB label="Hybrid Petrol" /><CB label="Hybrid Diesel" /><CB label="Electric" /></Row>
+              </div>
+              <div>
+                <div style={labelStyle}>Fuel Type</div>
+                <Row><CB label="ULP-93" /><CB label="ULP-95" /><CB label="Diesel 10ppm" /><CB label="Diesel 50ppm" /><CB label="Diesel 500ppm" /></Row>
+              </div>
+              <div>
+                <div style={labelStyle}>License Code <span style={{ color: '#dc2626' }}>*</span></div>
+                <Row><CB label="Code B" /><CB label="Code C" /><CB label="Code C1" /><CB label="Code EC" /><CB label="Code EC1" /><CB label="Code EB" /></Row>
+              </div>
+              <div>
+                <div style={labelStyle}>Driver's License</div>
+                <Grid cols={1}><F label="License Number" /><F label="License Expiry" hint="DD/MM/YYYY" /></Grid>
+              </div>
             </div>
-            <div>
-              <div style={labelStyle}>Fuel Type</div>
-              <Row>
-                <CB label="ULP-93" />
-                <CB label="ULP-95" />
-                <CB label="Diesel 10ppm" />
-                <CB label="Diesel 50ppm" />
-                <CB label="Diesel 500ppm" />
-              </Row>
-            </div>
-            <div>
-              <div style={labelStyle}>License Code <span style={{ color: '#dc2626' }}>*</span></div>
-              <Row>
-                <CB label="Code B" />
-                <CB label="Code C" />
-                <CB label="Code C1" />
-                <CB label="Code EC" />
-                <CB label="Code EC1" />
-                <CB label="Code EB" />
-              </Row>
-            </div>
-            <div>
-              <div style={labelStyle}>Driver's License</div>
-              <Grid cols={1}>
-                <F label="License Number" />
-                <F label="License Expiry" hint="DD/MM/YYYY" />
-              </Grid>
+          </div>
+
+          {/* Vehicle 2 */}
+          <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '4px 6px' }}>
+            <div style={{ fontSize: '7pt', fontWeight: 'bold', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '3px', borderBottom: '1px solid #e5e7eb', paddingBottom: '2px' }}>Vehicle 2 (if applicable)</div>
+            <Grid cols={4}>
+              <F label="Registration Number" />
+              <F label="Make" hint="e.g. Toyota" />
+              <F label="Model" hint="e.g. Corolla" />
+              <F label="Year" hint="e.g. 2022" />
+              <F label="VIN Number" />
+              <F label="Tank Capacity (L)" />
+              <F label="License Disk Expiry" hint="DD/MM/YYYY" />
+              <F label="Odometer Reading (km)" />
+            </Grid>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.4fr 1fr 1fr', gap: '3px 10px', marginTop: '3px' }}>
+              <div>
+                <div style={labelStyle}>Vehicle Type</div>
+                <Row><CB label="ULP (Petrol)" /><CB label="Diesel" /><CB label="Hybrid Petrol" /><CB label="Hybrid Diesel" /><CB label="Electric" /></Row>
+              </div>
+              <div>
+                <div style={labelStyle}>Fuel Type</div>
+                <Row><CB label="ULP-93" /><CB label="ULP-95" /><CB label="Diesel 10ppm" /><CB label="Diesel 50ppm" /><CB label="Diesel 500ppm" /></Row>
+              </div>
+              <div>
+                <div style={labelStyle}>License Code</div>
+                <Row><CB label="Code B" /><CB label="Code C" /><CB label="Code C1" /><CB label="Code EC" /><CB label="Code EC1" /><CB label="Code EB" /></Row>
+              </div>
+              <div>
+                <div style={labelStyle}>Driver's License</div>
+                <Grid cols={1}><F label="License Number" /><F label="License Expiry" hint="DD/MM/YYYY" /></Grid>
+              </div>
             </div>
           </div>
         </Section>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Save, AlertCircle, CheckCircle, Copy } from 'lucide-react';
+import { Building2, Save, AlertCircle, CheckCircle, Copy, Printer, User } from 'lucide-react';
+import GarageClientIntakeForm, { IntakeFormType } from './GarageClientIntakeForm';
 
 interface CreateClientOrganizationProps {
   onNavigate?: (view: string) => void;
@@ -19,6 +20,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [componentError, setComponentError] = useState<string | null>(null);
+  const [showIntakeForm, setShowIntakeForm] = useState(false);
+  const [intakeFormType, setIntakeFormType] = useState<IntakeFormType>('organisation');
 
   // Wrap all state updates in try-catch
   const safeSetFormData = (updater: any) => {
@@ -372,6 +375,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
     // Step 1: Account Type Selection
     if (step === 'type-selection') {
       return (
+        <>
         <div className="h-full flex flex-col">
           <div className="sticky top-0 bg-white z-10 border-b border-gray-200 px-6 py-4 flex-shrink-0">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -399,45 +403,73 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <button
-                  onClick={() => {
-                    setAccountType('organization');
-                    setStep('details');
-                  }}
-                  className="p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
-                      <Building2 className="w-8 h-8 text-green-600" />
+                {/* Organisation card */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => {
+                      setAccountType('organization');
+                      setStep('details');
+                    }}
+                    className="flex-1 p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-green-200 transition-colors">
+                        <Building2 className="w-8 h-8 text-green-600" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Organization</h4>
+                      <p className="text-sm text-gray-600">
+                        For companies, businesses, or entities with registration numbers and VAT
+                      </p>
                     </div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Organization</h4>
-                    <p className="text-sm text-gray-600">
-                      For companies, businesses, or entities with registration numbers and VAT
-                    </p>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={() => { setIntakeFormType('organisation'); setShowIntakeForm(true); }}
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-teal-700 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print Organisation Intake Form
+                  </button>
+                </div>
 
-                <button
-                  onClick={() => {
-                    setAccountType('individual');
-                    setStep('details');
-                  }}
-                  className="p-6 border-2 border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all group"
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
-                      <Building2 className="w-8 h-8 text-blue-600" />
+                {/* Individual card */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => {
+                      setAccountType('individual');
+                      setStep('details');
+                    }}
+                    className="flex-1 p-6 border-2 border-gray-300 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-blue-200 transition-colors">
+                        <User className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Individual</h4>
+                      <p className="text-sm text-gray-600">
+                        For personal accounts using an ID number instead of company registration
+                      </p>
                     </div>
-                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Individual</h4>
-                    <p className="text-sm text-gray-600">
-                      For personal accounts using an ID number instead of company registration
-                    </p>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={() => { setIntakeFormType('individual'); setShowIntakeForm(true); }}
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <Printer className="w-4 h-4" />
+                    Print Individual Intake Form
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {showIntakeForm && (
+          <GarageClientIntakeForm
+            formType={intakeFormType}
+            onClose={() => setShowIntakeForm(false)}
+          />
+        )}
+        </>
       );
     }
 

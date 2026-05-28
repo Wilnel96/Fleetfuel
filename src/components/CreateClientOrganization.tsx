@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Save, AlertCircle, CheckCircle, Copy, Printer, User } from 'lucide-react';
+import { Building2, Save, AlertCircle, CheckCircle, Copy, Printer, User, CreditCard } from 'lucide-react';
 import GarageClientIntakeForm, { IntakeFormType } from './GarageClientIntakeForm';
 
 interface CreateClientOrganizationProps {
@@ -208,7 +208,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       monthly_fee_per_driver: formData.monthly_fee_per_driver,
       entity_type: accountType === 'organization' ? formData.entity_type || null : null,
       entity_type_other: (accountType === 'organization' && formData.entity_type === 'Other') ? formData.entity_type_other.trim() || null : null,
-      payment_option: formData.payment_option || null,
+      payment_option: (publicMode && accountType === 'individual') ? 'Card Payment' : (formData.payment_option || null),
       fuel_payment_terms: formData.fuel_payment_terms || null,
       fuel_payment_interest_rate: formData.fuel_payment_interest_rate || null,
       daily_spending_limit: formData.daily_spending_limit || null,
@@ -448,15 +448,23 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                       <p className="text-sm text-gray-600">
                         For personal accounts using an ID number instead of company registration
                       </p>
+                      {publicMode && (
+                        <div className="mt-3 flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-1.5">
+                          <CreditCard className="w-3.5 h-3.5 flex-shrink-0" />
+                          Pays by Credit/Debit Card
+                        </div>
+                      )}
                     </div>
                   </button>
-                  <button
-                    onClick={() => { setIntakeFormType('individual'); setShowIntakeForm(true); }}
-                    className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
-                  >
-                    <Printer className="w-4 h-4" />
-                    Print Individual Setup Form
-                  </button>
+                  {!publicMode && (
+                    <button
+                      onClick={() => { setIntakeFormType('individual'); setShowIntakeForm(true); }}
+                      className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print Individual Setup Form
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -557,9 +565,9 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                     type="text"
                     required
                     value={individualName}
-                    onChange={(e) => setIndividualName(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="e.g., John"
+                    onChange={(e) => setIndividualName(e.target.value.toUpperCase())}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                    placeholder="E.G., JOHN"
                   />
                 </div>
                 <div>
@@ -570,9 +578,9 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                     type="text"
                     required
                     value={individualSurname}
-                    onChange={(e) => setIndividualSurname(e.target.value)}
-                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="e.g., Smith"
+                    onChange={(e) => setIndividualSurname(e.target.value.toUpperCase())}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
+                    placeholder="E.G., SMITH"
                   />
                 </div>
               </>
@@ -685,8 +693,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               <input
                 type="text"
                 value={formData.address_line_1}
-                onChange={(e) => safeSetFormData({ ...formData, address_line_1: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => safeSetFormData({ ...formData, address_line_1: e.target.value.toUpperCase() })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
               />
             </div>
             <div>
@@ -694,8 +702,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               <input
                 type="text"
                 value={formData.address_line_2}
-                onChange={(e) => safeSetFormData({ ...formData, address_line_2: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => safeSetFormData({ ...formData, address_line_2: e.target.value.toUpperCase() })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
               />
             </div>
             <div>
@@ -703,8 +711,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               <input
                 type="text"
                 value={formData.city}
-                onChange={(e) => safeSetFormData({ ...formData, city: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => safeSetFormData({ ...formData, city: e.target.value.toUpperCase() })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
               />
             </div>
             <div>
@@ -754,10 +762,12 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               <label className="block text-xs font-medium text-gray-700 mb-0.5">
                 Fuel Payment Option <span className="text-red-500">*</span>
               </label>
-              {lockedPaymentOption ? (
-                <div className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700 flex items-center gap-2">
-                  <span className="font-medium">{lockedPaymentOption}</span>
-                  <span className="text-xs text-gray-500">(fixed for local account clients)</span>
+              {(lockedPaymentOption || (publicMode && accountType === 'individual')) ? (
+                <div className="w-full px-2.5 py-1.5 text-sm border border-blue-200 rounded-lg bg-blue-50 text-blue-800 flex items-center gap-2">
+                  <span className="font-medium">Credit/Debit Card Payment</span>
+                  {publicMode && accountType === 'individual' && (
+                    <span className="text-xs text-blue-600">— individuals signing up directly always pay by card</span>
+                  )}
                 </div>
               ) : (
                 <select
@@ -780,18 +790,20 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               )}
             </div>
 
-            {formData.payment_option === 'Card Payment' && (
+            {(formData.payment_option === 'Card Payment' || (publicMode && accountType === 'individual')) && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-xs text-blue-900 font-medium">
-                  Client's credit/debit card is securely encrypted and stored. Drivers use their PIN + NFC to transfer card details to garage card machines for payment. Client pays garages directly via their card and only pays MyFuelApp for management fees.
+                  Your credit/debit card will be securely stored. Drivers use their PIN + NFC to authorise payments at garages. You pay garages directly via your card and only pay MyFuelApp for management fees.
                 </p>
-                <p className="text-xs text-blue-800 mt-2">
-                  Note: Card will be configured after organization creation in Financial Info section.
-                </p>
+                {!publicMode && (
+                  <p className="text-xs text-blue-800 mt-2">
+                    Note: Card will be configured after organisation creation in Financial Info section.
+                  </p>
+                )}
               </div>
             )}
 
-            {formData.payment_option === 'Local Account' && (
+            {formData.payment_option === 'Local Account' && !(publicMode && accountType === 'individual') && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                 <p className="text-xs text-amber-900 font-medium">
                   Client has existing local accounts with garages. MyFuelApp manages fuel transactions and billing. Client pays MyFuelApp for management fees only. Fuel costs are settled through existing local account arrangements.
@@ -799,17 +811,19 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               </div>
             )}
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <h4 className="text-xs font-semibold text-gray-900 mb-2">Payment Option Guide:</h4>
-              <div className="space-y-1.5 text-xs text-gray-700">
-                <div>
-                  <span className="font-medium text-blue-700">Credit/Debit Card Payment:</span> Client's card stored securely. Drivers use PIN + NFC for payments at garages. Client pays garages directly and MyFuelApp for management fees only.
-                </div>
-                <div>
-                  <span className="font-medium text-amber-700">Local Account:</span> Client has existing accounts with garages. MyFuelApp tracks transactions. Client pays MyFuelApp for management fees only. Best for established garage relationships.
+            {!publicMode && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-900 mb-2">Payment Option Guide:</h4>
+                <div className="space-y-1.5 text-xs text-gray-700">
+                  <div>
+                    <span className="font-medium text-blue-700">Credit/Debit Card Payment:</span> Client's card stored securely. Drivers use PIN + NFC for payments at garages. Client pays garages directly and MyFuelApp for management fees only.
+                  </div>
+                  <div>
+                    <span className="font-medium text-amber-700">Local Account:</span> Client has existing accounts with garages. MyFuelApp tracks transactions. Client pays MyFuelApp for management fees only. Best for established garage relationships.
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -824,8 +838,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                 type="text"
                 required
                 value={mainUser.name}
-                onChange={(e) => safeSetMainUser({ ...mainUser, name: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => safeSetMainUser({ ...mainUser, name: e.target.value.toUpperCase() })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
               />
             </div>
             <div>
@@ -836,8 +850,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                 type="text"
                 required
                 value={mainUser.surname}
-                onChange={(e) => safeSetMainUser({ ...mainUser, surname: e.target.value })}
-                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                onChange={(e) => safeSetMainUser({ ...mainUser, surname: e.target.value.toUpperCase() })}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent uppercase"
               />
             </div>
             <div>
@@ -890,7 +904,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
           </div>
         </div>
 
-        <div className="border-t pt-3">
+        {!(publicMode && accountType === 'individual') && <div className="border-t pt-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-base font-semibold text-gray-900">Billing User</h3>
             <button
@@ -1157,9 +1171,9 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               </div>
             </div>
           </div>
-        </div>
+        </div>}
 
-        {managingGarageId && (
+        {managingGarageId && !(publicMode && accountType === 'individual') && (
           <div className="border-t pt-3">
             <h3 className="text-base font-semibold text-gray-900 mb-2">Garage Account</h3>
             <div>
@@ -1178,7 +1192,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
           </div>
         )}
 
-        <div className="border-t pt-3">
+        {!publicMode && <div className="border-t pt-3">
           <h3 className="text-base font-semibold text-gray-900 mb-2">Financial Settings</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -1283,7 +1297,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
               />
             </div>
           </div>
-        </div>
+        </div>}
 
         <div className="border-t pt-4 flex justify-end gap-3">
           <button

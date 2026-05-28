@@ -271,8 +271,8 @@ function VehicleBlock({ index }: { index: number }) {
 
 function DriverBlock({ index }: { index: number }) {
   return (
-    <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '5px 7px', marginBottom: '6px', pageBreakInside: 'avoid' }}>
-      <div style={{ fontSize: '7.5pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px', borderBottom: '1px solid #ccfbf1', paddingBottom: '2px' }}>
+    <div style={{ border: '1px solid #d1d5db', borderRadius: '3px', padding: '3px 6px', marginBottom: '3px', pageBreakInside: 'avoid' }}>
+      <div style={{ fontSize: '7.5pt', fontWeight: 'bold', color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '2px', borderBottom: '1px solid #ccfbf1', paddingBottom: '1px' }}>
         Driver {index}
       </div>
       <Grid cols={4}>
@@ -285,7 +285,7 @@ function DriverBlock({ index }: { index: number }) {
         <F label="License Number" />
         <F label="License Expiry Date" hint="DD/MM/YYYY" />
       </Grid>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr', gap: '4px 10px', marginTop: '4px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1fr 1fr', gap: '2px 10px', marginTop: '2px' }}>
         <div>
           <div style={labelStyle}>License Code</div>
           <Row>
@@ -309,7 +309,7 @@ function DriverBlock({ index }: { index: number }) {
         <div>
           <div style={labelStyle}>PrDP Permit?</div>
           <Row><CB label="Yes" /><CB label="No" /></Row>
-          <div style={{ marginTop: '3px' }}>
+          <div style={{ marginTop: '2px' }}>
             <div style={labelStyle}>PrDP Type</div>
             <Row>
               <CB label="Passengers" />
@@ -473,12 +473,11 @@ function OrgPrintableForm({ garageName }: { garageName?: string }) {
       <div style={{ pageBreakBefore: 'always', padding: '3mm 2mm' }}>
         <MiniHeader garageName={garageName} subtitle="Drivers — Page 3 of 3" today={today} />
         <Section number="6" title="Drivers" subtitle="Complete one block per driver. Photocopy this page for additional drivers.">
-          <TemplateNote>Template — one block per driver. Photocopy this page if you have more than 5 drivers.</TemplateNote>
+          <TemplateNote>Template — one block per driver. Photocopy this page if you have more than 4 drivers.</TemplateNote>
           <DriverBlock index={1} />
           <DriverBlock index={2} />
           <DriverBlock index={3} />
           <DriverBlock index={4} />
-          <DriverBlock index={5} />
         </Section>
         <Footer today={today} page={3} pages={3} />
       </div>

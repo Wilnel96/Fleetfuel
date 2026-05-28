@@ -459,10 +459,12 @@ function OrgPrintableForm({ garageName }: { garageName?: string }) {
       <div style={{ pageBreakBefore: 'always', pageBreakAfter: 'always', padding: '3mm 2mm' }}>
         <MiniHeader garageName={garageName} subtitle="Vehicles — Page 2 of 3" today={today} />
         <Section number="5" title="Vehicles" subtitle="Complete one block per vehicle. Photocopy this page for additional vehicles.">
-          <TemplateNote>Template — one block per vehicle. Photocopy this page if you have more than 3 vehicles.</TemplateNote>
+          <TemplateNote>Template — one block per vehicle. Photocopy this page if you have more than 5 vehicles.</TemplateNote>
           <VehicleBlock index={1} />
           <VehicleBlock index={2} />
           <VehicleBlock index={3} />
+          <VehicleBlock index={4} />
+          <VehicleBlock index={5} />
         </Section>
         <Footer today={today} page={2} pages={3} />
       </div>
@@ -471,10 +473,12 @@ function OrgPrintableForm({ garageName }: { garageName?: string }) {
       <div style={{ pageBreakBefore: 'always', padding: '3mm 2mm' }}>
         <MiniHeader garageName={garageName} subtitle="Drivers — Page 3 of 3" today={today} />
         <Section number="6" title="Drivers" subtitle="Complete one block per driver. Photocopy this page for additional drivers.">
-          <TemplateNote>Template — one block per driver. Photocopy this page if you have more than 3 drivers.</TemplateNote>
+          <TemplateNote>Template — one block per driver. Photocopy this page if you have more than 5 drivers.</TemplateNote>
           <DriverBlock index={1} />
           <DriverBlock index={2} />
           <DriverBlock index={3} />
+          <DriverBlock index={4} />
+          <DriverBlock index={5} />
         </Section>
         <Footer today={today} page={3} pages={3} />
       </div>

@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Fuel, AlertCircle, ArrowLeft, Building2, User, Mail, Lock, Phone, MapPin, Users, CreditCard } from 'lucide-react';
+import { Fuel, AlertCircle, ArrowLeft, Building2, User, Mail, Lock, Phone, MapPin, CreditCard } from 'lucide-react';
 
 interface ClientSignupProps {
   portalType: 'card' | 'account';
   onBack: () => void;
   onSignupSuccess: () => void;
 }
+
+const SA_PROVINCES = [
+  'Eastern Cape', 'Free State', 'Gauteng', 'KwaZulu-Natal',
+  'Limpopo', 'Mpumalanga', 'Northern Cape', 'North West', 'Western Cape',
+];
 
 export default function ClientSignup({ portalType, onBack, onSignupSuccess }: ClientSignupProps) {
   const [step, setStep] = useState<'type' | 'org' | 'user'>('type');
@@ -42,24 +47,20 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
     confirmPassword: '',
   });
 
+  const up = (v: string) => v.toUpperCase();
+
   const handleTypeSelection = (type: 'individual' | 'organization') => {
     setAccountType(type);
-    if (type === 'individual') {
-      setStep('user');
-    } else {
-      setStep('org');
-    }
+    setStep(type === 'individual' ? 'user' : 'org');
   };
 
   const handleOrgSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
     if (!orgData.name || !orgData.email) {
-      setError('Organization name and email are required');
+      setError('Organisation name and email are required');
       return;
     }
-
     setStep('user');
   };
 
@@ -70,27 +71,22 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
 
     try {
       if (!userData.first_name || !userData.last_name || !userData.email || !userData.password) {
-        throw new Error('All user fields are required');
+        throw new Error('All required fields must be completed');
       }
-
       if (userData.password !== userData.confirmPassword) {
         throw new Error('Passwords do not match');
       }
-
       if (userData.password.length < 8) {
         throw new Error('Password must be at least 8 characters');
       }
-
       if (accountType === 'individual' && !userData.id_number) {
-        throw new Error('ID number is required for individual accounts');
+        throw new Error('SA ID number is required for individual accounts');
       }
 
-      const paymentOption = portalType === 'card' ? 'Card Payment' : 'Local Account';
       const orgName = accountType === 'individual'
         ? `${userData.first_name} ${userData.last_name}`
         : orgData.name;
 
-      console.log('[Signup] Creating user account with organization data...');
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -106,21 +102,16 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
       if (signUpError) throw signUpError;
       if (!authData.user) throw new Error('Failed to create user account');
 
-      console.log('[Signup] User created:', authData.user.id);
-
-      console.log('[Signup] Fetching created organization...');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('organization_id')
         .eq('id', authData.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError || !profile?.organization_id) {
-        console.error('[Signup] Profile fetch error:', profileError);
         throw new Error('Failed to fetch user profile');
       }
 
-      // Fetch global default monthly fee for new signups
       const { data: feeSetting } = await supabase
         .from('global_settings')
         .select('value')
@@ -128,34 +119,39 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         .maybeSingle();
       const defaultMonthlyFee = feeSetting?.value ? parseFloat(feeSetting.value) : 10;
 
-      console.log('[Signup] Updating organization details...');
       const { error: orgUpdateError } = await supabase
         .from('organizations')
         .update({
-          company_registration_number: accountType === 'individual' ? userData.id_number : (orgData.registration_number || null),
-          vat_number: accountType === 'individual' ? null : (orgData.vat_number || null),
+          company_registration_number: accountType === 'individual'
+            ? userData.id_number
+            : (orgData.registration_number.toUpperCase() || null),
+          vat_number: accountType === 'individual' ? null : (orgData.vat_number.toUpperCase() || null),
           email: accountType === 'individual' ? userData.email : orgData.email,
-          phone_number: accountType === 'individual' ? (userData.phone_number || null) : (orgData.phone_number || null),
-          address_line_1: accountType === 'individual' ? (userData.address_line_1 || null) : (orgData.address_line_1 || null),
-          address_line_2: accountType === 'individual' ? (userData.address_line_2 || null) : (orgData.address_line_2 || null),
-          city: accountType === 'individual' ? (userData.city || null) : (orgData.city || null),
+          phone_number: accountType === 'individual'
+            ? (userData.phone_number || null)
+            : (orgData.phone_number || null),
+          address_line_1: accountType === 'individual'
+            ? (userData.address_line_1.toUpperCase() || null)
+            : (orgData.address_line_1.toUpperCase() || null),
+          address_line_2: accountType === 'individual'
+            ? (userData.address_line_2.toUpperCase() || null)
+            : (orgData.address_line_2.toUpperCase() || null),
+          city: accountType === 'individual'
+            ? (userData.city.toUpperCase() || null)
+            : (orgData.city.toUpperCase() || null),
           province: accountType === 'individual' ? (userData.province || null) : (orgData.province || null),
           postal_code: accountType === 'individual' ? (userData.postal_code || null) : (orgData.postal_code || null),
           account_type: accountType,
-          payment_option: paymentOption,
+          payment_option: 'Card Payment',
           is_management_org: false,
           organization_type: 'client',
           monthly_fee_per_vehicle: defaultMonthlyFee,
         })
         .eq('id', profile.organization_id);
 
-      if (orgUpdateError) {
-        console.error('[Signup] Organization update error:', orgUpdateError);
-        throw new Error(`Failed to update organization: ${orgUpdateError.message}`);
-      }
+      if (orgUpdateError) throw new Error(`Failed to update organisation: ${orgUpdateError.message}`);
 
-      console.log('[Signup] Updating organization user details...');
-      const { error: orgUserUpdateError } = await supabase
+      await supabase
         .from('organization_users')
         .update({
           phone_mobile: userData.phone_number || null,
@@ -164,69 +160,69 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
         .eq('user_id', authData.user.id)
         .eq('organization_id', profile.organization_id);
 
-      if (orgUserUpdateError) {
-        console.error('[Signup] Organization user update error:', orgUserUpdateError);
-      }
-
-      console.log('[Signup] Updating profile details...');
-      const { error: profileUpdateError } = await supabase
+      await supabase
         .from('profiles')
-        .update({
-          id_number: accountType === 'individual' ? userData.id_number : null,
-        })
+        .update({ id_number: accountType === 'individual' ? userData.id_number : null })
         .eq('id', authData.user.id);
 
-      if (profileUpdateError) {
-        console.error('[Signup] Profile update error:', profileUpdateError);
-      }
-
-      console.log('[Signup] Signup complete!');
       onSignupSuccess();
-
     } catch (err: any) {
-      console.error('[Signup] Error:', err);
       setError(err.message || 'Signup failed');
       setLoading(false);
     }
   };
 
-  const portalTitle = portalType === 'card' ? 'MyFuelApp Card' : 'MyFuelApp Accounts';
-  const portalColor = portalType === 'card' ? 'blue' : 'amber';
+  const accentCls = portalType === 'card' ? 'blue' : 'amber';
+  const ringCls = `focus:ring-${accentCls}-500`;
+  const btnCls = `w-full bg-${accentCls}-600 text-white py-3 rounded-lg font-semibold hover:bg-${accentCls}-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed`;
+
+  const inputCls = `w-full px-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent uppercase`;
+  const plInputCls = `w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent uppercase`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-        <div className={`bg-gradient-to-r from-${portalColor}-500 to-${portalColor}-600 text-white p-6`}>
+        {/* Header */}
+        <div className={`bg-gradient-to-r from-${accentCls}-500 to-${accentCls}-600 text-white p-6`}>
           <div className="flex items-center justify-center gap-3 mb-2">
             <Fuel className="w-10 h-10" />
-            <h1 className="text-2xl font-bold">{portalTitle}</h1>
+            <h1 className="text-2xl font-bold">MyFuelApp</h1>
           </div>
-          <p className={`text-${portalColor}-100 text-sm text-center`}>Create Your Account</p>
+          <p className={`text-${accentCls}-100 text-sm text-center`}>Create Your Card Account</p>
         </div>
 
         <div className="p-6">
           <button
             onClick={onBack}
-            className={`text-${portalColor}-600 hover:text-${portalColor}-700 font-medium flex items-center gap-2 mb-4`}
+            className={`text-${accentCls}-600 hover:text-${accentCls}-700 font-medium flex items-center gap-2 mb-4`}
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Login
           </button>
 
+          {/* Card payment info banner */}
+          <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5">
+            <CreditCard className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <strong>Credit / Debit Card Account</strong> — You are signing up for a MyFuelApp card payment account. Fuel purchases will be charged to your card. If you need a garage-managed local account, please contact your garage directly.
+            </div>
+          </div>
+
+          {/* Step indicator */}
           {step !== 'type' && (
             <div className="mb-6">
               <div className="flex items-center gap-2">
-                <div className={`flex items-center gap-2 ${step === 'org' || accountType === 'organization' ? 'text-' + portalColor + '-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'org' ? 'bg-' + portalColor + '-100' : 'bg-gray-100'}`}>
+                <div className={`flex items-center gap-2 ${accentCls === 'blue' ? 'text-blue-600' : 'text-amber-600'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center bg-${accentCls}-100`}>
                     {accountType === 'individual' ? <User className="w-4 h-4" /> : <Building2 className="w-4 h-4" />}
                   </div>
                   <span className="font-medium text-sm">
-                    {accountType === 'individual' ? 'Individual' : 'Organization'}
+                    {accountType === 'individual' ? 'Individual' : 'Organisation'}
                   </span>
                 </div>
-                <div className="flex-1 h-0.5 bg-gray-200"></div>
-                <div className={`flex items-center gap-2 ${step === 'user' ? 'text-' + portalColor + '-600' : 'text-gray-400'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'user' ? 'bg-' + portalColor + '-100' : 'bg-gray-100'}`}>
+                <div className="flex-1 h-0.5 bg-gray-200" />
+                <div className={`flex items-center gap-2 ${step === 'user' ? (accentCls === 'blue' ? 'text-blue-600' : 'text-amber-600') : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'user' ? `bg-${accentCls}-100` : 'bg-gray-100'}`}>
                     <User className="w-4 h-4" />
                   </div>
                   <span className="font-medium text-sm">Account</span>
@@ -242,218 +238,153 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
             </div>
           )}
 
+          {/* ── Type selection ── */}
           {step === 'type' && (
             <div className="space-y-4">
               <h3 className="font-semibold text-gray-900 text-center mb-6">Select Account Type</h3>
-
               <div className="grid md:grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => handleTypeSelection('individual')}
-                  className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                  className={`p-6 border-2 border-gray-200 rounded-xl hover:border-${accentCls}-500 hover:bg-${accentCls}-50 transition-all group`}
                 >
                   <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                      <User className="w-8 h-8 text-blue-600" />
+                    <div className={`w-16 h-16 bg-${accentCls}-100 rounded-full flex items-center justify-center group-hover:bg-${accentCls}-200 transition-colors`}>
+                      <User className={`w-8 h-8 text-${accentCls}-600`} />
                     </div>
                     <h4 className="font-semibold text-gray-900">Individual</h4>
-                    <p className="text-sm text-gray-600">
-                      Personal account for individual use
-                    </p>
+                    <p className="text-sm text-gray-600">Personal card account for an individual</p>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleTypeSelection('organization')}
-                  className="p-6 border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all group"
+                  className={`p-6 border-2 border-gray-200 rounded-xl hover:border-${accentCls}-500 hover:bg-${accentCls}-50 transition-all group`}
                 >
                   <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                      <Building2 className="w-8 h-8 text-blue-600" />
+                    <div className={`w-16 h-16 bg-${accentCls}-100 rounded-full flex items-center justify-center group-hover:bg-${accentCls}-200 transition-colors`}>
+                      <Building2 className={`w-8 h-8 text-${accentCls}-600`} />
                     </div>
-                    <h4 className="font-semibold text-gray-900">Organization</h4>
-                    <p className="text-sm text-gray-600">
-                      Business or company account
-                    </p>
+                    <h4 className="font-semibold text-gray-900">Organisation</h4>
+                    <p className="text-sm text-gray-600">Business or company card account</p>
                   </div>
                 </button>
               </div>
             </div>
           )}
 
+          {/* ── Organisation details ── */}
           {step === 'org' && (
             <form onSubmit={handleOrgSubmit} className="space-y-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Organization Information</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Organisation Information</h3>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization Name <span className="text-red-500">*</span>
+                  Organisation Name <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={orgData.name}
-                    onChange={(e) => setOrgData({ ...orgData, name: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="text" value={orgData.name}
+                    onChange={e => setOrgData(d => ({ ...d, name: up(e.target.value) }))}
+                    className={plInputCls} required />
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Registration Number</label>
+                  <input type="text" value={orgData.registration_number}
+                    onChange={e => setOrgData(d => ({ ...d, registration_number: up(e.target.value) }))}
+                    className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">VAT Number</label>
+                  <input type="text" value={orgData.vat_number}
+                    onChange={e => setOrgData(d => ({ ...d, vat_number: up(e.target.value) }))}
+                    className={inputCls} />
                 </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Registration Number
-                  </label>
-                  <input
-                    type="text"
-                    value={orgData.registration_number}
-                    onChange={(e) => setOrgData({ ...orgData, registration_number: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    VAT Number
-                  </label>
-                  <input
-                    type="text"
-                    value={orgData.vat_number}
-                    onChange={(e) => setOrgData({ ...orgData, vat_number: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Organization Email <span className="text-red-500">*</span>
+                    Organisation Email <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="email"
-                      value={orgData.email}
-                      onChange={(e) => setOrgData({ ...orgData, email: e.target.value })}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input type="email" value={orgData.email}
+                      onChange={e => setOrgData(d => ({ ...d, email: e.target.value.toLowerCase() }))}
+                      className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent lowercase`}
+                      required />
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={orgData.phone_number}
-                      onChange={(e) => setOrgData({ ...orgData, phone_number: e.target.value })}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input type="tel" value={orgData.phone_number}
+                      onChange={e => setOrgData(d => ({ ...d, phone_number: e.target.value }))}
+                      className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`} />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Line 1
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={orgData.address_line_1}
-                    onChange={(e) => setOrgData({ ...orgData, address_line_1: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="text" value={orgData.address_line_1}
+                    onChange={e => setOrgData(d => ({ ...d, address_line_1: up(e.target.value) }))}
+                    className={plInputCls} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address Line 2
-                </label>
-                <input
-                  type="text"
-                  value={orgData.address_line_2}
-                  onChange={(e) => setOrgData({ ...orgData, address_line_2: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
+                <input type="text" value={orgData.address_line_2}
+                  onChange={e => setOrgData(d => ({ ...d, address_line_2: up(e.target.value) }))}
+                  className={inputCls} />
               </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    value={orgData.city}
-                    onChange={(e) => setOrgData({ ...orgData, city: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                  <input type="text" value={orgData.city}
+                    onChange={e => setOrgData(d => ({ ...d, city: up(e.target.value) }))}
+                    className={inputCls} />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Province
-                  </label>
-                  <select
-                    value={orgData.province}
-                    onChange={(e) => setOrgData({ ...orgData, province: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+                  <select value={orgData.province}
+                    onChange={e => setOrgData(d => ({ ...d, province: e.target.value }))}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`}>
                     <option value="">Select...</option>
-                    <option value="Eastern Cape">Eastern Cape</option>
-                    <option value="Free State">Free State</option>
-                    <option value="Gauteng">Gauteng</option>
-                    <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                    <option value="Limpopo">Limpopo</option>
-                    <option value="Mpumalanga">Mpumalanga</option>
-                    <option value="Northern Cape">Northern Cape</option>
-                    <option value="North West">North West</option>
-                    <option value="Western Cape">Western Cape</option>
+                    {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Postal Code
-                  </label>
-                  <input
-                    type="text"
-                    value={orgData.postal_code}
-                    onChange={(e) => setOrgData({ ...orgData, postal_code: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                  <input type="text" value={orgData.postal_code}
+                    onChange={e => setOrgData(d => ({ ...d, postal_code: e.target.value }))}
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`} />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className={`w-full bg-${portalColor}-600 text-white py-3 rounded-lg font-semibold hover:bg-${portalColor}-700 transition-colors`}
-              >
-                Continue to User Account
+              <button type="submit" className={btnCls}>
+                Continue to Account Details
               </button>
             </form>
           )}
 
+          {/* ── User / account details ── */}
           {step === 'user' && (
             <form onSubmit={handleUserSubmit} className="space-y-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">Your Account Information</h3>
-                <button
-                  type="button"
+                <h3 className="font-semibold text-gray-900">Your Account Details</h3>
+                <button type="button"
                   onClick={() => accountType === 'organization' ? setStep('org') : setStep('type')}
-                  className="text-sm text-gray-600 hover:text-gray-700"
-                >
+                  className="text-sm text-gray-600 hover:text-gray-700">
                   ← Back
                 </button>
               </div>
@@ -464,28 +395,19 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="text"
-                      value={userData.first_name}
-                      onChange={(e) => setUserData({ ...userData, first_name: e.target.value })}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input type="text" value={userData.first_name}
+                      onChange={e => setUserData(d => ({ ...d, first_name: up(e.target.value) }))}
+                      className={plInputCls} required />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Surname <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={userData.last_name}
-                    onChange={(e) => setUserData({ ...userData, last_name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <input type="text" value={userData.last_name}
+                    onChange={e => setUserData(d => ({ ...d, last_name: up(e.target.value) }))}
+                    className={inputCls} required />
                 </div>
               </div>
 
@@ -494,29 +416,21 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="email"
-                    value={userData.email}
-                    onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="email" value={userData.email}
+                    onChange={e => setUserData(d => ({ ...d, email: e.target.value.toLowerCase() }))}
+                    className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent lowercase`}
+                    required />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Mobile Phone
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Phone</label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={userData.phone_number}
-                    onChange={(e) => setUserData({ ...userData, phone_number: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="tel" value={userData.phone_number}
+                    onChange={e => setUserData(d => ({ ...d, phone_number: e.target.value }))}
+                    className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`} />
                 </div>
               </div>
 
@@ -524,19 +438,14 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ID Number <span className="text-red-500">*</span>
+                      SA ID Number <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={userData.id_number}
-                        onChange={(e) => setUserData({ ...userData, id_number: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        required={accountType === 'individual'}
-                        maxLength={13}
-                        placeholder="13-digit ID number"
-                      />
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input type="text" value={userData.id_number}
+                        onChange={e => setUserData(d => ({ ...d, id_number: e.target.value }))}
+                        className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`}
+                        required maxLength={13} placeholder="13-digit ID number" />
                     </div>
                     <p className="text-xs text-gray-500 mt-1">South African ID number (13 digits)</p>
                   </div>
@@ -544,69 +453,45 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   <div className="pt-2">
                     <h4 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
                       <MapPin className="w-4 h-4" />
-                      Address
+                      Residential Address
                     </h4>
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
                         <div className="relative">
-                          <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                          <input
-                            type="text"
-                            value={userData.address_line_1}
-                            onChange={(e) => setUserData({ ...userData, address_line_1: e.target.value })}
-                            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Street address"
-                          />
+                          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                          <input type="text" value={userData.address_line_1}
+                            onChange={e => setUserData(d => ({ ...d, address_line_1: up(e.target.value) }))}
+                            className={plInputCls} placeholder="STREET ADDRESS" />
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
-                        <input
-                          type="text"
-                          value={userData.address_line_2}
-                          onChange={(e) => setUserData({ ...userData, address_line_2: e.target.value })}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          placeholder="Suburb, unit, etc."
-                        />
+                        <input type="text" value={userData.address_line_2}
+                          onChange={e => setUserData(d => ({ ...d, address_line_2: up(e.target.value) }))}
+                          className={inputCls} placeholder="SUBURB, UNIT, ETC." />
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                          <input
-                            type="text"
-                            value={userData.city}
-                            onChange={(e) => setUserData({ ...userData, city: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
+                          <input type="text" value={userData.city}
+                            onChange={e => setUserData(d => ({ ...d, city: up(e.target.value) }))}
+                            className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent uppercase`} />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-                          <select
-                            value={userData.province}
-                            onChange={(e) => setUserData({ ...userData, province: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
+                          <select value={userData.province}
+                            onChange={e => setUserData(d => ({ ...d, province: e.target.value }))}
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`}>
                             <option value="">Select...</option>
-                            <option value="Eastern Cape">Eastern Cape</option>
-                            <option value="Free State">Free State</option>
-                            <option value="Gauteng">Gauteng</option>
-                            <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                            <option value="Limpopo">Limpopo</option>
-                            <option value="Mpumalanga">Mpumalanga</option>
-                            <option value="Northern Cape">Northern Cape</option>
-                            <option value="North West">North West</option>
-                            <option value="Western Cape">Western Cape</option>
+                            {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
-                          <input
-                            type="text"
-                            value={userData.postal_code}
-                            onChange={(e) => setUserData({ ...userData, postal_code: e.target.value })}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
+                          <input type="text" value={userData.postal_code}
+                            onChange={e => setUserData(d => ({ ...d, postal_code: e.target.value }))}
+                            className={`w-full px-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`} />
                         </div>
                       </div>
                     </div>
@@ -619,15 +504,11 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="password"
-                    value={userData.password}
-                    onChange={(e) => setUserData({ ...userData, password: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                    minLength={8}
-                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="password" value={userData.password}
+                    onChange={e => setUserData(d => ({ ...d, password: e.target.value }))}
+                    className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`}
+                    required minLength={8} />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
               </div>
@@ -637,23 +518,16 @@ export default function ClientSignup({ portalType, onBack, onSignupSuccess }: Cl
                   Confirm Password <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="password"
-                    value={userData.confirmPassword}
-                    onChange={(e) => setUserData({ ...userData, confirmPassword: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input type="password" value={userData.confirmPassword}
+                    onChange={e => setUserData(d => ({ ...d, confirmPassword: e.target.value }))}
+                    className={`w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg ${ringCls} focus:border-transparent`}
+                    required />
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed`}
-              >
-                {loading ? 'Creating Account...' : 'Create Account'}
+              <button type="submit" disabled={loading} className={btnCls}>
+                {loading ? 'Creating Account...' : 'Create Card Account'}
               </button>
             </form>
           )}

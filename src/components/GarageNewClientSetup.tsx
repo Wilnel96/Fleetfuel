@@ -122,6 +122,8 @@ const STEPS: { key: Step; label: string; icon: any }[] = [
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+const UC = 'uppercase';
+
 function StepBar({ current }: { current: Step }) {
   const currentIdx = STEPS.findIndex(s => s.key === current);
   return (
@@ -196,6 +198,8 @@ export default function GarageNewClientSetup({
     };
   };
 
+  const up = (v: string) => v.toUpperCase();
+
   // ── Step: Org ──────────────────────────────────────────────────────────────
 
   const validateOrg = () => {
@@ -236,13 +240,13 @@ export default function GarageNewClientSetup({
       const headers = await getAuthHeaders();
       const payload = {
         organization: {
-          name: orgForm.name.trim(),
+          name: orgForm.name.trim().toUpperCase(),
           entity_type: orgForm.entity_type || null,
-          company_registration_number: orgForm.company_registration_number.trim() || null,
-          vat_number: orgForm.vat_number.trim() || null,
-          address_line_1: orgForm.address_line_1.trim() || null,
-          address_line_2: orgForm.address_line_2.trim() || null,
-          city: orgForm.city.trim(),
+          company_registration_number: orgForm.company_registration_number.trim().toUpperCase() || null,
+          vat_number: orgForm.vat_number.trim().toUpperCase() || null,
+          address_line_1: orgForm.address_line_1.trim().toUpperCase() || null,
+          address_line_2: orgForm.address_line_2.trim().toUpperCase() || null,
+          city: orgForm.city.trim().toUpperCase(),
           province: orgForm.province || null,
           postal_code: orgForm.postal_code.trim() || null,
           country: orgForm.country || 'South Africa',
@@ -255,9 +259,9 @@ export default function GarageNewClientSetup({
           is_garage_managed: true,
         },
         users: [{
-          name: userForm.name.trim(),
-          surname: userForm.surname.trim(),
-          email: userForm.email.trim(),
+          name: userForm.name.trim().toUpperCase(),
+          surname: userForm.surname.trim().toUpperCase(),
+          email: userForm.email.trim().toLowerCase(),
           password: userForm.password,
           phone_office: userForm.phone_office.trim() || null,
           phone_mobile: userForm.phone_mobile.trim() || null,
@@ -278,7 +282,7 @@ export default function GarageNewClientSetup({
           can_manage_users: true,
           can_view_financial_data: true,
         }],
-        garage_account_number: accountNumber.trim(),
+        garage_account_number: accountNumber.trim().toUpperCase(),
         monthly_spend_limit: monthlyLimit.trim() ? parseFloat(monthlyLimit) : null,
       };
 
@@ -392,6 +396,9 @@ export default function GarageNewClientSetup({
     // Once org is created we don't allow going back to account/user/org
   };
 
+  const inputCls = 'w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 uppercase';
+  const smInputCls = 'w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 uppercase';
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -404,8 +411,8 @@ export default function GarageNewClientSetup({
           </button>
         )}
         <div className="flex-1 min-w-0">
-          <h2 className="text-base font-semibold">New Managed Client Setup</h2>
-          <p className="text-xs text-teal-100 mt-0.5">{garageName}</p>
+          <h2 className="text-base font-semibold">New Garage-Managed Client Setup</h2>
+          <p className="text-xs text-teal-100 mt-0.5">{garageName} — Local Account</p>
         </div>
       </div>
 
@@ -423,7 +430,7 @@ export default function GarageNewClientSetup({
         {step === 'org' && (
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <p className="text-sm text-gray-600">Enter the client's organisation details.</p>
+              <p className="text-sm text-gray-600">Enter the client's organisation details. All fields are saved in upper case.</p>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={() => { setIntakeFormType('organisation'); setShowIntakeForm(true); }}
@@ -443,8 +450,8 @@ export default function GarageNewClientSetup({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Organisation Name <span className="text-red-500">*</span></label>
-              <input value={orgForm.name} onChange={e => setOrgForm(f => ({ ...f, name: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="e.g. ABC Transport (Pty) Ltd" />
+              <input value={orgForm.name} onChange={e => setOrgForm(f => ({ ...f, name: up(e.target.value) }))}
+                className={inputCls} placeholder="E.G. ABC TRANSPORT (PTY) LTD" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -463,30 +470,30 @@ export default function GarageNewClientSetup({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Company Reg. No.</label>
-                <input value={orgForm.company_registration_number} onChange={e => setOrgForm(f => ({ ...f, company_registration_number: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="2020/123456/07" />
+                <input value={orgForm.company_registration_number} onChange={e => setOrgForm(f => ({ ...f, company_registration_number: up(e.target.value) }))}
+                  className={inputCls} placeholder="2020/123456/07" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">VAT Number</label>
-                <input value={orgForm.vat_number} onChange={e => setOrgForm(f => ({ ...f, vat_number: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="4XXXXXXXXX" />
+                <input value={orgForm.vat_number} onChange={e => setOrgForm(f => ({ ...f, vat_number: up(e.target.value) }))}
+                  className={inputCls} placeholder="4XXXXXXXXX" />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
-              <input value={orgForm.address_line_1} onChange={e => setOrgForm(f => ({ ...f, address_line_1: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+              <input value={orgForm.address_line_1} onChange={e => setOrgForm(f => ({ ...f, address_line_1: up(e.target.value) }))}
+                className={inputCls} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2</label>
-              <input value={orgForm.address_line_2} onChange={e => setOrgForm(f => ({ ...f, address_line_2: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+              <input value={orgForm.address_line_2} onChange={e => setOrgForm(f => ({ ...f, address_line_2: up(e.target.value) }))}
+                className={inputCls} />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
-                <input value={orgForm.city} onChange={e => setOrgForm(f => ({ ...f, city: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                <input value={orgForm.city} onChange={e => setOrgForm(f => ({ ...f, city: up(e.target.value) }))}
+                  className={inputCls} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
@@ -510,24 +517,24 @@ export default function GarageNewClientSetup({
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2 text-sm text-blue-800">
               <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              The main user will manage this client account through the Client Portal. After setup, vehicle and driver changes must be made by the client.
+              The main user will manage this client account through the Client Portal. This is a garage-managed local account — payment is not by card.
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">First Name <span className="text-red-500">*</span></label>
-                <input value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                <input value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: up(e.target.value) }))}
+                  className={inputCls} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Surname <span className="text-red-500">*</span></label>
-                <input value={userForm.surname} onChange={e => setUserForm(f => ({ ...f, surname: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                <input value={userForm.surname} onChange={e => setUserForm(f => ({ ...f, surname: up(e.target.value) }))}
+                  className={inputCls} />
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-              <input type="email" value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="user@company.co.za" />
+              <input type="email" value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value.toLowerCase() }))}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 lowercase" placeholder="user@company.co.za" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
@@ -555,8 +562,8 @@ export default function GarageNewClientSetup({
             <p className="text-sm text-gray-600">Set the local account details for this client at {garageName}.</p>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Account Number <span className="text-red-500">*</span></label>
-              <input value={accountNumber} onChange={e => setAccountNumber(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="e.g. ACC-0001" />
+              <input value={accountNumber} onChange={e => setAccountNumber(up(e.target.value))}
+                className={inputCls} placeholder="E.G. ACC-0001" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Spend Limit (R)</label>
@@ -614,18 +621,18 @@ export default function GarageNewClientSetup({
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Registration <span className="text-red-500">*</span></label>
-                    <input value={vehicleDraft.registration_number} onChange={e => setVehicleDraft(v => ({ ...v, registration_number: e.target.value.toUpperCase() }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="ABC 123 GP" />
+                    <input value={vehicleDraft.registration_number} onChange={e => setVehicleDraft(v => ({ ...v, registration_number: up(e.target.value) }))}
+                      className={smInputCls} placeholder="ABC 123 GP" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Make <span className="text-red-500">*</span></label>
-                    <input value={vehicleDraft.make} onChange={e => setVehicleDraft(v => ({ ...v, make: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="Toyota" />
+                    <input value={vehicleDraft.make} onChange={e => setVehicleDraft(v => ({ ...v, make: up(e.target.value) }))}
+                      className={smInputCls} placeholder="TOYOTA" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Model <span className="text-red-500">*</span></label>
-                    <input value={vehicleDraft.model} onChange={e => setVehicleDraft(v => ({ ...v, model: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" placeholder="Hilux" />
+                    <input value={vehicleDraft.model} onChange={e => setVehicleDraft(v => ({ ...v, model: up(e.target.value) }))}
+                      className={smInputCls} placeholder="HILUX" />
                   </div>
                 </div>
                 <div className="grid grid-cols-4 gap-3">
@@ -675,8 +682,8 @@ export default function GarageNewClientSetup({
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">VIN Number</label>
-                    <input value={vehicleDraft.vin_number} onChange={e => setVehicleDraft(v => ({ ...v, vin_number: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                    <input value={vehicleDraft.vin_number} onChange={e => setVehicleDraft(v => ({ ...v, vin_number: up(e.target.value) }))}
+                      className={smInputCls} />
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -741,13 +748,13 @@ export default function GarageNewClientSetup({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">First Name <span className="text-red-500">*</span></label>
-                    <input value={driverDraft.first_name} onChange={e => setDriverDraft(d => ({ ...d, first_name: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                    <input value={driverDraft.first_name} onChange={e => setDriverDraft(d => ({ ...d, first_name: up(e.target.value) }))}
+                      className={smInputCls} />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Surname <span className="text-red-500">*</span></label>
-                    <input value={driverDraft.surname} onChange={e => setDriverDraft(d => ({ ...d, surname: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                    <input value={driverDraft.surname} onChange={e => setDriverDraft(d => ({ ...d, surname: up(e.target.value) }))}
+                      className={smInputCls} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -765,13 +772,13 @@ export default function GarageNewClientSetup({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" value={driverDraft.email} onChange={e => setDriverDraft(d => ({ ...d, email: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                    <input type="email" value={driverDraft.email} onChange={e => setDriverDraft(d => ({ ...d, email: e.target.value.toLowerCase() }))}
+                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 lowercase" />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">License Number</label>
-                    <input value={driverDraft.license_number} onChange={e => setDriverDraft(d => ({ ...d, license_number: e.target.value }))}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500" />
+                    <input value={driverDraft.license_number} onChange={e => setDriverDraft(d => ({ ...d, license_number: up(e.target.value) }))}
+                      className={smInputCls} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -839,7 +846,7 @@ export default function GarageNewClientSetup({
                 <p className="text-xs text-gray-500">{userForm.email}</p>
               </div>
               <div className="px-4 py-3 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Account at {garageName}</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Local Account at {garageName}</p>
                 <p className="text-sm text-gray-900 mt-1">Account No: <span className="font-semibold">{accountNumber}</span></p>
                 {monthlyLimit && <p className="text-xs text-gray-500">Monthly limit: R{parseFloat(monthlyLimit).toFixed(2)}</p>}
               </div>

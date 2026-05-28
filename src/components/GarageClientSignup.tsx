@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Search, UserPlus, Users, ArrowLeft, CheckCircle, AlertCircle, Loader2, Printer } from 'lucide-react';
+import { Building2, Search, UserPlus, Users, ArrowLeft, CheckCircle, AlertCircle, Loader2, Printer, CreditCard } from 'lucide-react';
 import GarageNewClientSetup from './GarageNewClientSetup';
 import GarageClientIntakeForm, { IntakeFormType } from './GarageClientIntakeForm';
 
@@ -333,9 +333,9 @@ export default function GarageClientSignup({
       </div>
 
       <div className="p-6 space-y-4">
-        <p className="text-sm text-gray-600">
-          Is this client already registered in the system, or are they a new client?
-        </p>
+        <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 text-sm text-teal-800">
+          <strong>Garage-Managed Local Accounts</strong> — Use this section to register clients whose fuel account is managed by {garageName}. For clients who sign up independently with a credit/debit card, they register via the MyFuelApp client portal.
+        </div>
 
         <button
           onClick={() => { setStep('search-existing'); setError(''); }}
@@ -346,9 +346,9 @@ export default function GarageClientSignup({
               <Users className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">MyFuelApp Registered Client</h3>
+              <h3 className="font-semibold text-gray-900">Existing MyFuelApp Client</h3>
               <p className="text-sm text-gray-600 mt-0.5">
-                Search for a client already registered on MyFuelApp and link them to your local account
+                Link a client already registered on MyFuelApp (card or account holder) to a local account at {garageName}
               </p>
             </div>
           </div>
@@ -363,13 +363,27 @@ export default function GarageClientSignup({
               <UserPlus className="w-6 h-6 text-teal-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">New Client</h3>
+              <h3 className="font-semibold text-gray-900">New Garage-Managed Client</h3>
               <p className="text-sm text-gray-600 mt-0.5">
-                Register a new client and set up their local account
+                Register a brand-new client with a garage-managed local fuel account — no card required
               </p>
             </div>
           </div>
         </button>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 text-sm">Credit / Debit Card Clients</h3>
+              <p className="text-sm text-gray-600 mt-0.5">
+                Clients who pay by card register themselves via the <strong>MyFuelApp Client Portal</strong>. Direct them to sign up there — no action required here.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="pt-2 border-t border-gray-100">
           <p className="text-xs text-gray-500 mb-2">Print a blank intake form for the client to complete offline:</p>

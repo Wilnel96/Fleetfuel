@@ -54,6 +54,15 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
   const [individualName, setIndividualName] = useState('');
   const [individualSurname, setIndividualSurname] = useState('');
   const [garageAccountNumber, setGarageAccountNumber] = useState('');
+  const [debitOrderAuthorised, setDebitOrderAuthorised] = useState(false);
+  const [bankDetails, setBankDetails] = useState({
+    company_name: 'Fuel Empowerment Systems (Pty) Ltd',
+    bank_name: '',
+    bank_account_holder: '',
+    bank_account_number: '',
+    bank_branch_code: '',
+    bank_account_type: '',
+  });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -133,26 +142,39 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
           }
         }
 
-        // Load global default monthly fees (works anonymously)
-        const [vFeeSetting, dFeeSetting] = await Promise.all([
-          supabase.from('global_settings').select('value').eq('key', 'monthly_fee_per_vehicle').maybeSingle(),
-          supabase.from('global_settings').select('value').eq('key', 'monthly_fee_per_driver').maybeSingle(),
-        ]);
+        // Load global default monthly fees and bank details (works anonymously)
+        const bankKeys = ['monthly_fee_per_vehicle', 'monthly_fee_per_driver', 'company_name', 'bank_name', 'bank_account_holder', 'bank_account_number', 'bank_branch_code', 'bank_account_type'];
+        const { data: settingsRows } = await supabase
+          .from('global_settings')
+          .select('key, value')
+          .in('key', bankKeys);
+
+        const settings: Record<string, string> = {};
+        (settingsRows ?? []).forEach((r: any) => { settings[r.key] = r.value; });
 
         safeSetFormData((prev: any) => {
           const updates: any = {};
-          if (vFeeSetting.data?.value) {
-            const v = parseFloat(vFeeSetting.data.value);
+          if (settings.monthly_fee_per_vehicle) {
+            const v = parseFloat(settings.monthly_fee_per_vehicle);
             if (!isNaN(v)) updates.monthly_fee_per_vehicle = v;
           }
-          if (dFeeSetting.data?.value) {
-            const d = parseFloat(dFeeSetting.data.value);
+          if (settings.monthly_fee_per_driver) {
+            const d = parseFloat(settings.monthly_fee_per_driver);
             if (!isNaN(d)) updates.monthly_fee_per_driver = d;
           }
           if (lockedPaymentOption) {
             updates.payment_option = lockedPaymentOption;
           }
           return { ...prev, ...updates };
+        });
+
+        setBankDetails({
+          company_name: settings.company_name || 'Fuel Empowerment Systems (Pty) Ltd',
+          bank_name: settings.bank_name || '',
+          bank_account_holder: settings.bank_account_holder || '',
+          bank_account_number: settings.bank_account_number || '',
+          bank_branch_code: settings.bank_branch_code || '',
+          bank_account_type: settings.bank_account_type || '',
         });
 
         console.log('[CreateClient] Init complete');
@@ -282,6 +304,13 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
         if (!formData.entity_type) throw new Error('Please select an entity type');
         if (formData.entity_type === 'Other' && !formData.entity_type_other.trim()) {
           throw new Error('Please describe the entity type');
+        }
+      }
+
+      // Require debit order authorisation in public signup for card payment accounts
+      if (publicMode && (formData.payment_option === 'Card Payment' || accountType === 'individual')) {
+        if (!debitOrderAuthorised) {
+          throw new Error('Please authorise the debit order for monthly management fees before continuing.');
         }
       }
 
@@ -791,18 +820,63 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             </div>
 
             {(formData.payment_option === 'Card Payment' || (publicMode && accountType === 'individual')) && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+                {/* How it works */}
                 <p className="text-xs text-blue-900 font-medium">
                   Once your account is created, log in to the Client Portal with your email and password and enter your Credit/Debit card details under Financial Information. Your card is securely stored and used by drivers via PIN + NFC to authorise fuel payments at garages. You pay garages directly via your card.
                 </p>
+
+                {/* Fleet note */}
                 <p className="text-xs text-blue-900">
-                  <span className="font-semibold">Monthly management fees (payable via debit order):</span>{' '}
-                  R{formData.monthly_fee_per_vehicle > 0 ? formData.monthly_fee_per_vehicle.toFixed(2) : '—'} per vehicle &amp; R{formData.monthly_fee_per_driver > 0 ? formData.monthly_fee_per_driver.toFixed(2) : '—'} per driver per month.
-                  Vehicles and drivers are registered after sign-up in the Client Portal under Fleet Management.
+                  Vehicles and drivers are registered after sign-up in the Client Portal under <span className="font-semibold">Fleet Management</span>. Only registered drivers assigned to a registered vehicle may use the card to pay for fuel at garages.
                 </p>
-                <p className="text-xs text-blue-800">
-                  Only registered drivers assigned to a registered vehicle may use the card to pay for fuel at garages.
-                </p>
+
+                {/* Monthly fees */}
+                <div className="bg-white border border-blue-200 rounded p-3 space-y-1">
+                  <p className="text-xs font-semibold text-blue-900">Monthly Management Fees (debit order)</p>
+                  <div className="grid grid-cols-2 gap-x-4 text-xs text-blue-800">
+                    <span>Per vehicle:</span>
+                    <span className="font-medium">R{formData.monthly_fee_per_vehicle > 0 ? formData.monthly_fee_per_vehicle.toFixed(2) : '—'} / month</span>
+                    <span>Per driver:</span>
+                    <span className="font-medium">R{formData.monthly_fee_per_driver > 0 ? formData.monthly_fee_per_driver.toFixed(2) : '—'} / month</span>
+                  </div>
+                  <p className="text-xs text-blue-700 pt-1">
+                    Fees are calculated monthly based on the number of active vehicles and drivers on your account.
+                  </p>
+                </div>
+
+                {/* Bank details */}
+                <div className="bg-white border border-blue-200 rounded p-3 space-y-1">
+                  <p className="text-xs font-semibold text-blue-900">Debit Order — Banking Details</p>
+                  <div className="grid grid-cols-2 gap-x-4 text-xs text-blue-800">
+                    <span>Account holder:</span>
+                    <span className="font-medium">{bankDetails.bank_account_holder || bankDetails.company_name}</span>
+                    <span>Bank:</span>
+                    <span className="font-medium">{bankDetails.bank_name || '—'}</span>
+                    <span>Account number:</span>
+                    <span className="font-medium">{bankDetails.bank_account_number || '—'}</span>
+                    <span>Branch code:</span>
+                    <span className="font-medium">{bankDetails.bank_branch_code || '—'}</span>
+                    <span>Account type:</span>
+                    <span className="font-medium">{bankDetails.bank_account_type || '—'}</span>
+                  </div>
+                </div>
+
+                {/* Debit order authorisation */}
+                {publicMode && (
+                  <label className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={debitOrderAuthorised}
+                      onChange={e => setDebitOrderAuthorised(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                    />
+                    <span className="text-xs text-blue-900">
+                      I authorise <span className="font-semibold">{bankDetails.company_name}</span> to debit my account monthly for vehicle and driver management fees as set out above, and confirm that I have read and understood the fee structure.
+                    </span>
+                  </label>
+                )}
+
                 {!publicMode && (
                   <p className="text-xs text-blue-800 border-t border-blue-200 pt-2">
                     Note: Card will be configured after organisation creation in the Financial Information section.

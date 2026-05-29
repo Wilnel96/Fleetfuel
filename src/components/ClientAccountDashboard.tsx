@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Truck, Users, FileText, Store, Settings, BarChart3, LogOut, ArrowLeft, DollarSign, Building2 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface ClientAccountDashboardProps {
   onNavigate: (view: string) => void;
@@ -8,9 +9,54 @@ interface ClientAccountDashboardProps {
   resetSubmenu?: boolean;
 }
 
+interface ClientPermissions {
+  isMainUser: boolean;
+  isSecondaryMainUser: boolean;
+  can_add_vehicles: boolean;
+  can_edit_vehicles: boolean;
+  can_delete_vehicles: boolean;
+  can_add_drivers: boolean;
+  can_edit_drivers: boolean;
+  can_delete_drivers: boolean;
+  can_view_reports: boolean;
+  can_create_reports: boolean;
+  can_view_custom_reports: boolean;
+  can_edit_organization_info: boolean;
+  can_view_fuel_transactions: boolean;
+  can_manage_users: boolean;
+  can_view_financial_data: boolean;
+  can_view_invoice_management: boolean;
+  can_access_back_office: boolean;
+}
+
+const FULL_ACCESS: ClientPermissions = {
+  isMainUser: true,
+  isSecondaryMainUser: false,
+  can_add_vehicles: true,
+  can_edit_vehicles: true,
+  can_delete_vehicles: true,
+  can_add_drivers: true,
+  can_edit_drivers: true,
+  can_delete_drivers: true,
+  can_view_reports: true,
+  can_create_reports: true,
+  can_view_custom_reports: true,
+  can_edit_organization_info: true,
+  can_view_fuel_transactions: true,
+  can_manage_users: true,
+  can_view_financial_data: true,
+  can_view_invoice_management: true,
+  can_access_back_office: true,
+};
+
 export default function ClientAccountDashboard({ onNavigate, onSignOut, initialView = 'main', resetSubmenu }: ClientAccountDashboardProps) {
   const [showReportsMenu, setShowReportsMenu] = useState(initialView === 'reports');
   const [showInvoicesMenu, setShowInvoicesMenu] = useState(initialView === 'invoices');
+  const [perms, setPerms] = useState<ClientPermissions | null>(null);
+
+  useEffect(() => {
+    loadPermissions();
+  }, []);
 
   useEffect(() => {
     if (resetSubmenu) {
@@ -24,22 +70,72 @@ export default function ClientAccountDashboard({ onNavigate, onSignOut, initialV
     setShowInvoicesMenu(initialView === 'invoices');
   }, [initialView]);
 
-  if (showInvoicesMenu) {
-    const invoicesMenuItems = [
-      {
-        id: 'fee-invoices',
-        title: 'Fee Invoices',
-        description: 'Monthly subscription and service fees',
-        icon: DollarSign,
-      },
-      {
-        id: 'fuel-invoices',
-        title: 'Fuel Invoices',
-        description: 'Individual fuel transaction invoices',
-        icon: FileText,
-      },
-    ];
+  const loadPermissions = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.role === 'super_admin') {
+        setPerms(FULL_ACCESS);
+        return;
+      }
+
+      const { data: orgUser } = await supabase
+        .from('organization_users')
+        .select('is_main_user, is_secondary_main_user, can_add_vehicles, can_edit_vehicles, can_delete_vehicles, can_add_drivers, can_edit_drivers, can_delete_drivers, can_view_reports, can_create_reports, can_view_custom_reports, can_edit_organization_info, can_view_fuel_transactions, can_manage_users, can_view_financial_data, can_view_invoice_management, can_access_back_office')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!orgUser) {
+        setPerms(FULL_ACCESS);
+        return;
+      }
+
+      const full = orgUser.is_main_user || orgUser.is_secondary_main_user;
+      setPerms({
+        isMainUser: orgUser.is_main_user,
+        isSecondaryMainUser: orgUser.is_secondary_main_user,
+        can_add_vehicles: full || orgUser.can_add_vehicles,
+        can_edit_vehicles: full || orgUser.can_edit_vehicles,
+        can_delete_vehicles: full || orgUser.can_delete_vehicles,
+        can_add_drivers: full || orgUser.can_add_drivers,
+        can_edit_drivers: full || orgUser.can_edit_drivers,
+        can_delete_drivers: full || orgUser.can_delete_drivers,
+        can_view_reports: full || orgUser.can_view_reports,
+        can_create_reports: full || orgUser.can_create_reports,
+        can_view_custom_reports: full || orgUser.can_view_custom_reports,
+        can_edit_organization_info: full || orgUser.can_edit_organization_info,
+        can_view_fuel_transactions: full || orgUser.can_view_fuel_transactions,
+        can_manage_users: full || orgUser.can_manage_users,
+        can_view_financial_data: full || orgUser.can_view_financial_data,
+        can_view_invoice_management: full || orgUser.can_view_invoice_management,
+        can_access_back_office: full || orgUser.can_access_back_office,
+      });
+    } catch {
+      setPerms(FULL_ACCESS);
+    }
+  };
+
+  const canAccessVehicles = perms && (perms.can_add_vehicles || perms.can_edit_vehicles || perms.can_delete_vehicles);
+  const canAccessDrivers = perms && (perms.can_add_drivers || perms.can_edit_drivers || perms.can_delete_drivers);
+  const canAccessReports = perms && (perms.can_view_reports || perms.can_create_reports);
+  const canAccessInvoices = perms && perms.can_view_invoice_management;
+  const canAccessBackOffice = perms && (
+    perms.isMainUser || perms.isSecondaryMainUser ||
+    perms.can_access_back_office ||
+    perms.can_edit_organization_info ||
+    perms.can_manage_users ||
+    perms.can_view_financial_data
+  );
+
+  if (showInvoicesMenu) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -55,48 +151,41 @@ export default function ClientAccountDashboard({ onNavigate, onSignOut, initialV
             Back to Main Menu
           </button>
         </div>
-
         <div className="space-y-2">
-        {invoicesMenuItems.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-50 rounded-lg">
-                  <Icon className="w-6 h-6 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                  <p className="text-sm text-gray-600">{item.description}</p>
-                </div>
+          <button
+            onClick={() => onNavigate('fee-invoices')}
+            className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <DollarSign className="w-6 h-6 text-amber-600" />
               </div>
-            </button>
-          );
-        })}
+              <div>
+                <h3 className="font-semibold text-gray-900">Fee Invoices</h3>
+                <p className="text-sm text-gray-600">Monthly subscription and service fees</p>
+              </div>
+            </div>
+          </button>
+          <button
+            onClick={() => onNavigate('fuel-invoices')}
+            className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <FileText className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Fuel Invoices</h3>
+                <p className="text-sm text-gray-600">Individual fuel transaction invoices</p>
+              </div>
+            </div>
+          </button>
         </div>
       </div>
     );
   }
 
   if (showReportsMenu) {
-    const reportsMenuItems = [
-      {
-        id: 'reports',
-        title: 'Reports',
-        icon: FileText,
-      },
-      {
-        id: 'custom-reports',
-        title: 'Custom Report Builder',
-        icon: BarChart3,
-      },
-    ];
-
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -112,65 +201,37 @@ export default function ClientAccountDashboard({ onNavigate, onSignOut, initialV
             Back to Main Menu
           </button>
         </div>
-
         <div className="space-y-2">
-        {reportsMenuItems.map((item) => {
-          const Icon = item.icon;
-
-          return (
+          {perms?.can_view_reports && (
             <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => onNavigate('reports')}
               className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors flex items-center gap-3"
             >
-              <Icon className="w-5 h-5 flex-shrink-0 text-amber-600" />
-              <span className="font-medium text-gray-900">{item.title}</span>
+              <FileText className="w-5 h-5 flex-shrink-0 text-amber-600" />
+              <span className="font-medium text-gray-900">Reports</span>
             </button>
-          );
-        })}
+          )}
+          {(perms?.can_create_reports || perms?.can_view_custom_reports) && (
+            <button
+              onClick={() => onNavigate('custom-reports')}
+              className="w-full bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors flex items-center gap-3"
+            >
+              <BarChart3 className="w-5 h-5 flex-shrink-0 text-amber-600" />
+              <span className="font-medium text-gray-900">Custom Report Builder</span>
+            </button>
+          )}
         </div>
       </div>
     );
   }
 
-  const menuItems = [
-    {
-      id: 'vehicles',
-      title: 'Vehicles',
-      description: 'Manage your fleet vehicles',
-      icon: Truck,
-    },
-    {
-      id: 'drivers',
-      title: 'Drivers',
-      description: 'Manage drivers and assignments',
-      icon: Users,
-    },
-    {
-      id: 'garages',
-      title: 'Garage Accounts',
-      description: 'Manage local garage accounts and spending limits',
-      icon: Store,
-    },
-    {
-      id: 'invoices-menu',
-      title: 'Invoices',
-      description: 'View payment and fuel invoices',
-      icon: DollarSign,
-    },
-    {
-      id: 'reports-menu',
-      title: 'Reports',
-      description: 'Fuel usage and transaction reports',
-      icon: FileText,
-    },
-    {
-      id: 'backoffice',
-      title: 'Back Office',
-      description: 'Organization settings and configurations',
-      icon: Settings,
-    },
-  ];
+  if (!perms) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -183,35 +244,93 @@ export default function ClientAccountDashboard({ onNavigate, onSignOut, initialV
       </div>
 
       <div className="grid md:grid-cols-2 gap-3">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === 'reports-menu') {
-                  setShowReportsMenu(true);
-                  onNavigate(item.id);
-                } else if (item.id === 'invoices-menu') {
-                  setShowInvoicesMenu(true);
-                  onNavigate(item.id);
-                } else {
-                  onNavigate(item.id);
-                }
-              }}
-              className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-amber-50 rounded-lg">
-                  <Icon className="w-6 h-6 text-amber-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900">{item.title}</h3>
+        {canAccessVehicles && (
+          <button
+            onClick={() => onNavigate('vehicles')}
+            className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Truck className="w-6 h-6 text-amber-600" />
               </div>
-              <p className="text-sm text-gray-600">{item.description}</p>
-            </button>
-          );
-        })}
+              <h3 className="font-semibold text-gray-900">Vehicles</h3>
+            </div>
+            <p className="text-sm text-gray-600">Manage your fleet vehicles</p>
+          </button>
+        )}
+
+        {canAccessDrivers && (
+          <button
+            onClick={() => onNavigate('drivers')}
+            className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Users className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Drivers</h3>
+            </div>
+            <p className="text-sm text-gray-600">Manage drivers and assignments</p>
+          </button>
+        )}
+
+        <button
+          onClick={() => onNavigate('garages')}
+          className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+        >
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-amber-50 rounded-lg">
+              <Store className="w-6 h-6 text-amber-600" />
+            </div>
+            <h3 className="font-semibold text-gray-900">Garage Accounts</h3>
+          </div>
+          <p className="text-sm text-gray-600">Manage local garage accounts and spending limits</p>
+        </button>
+
+        {canAccessInvoices && (
+          <button
+            onClick={() => { setShowInvoicesMenu(true); onNavigate('invoices-menu'); }}
+            className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <DollarSign className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Invoices</h3>
+            </div>
+            <p className="text-sm text-gray-600">View payment and fuel invoices</p>
+          </button>
+        )}
+
+        {canAccessReports && (
+          <button
+            onClick={() => { setShowReportsMenu(true); onNavigate('reports-menu'); }}
+            className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <FileText className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Reports</h3>
+            </div>
+            <p className="text-sm text-gray-600">Fuel usage and transaction reports</p>
+          </button>
+        )}
+
+        {canAccessBackOffice && (
+          <button
+            onClick={() => onNavigate('backoffice')}
+            className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-amber-50 rounded-lg">
+                <Settings className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900">Back Office</h3>
+            </div>
+            <p className="text-sm text-gray-600">Organization settings and configurations</p>
+          </button>
+        )}
       </div>
 
       <button

@@ -30,6 +30,8 @@ interface MgmtPermissions {
   can_edit_invoice_management: boolean;
   can_view_fuel_price_update: boolean;
   can_edit_fuel_price_update: boolean;
+  can_manage_users: boolean;
+  can_view_financial_data: boolean;
 }
 
 type BackOfficeView = 'menu' | 'management-org-menu' | 'org-info' | 'user-info' | 'financial-info' | 'fee-structure' | 'fuel-price-update' | 'invoice-management' | 'local-accounts' | 'payment-card' | 'client-standard-settings';
@@ -82,6 +84,8 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain, 
           can_edit_invoice_management: true,
           can_view_fuel_price_update: true,
           can_edit_fuel_price_update: true,
+          can_manage_users: true,
+          can_view_financial_data: true,
         });
         setLoadingPerms(false);
         return;
@@ -101,6 +105,8 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain, 
           can_edit_invoice_management: true,
           can_view_fuel_price_update: true,
           can_edit_fuel_price_update: true,
+          can_manage_users: true,
+          can_view_financial_data: true,
         });
         setLoadingPerms(false);
         return;
@@ -108,7 +114,7 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain, 
 
       const { data: orgUser } = await supabase
         .from('organization_users')
-        .select('is_main_user, is_secondary_main_user, can_access_back_office, can_view_org_info, can_edit_org_info, can_view_client_settings, can_edit_client_settings, can_view_invoice_management, can_edit_invoice_management, can_view_fuel_price_update, can_edit_fuel_price_update')
+        .select('is_main_user, is_secondary_main_user, can_access_back_office, can_view_org_info, can_edit_org_info, can_view_client_settings, can_edit_client_settings, can_view_invoice_management, can_edit_invoice_management, can_view_fuel_price_update, can_edit_fuel_price_update, can_manage_users, can_view_financial_data')
         .eq('user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
@@ -127,6 +133,8 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain, 
           can_edit_invoice_management: isMainOrSecondary || orgUser.can_edit_invoice_management,
           can_view_fuel_price_update: isMainOrSecondary || orgUser.can_view_fuel_price_update,
           can_edit_fuel_price_update: isMainOrSecondary || orgUser.can_edit_fuel_price_update,
+          can_manage_users: isMainOrSecondary || orgUser.can_manage_users,
+          can_view_financial_data: isMainOrSecondary || orgUser.can_view_financial_data,
         });
       } else {
         setMgmtPerms({
@@ -141,6 +149,8 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain, 
           can_edit_invoice_management: false,
           can_view_fuel_price_update: false,
           can_edit_fuel_price_update: false,
+          can_manage_users: false,
+          can_view_financial_data: false,
         });
       }
     } catch (err) {
@@ -368,25 +378,25 @@ export default function BackOffice({ userRole, paymentOption, onNavigateToMain, 
       icon: Building2,
       color: 'blue',
     }] : []),
-    // Client org items — always shown for non-management users
-    ...(!isMgmtOrg ? [{
+    // Client org items — shown for non-management users based on permissions
+    ...(!isMgmtOrg && (isFullAccess || mgmtPerms?.can_view_org_info || mgmtPerms?.can_edit_org_info) ? [{
       id: 'client-org-info',
       title: 'Organization Details',
       description: 'View and update your organization information',
       icon: Building2,
       color: 'blue',
     }] : []),
-    ...(!isMgmtOrg ? [{
+    ...(!isMgmtOrg && (isFullAccess || mgmtPerms?.can_manage_users) ? [{
       id: 'client-user-info',
       title: 'User Management',
       description: 'Manage users and their access permissions',
       icon: Users,
       color: 'green',
     }] : []),
-    ...(!isMgmtOrg ? [{
+    ...(!isMgmtOrg && (isFullAccess || mgmtPerms?.can_view_financial_data) ? [{
       id: 'client-financial-info',
       title: 'Financial Information',
-      description: 'Manage your payment card and financial settings',
+      description: 'View your payment settings and financial information',
       icon: DollarSign,
       color: 'emerald',
     }] : []),

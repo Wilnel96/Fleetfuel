@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Plus, Edit2, Trash2, Search, AlertCircle, CheckCircle, X, Scan, RotateCcw, ArrowLeft, TrendingUp, Calendar, Lock, Unlock } from 'lucide-react';
+import { Users, Plus, CreditCard as Edit2, Trash2, Search, AlertCircle, CheckCircle, X, Scan, RotateCcw, ArrowLeft, TrendingUp, Calendar, Lock, Unlock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import LicenseScanner, { ParsedLicenseData } from './LicenseScanner';
 
@@ -107,6 +107,9 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
   const [success, setSuccess] = useState('');
   const [showScanner, setShowScanner] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
+  const [canAddDriver, setCanAddDriver] = useState(false);
+  const [canEditDriver, setCanEditDriver] = useState(false);
+  const [canDeleteDriver, setCanDeleteDriver] = useState(false);
   const [idDobMismatch, setIdDobMismatch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -193,6 +196,27 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
 
       if (profile) {
         setUserRole(profile.role);
+
+        const isSuper = profile.role === 'super_admin';
+
+        // Load driver-specific permissions for non-super-admin users
+        if (!isSuper) {
+          const { data: orgUser } = await supabase
+            .from('organization_users')
+            .select('is_main_user, is_secondary_main_user, can_add_drivers, can_edit_drivers, can_delete_drivers')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          const full = orgUser?.is_main_user || orgUser?.is_secondary_main_user || false;
+          setCanAddDriver(full || orgUser?.can_add_drivers || false);
+          setCanEditDriver(full || orgUser?.can_edit_drivers || false);
+          setCanDeleteDriver(full || orgUser?.can_delete_drivers || false);
+        } else {
+          setCanAddDriver(true);
+          setCanEditDriver(true);
+          setCanDeleteDriver(true);
+        }
 
         // Check if user is in management organization
         const { data: userOrg } = await supabase
@@ -775,6 +799,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
           <h1 className="text-xl font-bold text-gray-900">Driver Management</h1>
         </div>
         <div className="flex items-center gap-3">
+          {canAddDriver && (
           <button
             onClick={() => openModal(undefined, selectedOrgId !== 'all' ? selectedOrgId : undefined)}
             disabled={selectedOrgId === 'all' || selectedOrgId === 'none'}
@@ -784,6 +809,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
             <Plus className="w-5 h-5" />
             Add Driver
           </button>
+          )}
           {onNavigate && (
             <button
               onClick={() => onNavigate(null)}
@@ -916,6 +942,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                           </button>
                         ) : (
                           <>
+                            {canEditDriver && (
                             <button
                               onClick={() => openModal(driver)}
                               className="text-blue-600 hover:text-blue-700"
@@ -923,6 +950,8 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
+                            )}
+                            {canDeleteDriver && (
                             <button
                               onClick={() => handleDelete(driver.id)}
                               className="text-red-600 hover:text-red-700"
@@ -930,6 +959,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                            )}
                           </>
                         )}
                       </div>

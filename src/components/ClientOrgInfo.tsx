@@ -50,6 +50,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
   const [searchTerm, setSearchTerm] = useState('');
   const [editForm, setEditForm] = useState<Partial<ClientOrganization>>({});
   const [cardConfigured, setCardConfigured] = useState<Record<string, boolean>>({});
+  const [canEdit, setCanEdit] = useState(!clientSelfMode);
 
   useEffect(() => {
     loadOrganizations();
@@ -133,6 +134,19 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
       // In clientSelfMode, automatically open the single org for viewing
       if (clientSelfMode && orgsWithUsers.length === 1) {
         setViewingId(orgsWithUsers[0].id);
+
+        // Check if the user can edit
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: orgUser } = await supabase
+            .from('organization_users')
+            .select('is_main_user, is_secondary_main_user, can_edit_organization_info')
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+            .maybeSingle();
+          const full = orgUser?.is_main_user || orgUser?.is_secondary_main_user || false;
+          setCanEdit(full || orgUser?.can_edit_organization_info || false);
+        }
       }
 
       // Check card configuration for organizations with Card Payment option
@@ -664,6 +678,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
                     >
                       {isExpanded ? 'Click to collapse' : 'Click to view details'}
                     </span>
+                    {canEdit && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -674,6 +689,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
                       <Edit2 className="w-3.5 h-3.5" />
                       Edit
                     </button>
+                    )}
                   </div>
                 </div>
 

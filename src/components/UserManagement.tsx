@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Users, Plus, Edit2, Trash2, Save, X, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Users, Plus, CreditCard as Edit2, Trash2, Save, X, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface Organization {
   id: string;
@@ -1008,6 +1008,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
             </div>
           ) : (
             <div className="flex items-center gap-3">
+              {(isSuperAdmin || isMainUser || isSecondaryMainUser || canManageUsers) && (
               <button
                 onClick={() => setShowAddForm(true)}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium flex items-center gap-1.5"
@@ -1015,6 +1016,7 @@ export default function UserManagement({ managementMode = false, onNavigate }: U
                 <Plus className="w-4 h-4" />
                 Add User
               </button>
+              )}
               {onNavigate && (
                 <button
                   onClick={() => onNavigate(managementMode ? 'management-org-menu' : 'client-organizations-menu')}

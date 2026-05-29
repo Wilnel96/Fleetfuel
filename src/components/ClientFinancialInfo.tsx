@@ -54,6 +54,7 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
   const [saved, setSaved] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editForm, setEditForm] = useState<Partial<Organization>>({});
+  const [canEdit, setCanEdit] = useState(!clientSelfMode);
 
   useEffect(() => {
     loadOrganizations();
@@ -104,8 +105,23 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
 
       // In clientSelfMode, auto-open the single org for editing
       if (clientSelfMode && orgs && orgs.length === 1) {
-        setEditingId(orgs[0].id);
-        setEditForm(orgs[0]);
+        // Check if user can edit financial data
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (authUser) {
+          const { data: orgUser } = await supabase
+            .from('organization_users')
+            .select('is_main_user, is_secondary_main_user, can_view_financial_data')
+            .eq('user_id', authUser.id)
+            .eq('is_active', true)
+            .maybeSingle();
+          const full = orgUser?.is_main_user || orgUser?.is_secondary_main_user || false;
+          const allowed = full || orgUser?.can_view_financial_data || false;
+          setCanEdit(allowed);
+          if (allowed) {
+            setEditingId(orgs[0].id);
+            setEditForm(orgs[0]);
+          }
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -219,7 +235,7 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
                   <X className="w-5 h-5" />
                   {saved ? 'Close' : 'Discard Changes'}
                 </button>
-                {!saved && (
+                {!saved && canEdit && (
                   <button
                     onClick={handleSave}
                     className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
@@ -699,6 +715,7 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
                     </p>
                   </div>
                 </div>
+                {canEdit && (
                 <button
                   onClick={() => handleEdit(org)}
                   className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center gap-1.5"
@@ -706,6 +723,7 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
                   <Edit2 className="w-3.5 h-3.5" />
                   Edit
                 </button>
+                )}
               </div>
             )}
           </div>

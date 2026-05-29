@@ -48,6 +48,9 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [loading, setLoading] = useState(false);
   const [userRole, setUserRole] = useState<string>('');
+  const [canAddVehicle, setCanAddVehicle] = useState(false);
+  const [canEditVehicle, setCanEditVehicle] = useState(false);
+  const [canDeleteVehicle, setCanDeleteVehicle] = useState(false);
   const [showOrgSelector, setShowOrgSelector] = useState(true);
   const [loadingOrganizations, setLoadingOrganizations] = useState(true);
   const [showLicenseExplanation, setShowLicenseExplanation] = useState(false);
@@ -122,6 +125,27 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
 
     if (profile) {
       setUserRole(profile.role);
+
+      const isSuper = profile.role === 'super_admin';
+
+      // Load vehicle-specific permissions for non-super-admin users
+      if (!isSuper) {
+        const { data: orgUser } = await supabase
+          .from('organization_users')
+          .select('is_main_user, is_secondary_main_user, can_add_vehicles, can_edit_vehicles, can_delete_vehicles')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        const full = orgUser?.is_main_user || orgUser?.is_secondary_main_user || false;
+        setCanAddVehicle(full || orgUser?.can_add_vehicles || false);
+        setCanEditVehicle(full || orgUser?.can_edit_vehicles || false);
+        setCanDeleteVehicle(full || orgUser?.can_delete_vehicles || false);
+      } else {
+        setCanAddVehicle(true);
+        setCanEditVehicle(true);
+        setCanDeleteVehicle(true);
+      }
 
       // Check if user is in management organization
       const { data: userOrg } = await supabase
@@ -405,6 +429,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
           <h1 className="text-xl font-bold text-gray-900">Vehicles</h1>
         </div>
         <div className="flex items-center gap-2">
+          {canAddVehicle && (
           <button
             onClick={() => {
               setFormData({ ...formData, organization_id: selectedOrgId });
@@ -417,6 +442,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
             <Plus className="w-4 h-4" />
             Add Vehicle
           </button>
+          )}
           {onNavigate && (
             <button
               onClick={() => onNavigate(null)}
@@ -957,18 +983,22 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                       </button>
                     ) : (
                       <>
+                        {canEditVehicle && (
                         <button
                           onClick={() => handleEdit(vehicle)}
                           className="text-blue-600 hover:text-blue-800"
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
+                        )}
+                        {canDeleteVehicle && (
                         <button
                           onClick={() => handleDelete(vehicle.id)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
+                        )}
                       </>
                     )}
                   </div>

@@ -1035,7 +1035,7 @@ function App() {
         ) : currentView === 'custom-reports' ? (
           <CustomReportBuilder key="custom-reports" onNavigate={setCurrentView} />
         ) : currentView === 'backup' ? (
-          <BackupManagement key="backup" />
+          userRole === 'super_admin' ? <BackupManagement key="backup" /> : null
         ) : null}
         </div>
       </main>

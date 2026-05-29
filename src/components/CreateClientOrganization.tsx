@@ -64,6 +64,15 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
     bank_account_type: '',
   });
 
+  // Client's own bank details (for debit order collection of management fees)
+  const [clientBankDetails, setClientBankDetails] = useState({
+    bank_name: '',
+    bank_account_holder: '',
+    bank_account_number: '',
+    bank_branch_code: '',
+    bank_account_type: '',
+  });
+
   const [formData, setFormData] = useState({
     name: '',
     entity_type: '',
@@ -228,7 +237,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       ...formData,
       name: orgName,
       monthly_fee_per_driver: formData.monthly_fee_per_driver,
-      entity_type: accountType === 'organization' ? formData.entity_type || null : null,
+      entity_type: accountType === 'individual' ? 'Individual' : (formData.entity_type || null),
       entity_type_other: (accountType === 'organization' && formData.entity_type === 'Other') ? formData.entity_type_other.trim() || null : null,
       payment_option: (publicMode && accountType === 'individual') ? 'Card Payment' : (formData.payment_option || null),
       fuel_payment_terms: formData.fuel_payment_terms || null,
@@ -242,6 +251,14 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       status: 'active',
       managing_garage_id: managingGarageId || null,
       is_garage_managed: !!managingGarageId,
+      // Client's own bank details for debit order (individuals only)
+      ...(accountType === 'individual' ? {
+        bank_name: clientBankDetails.bank_name || null,
+        bank_account_holder: clientBankDetails.bank_account_holder || null,
+        bank_account_number: clientBankDetails.bank_account_number || null,
+        bank_branch_code: clientBankDetails.bank_branch_code || null,
+        bank_account_type: clientBankDetails.bank_account_type || null,
+      } : {}),
     };
 
     const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
@@ -299,6 +316,11 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       if (accountType === 'individual') {
         const fullName = `${individualName.trim()} ${individualSurname.trim()}`.trim();
         if (!fullName) throw new Error('Name and Surname are required');
+        if (!clientBankDetails.bank_name) throw new Error('Please select a bank for the debit order');
+        if (!clientBankDetails.bank_account_holder.trim()) throw new Error('Account holder name is required');
+        if (!clientBankDetails.bank_account_number.trim()) throw new Error('Account number is required');
+        if (!clientBankDetails.bank_branch_code.trim()) throw new Error('Branch code is required');
+        if (!clientBankDetails.bank_account_type) throw new Error('Please select an account type');
       }
       if (accountType === 'organization') {
         if (!formData.entity_type) throw new Error('Please select an entity type');
@@ -783,6 +805,96 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             </div>
           </div>
         </div>
+
+        {accountType === 'individual' && (
+          <div className="border-t pt-3">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Bank Account Details</h3>
+              <span className="text-xs text-red-500 font-medium">Required for debit order</span>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+              <p className="text-xs text-amber-900">
+                Monthly vehicle and driver management fees are collected via debit order against this account.
+                Please provide the individual's banking details below.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Bank Name <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={clientBankDetails.bank_name}
+                  onChange={(e) => setClientBankDetails({ ...clientBankDetails, bank_name: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">-- Select Bank --</option>
+                  <option value="Absa">Absa</option>
+                  <option value="African Bank">African Bank</option>
+                  <option value="Capitec">Capitec</option>
+                  <option value="Discovery Bank">Discovery Bank</option>
+                  <option value="FNB">FNB</option>
+                  <option value="Investec">Investec</option>
+                  <option value="Nedbank">Nedbank</option>
+                  <option value="Standard Bank">Standard Bank</option>
+                  <option value="Tyme Bank">Tyme Bank</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Account Holder Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={clientBankDetails.bank_account_holder}
+                  onChange={(e) => setClientBankDetails({ ...clientBankDetails, bank_account_holder: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="As it appears on the account"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Account Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={clientBankDetails.bank_account_number}
+                  onChange={(e) => setClientBankDetails({ ...clientBankDetails, bank_account_number: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Account number"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Branch Code <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={clientBankDetails.bank_branch_code}
+                  onChange={(e) => setClientBankDetails({ ...clientBankDetails, bank_branch_code: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="e.g. 250655"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-0.5">
+                  Account Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={clientBankDetails.bank_account_type}
+                  onChange={(e) => setClientBankDetails({ ...clientBankDetails, bank_account_type: e.target.value })}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                >
+                  <option value="">-- Select Type --</option>
+                  <option value="Current">Current / Cheque</option>
+                  <option value="Savings">Savings</option>
+                  <option value="Transmission">Transmission</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="border-t pt-3">
           <h3 className="text-base font-semibold text-gray-900 mb-2">Payment Configuration</h3>

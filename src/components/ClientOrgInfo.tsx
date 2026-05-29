@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft } from 'lucide-react';
+import { Building2, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, ArrowLeft, Copy } from 'lucide-react';
 
 interface ClientOrganization {
   id: string;
@@ -544,7 +544,23 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
                 </div>
 
                 <div className="border-t pt-2 mt-2">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Billing User</h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-gray-900">Billing User</h4>
+                    <button
+                      type="button"
+                      onClick={() => setEditForm({
+                        ...editForm,
+                        billing_user_name: editForm.main_user_name,
+                        billing_user_surname: editForm.main_user_surname,
+                        billing_user_phone_mobile: editForm.main_user_phone_mobile,
+                        billing_user_phone_office: editForm.main_user_phone_office,
+                      })}
+                      className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                      Same as Main User
+                    </button>
+                  </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-0.5">First Name</label>

@@ -1018,11 +1018,19 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             {accountType === 'individual' && (individualName || individualSurname) && (
               <button
                 type="button"
-                onClick={() => safeSetMainUser({
-                  ...mainUser,
-                  name: individualName,
-                  surname: individualSurname,
-                })}
+                onClick={() => {
+                  safeSetMainUser({
+                    ...mainUser,
+                    name: individualName,
+                    surname: individualSurname,
+                  });
+                  if (!clientBankDetails.bank_account_holder) {
+                    setClientBankDetails({
+                      ...clientBankDetails,
+                      bank_account_holder: `${individualName} ${individualSurname}`.trim(),
+                    });
+                  }
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <User className="w-3.5 h-3.5" />

@@ -153,6 +153,7 @@ export default function InvoiceManagement() {
         .from('organizations')
         .select('id, name, is_garage_managed')
         .eq('is_management_org', false)
+        .eq('organization_type', 'client')
         .order('name');
 
       if (orgsError) throw orgsError;
@@ -1074,8 +1075,18 @@ export default function InvoiceManagement() {
                       {generationResult.billing_period && (
                         <p>Billing Period: {formatDate(generationResult.billing_period.start)} - {formatDate(generationResult.billing_period.end)}</p>
                       )}
-                      <p>Invoices Created: {generationResult.invoices_generated || 0}</p>
+                      <p className="font-medium">Invoices Created: {generationResult.invoices_generated || 0}</p>
                     </div>
+                    {generationResult.invoices && generationResult.invoices.length > 0 && (
+                      <ul className="mt-2 text-sm text-green-700 space-y-0.5 border-t border-green-200 pt-2">
+                        {generationResult.invoices.map((inv: any, idx: number) => (
+                          <li key={idx} className="flex justify-between">
+                            <span>{inv.organization}</span>
+                            <span className="font-medium">{inv.invoice_number} — R{inv.total_amount?.toFixed(2)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
 
                   {generationResult.errors && generationResult.errors.length > 0 && (

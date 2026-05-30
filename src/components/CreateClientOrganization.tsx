@@ -507,6 +507,13 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                         </div>
                       </div>
                     </button>
+                    <button
+                      onClick={() => { setIntakeFormType('individual-card'); setShowIntakeForm(true); }}
+                      className="flex items-center justify-center gap-2 py-2.5 px-4 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print Individual Signup Form
+                    </button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">

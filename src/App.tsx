@@ -704,7 +704,7 @@ function App() {
                 <Store className="w-6 h-6" />
                 <div className="text-left flex-1">
                   <div className="font-bold">Garage Portal</div>
-                  <div className="text-xs text-orange-100">For garage managers</div>
+                  <div className="text-xs text-orange-100">For garages to manage client accounts and their information</div>
                 </div>
               </div>
             </button>

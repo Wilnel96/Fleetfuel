@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { AlertCircle, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Store } from 'lucide-react';
 
 interface GarageAuthProps {
   onLogin: (garageId: string, garageName: string, garageEmail: string, garagePassword: string) => void;
@@ -77,8 +77,17 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="bg-blue-600 text-white p-6 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Store className="w-10 h-10" />
+            <h1 className="text-2xl font-bold">MyFuelApp</h1>
+          </div>
+          <p className="text-blue-100 text-sm">Garage Portal</p>
+        </div>
+
+        <div className="p-8">
         {onBack && (
           <button
             onClick={onBack}
@@ -89,7 +98,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
           </button>
         )}
         <div className="flex flex-col items-center mb-8">
-          <h1 className="text-xl font-bold text-gray-900">Garage Portal</h1>
+          <h1 className="text-xl font-bold text-gray-900">Garage Sign In</h1>
           <p className="text-gray-600 mt-2 text-center">
             Sign in to manage your garage information
           </p>
@@ -155,6 +164,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
           <p className="text-sm text-gray-600">
             Need help? Contact your system administrator
           </p>
+        </div>
         </div>
       </div>
     </div>

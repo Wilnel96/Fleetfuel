@@ -281,8 +281,17 @@ export default function GarageSignup({ onBack, onSuccess }: GarageSignupProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+        <div className="bg-blue-600 text-white p-6 text-center">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Store className="w-10 h-10" />
+            <h1 className="text-2xl font-bold">MyFuelApp</h1>
+          </div>
+          <p className="text-blue-100 text-sm">Garage Registration</p>
+        </div>
+
+        <div className="p-8">
         {onBack && (
           <button
             onClick={onBack}
@@ -292,16 +301,6 @@ export default function GarageSignup({ onBack, onSuccess }: GarageSignupProps) {
             Back to Login
           </button>
         )}
-
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-orange-600 p-4 rounded-full mb-4">
-            <Store className="w-12 h-12 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900">Join MyFuelApp</h1>
-          <p className="text-gray-600 mt-2 text-center">
-            Register your garage to accept MyFuelApp payments
-          </p>
-        </div>
 
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center gap-2">
@@ -716,6 +715,7 @@ export default function GarageSignup({ onBack, onSuccess }: GarageSignupProps) {
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

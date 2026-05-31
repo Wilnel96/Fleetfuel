@@ -118,7 +118,7 @@ function MiniHeader({ garageName, subtitle, today }: { garageName?: string; subt
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '5px', borderBottom: '2px solid #0d9488', marginBottom: '8px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <img src="/MyFuelApp_logo.png" alt="MyFuelApp" style={{ height: '26px', width: 'auto' }} />
-        <div style={{ fontSize: '10.5pt', fontWeight: 'bold', color: '#0d9488' }}>LOCAL ACCOUNT CLIENT INTAKE FORM</div>
+        <div style={{ fontSize: '10.5pt', fontWeight: 'bold', color: '#0d9488' }}>LOCAL ACCOUNT CLIENT SETUP FORM</div>
       </div>
       <div style={{ textAlign: 'right', fontSize: '7.5px', color: '#9ca3af' }}>
         {garageName && <div style={{ color: '#0d9488', fontWeight: 'bold', fontSize: '8.5px' }}>{garageName}</div>}

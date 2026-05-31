@@ -749,7 +749,7 @@ function App() {
                 <br />
                 <strong>Garages:</strong> Contact email and password
                 <br />
-                <strong>Admins:</strong> Email and password
+                <strong>Clients:</strong> Contact email and password
               </p>
             </div>
           </div>

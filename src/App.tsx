@@ -760,15 +760,26 @@ function App() {
 
   if (showPublicSignup) {
     return (
-      <CreateClientOrganization
-        publicMode={true}
-        onNavigate={(view) => {
-          if (view === 'back-to-home') {
-            setShowPublicSignup(false);
-            setShowModeSelection(true);
-          }
-        }}
-      />
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex flex-col">
+        <div className="bg-blue-600 text-white p-6 text-center flex-shrink-0">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <Fuel className="w-10 h-10" />
+            <h1 className="text-2xl font-bold">MyFuelApp</h1>
+          </div>
+          <p className="text-blue-100 text-sm">New Client Signup</p>
+        </div>
+        <div className="flex-1 bg-white overflow-auto">
+          <CreateClientOrganization
+            publicMode={true}
+            onNavigate={(view) => {
+              if (view === 'back-to-home') {
+                setShowPublicSignup(false);
+                setShowModeSelection(true);
+              }
+            }}
+          />
+        </div>
+      </div>
     );
   }
 

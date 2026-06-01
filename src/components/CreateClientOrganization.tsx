@@ -46,7 +46,11 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
 
   const safeSetMainUser = (updater: any) => {
     try {
-      setMainUser(updater);
+      if (typeof updater === 'function') {
+        setMainUser(updater);
+      } else {
+        setMainUser((prev: any) => ({ ...prev, ...updater }));
+      }
     } catch (err: any) {
       console.error('Error updating main user:', err);
       setError('An error occurred while updating main user');

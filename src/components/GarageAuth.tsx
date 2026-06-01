@@ -100,7 +100,7 @@ export default function GarageAuth({ onLogin, onBack, onSignup }: GarageAuthProp
         <div className="flex flex-col items-center mb-8">
           <h1 className="text-xl font-bold text-gray-900">Garage Sign In</h1>
           <p className="text-gray-600 mt-2 text-center">
-            Sign in to manage your garage information
+            Sign in to manage your local client accounts and your garage information
           </p>
         </div>
 

@@ -37,9 +37,11 @@ interface ClientOrgInfoProps {
   onNavigate?: (view: string) => void;
   /** When true, loads only the logged-in user's own organisation instead of the full list */
   clientSelfMode?: boolean;
+  /** Where the back button navigates to. Defaults to 'client-organizations-menu' */
+  backView?: string;
 }
 
-export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: ClientOrgInfoProps) {
+export default function ClientOrgInfo({ onNavigate, clientSelfMode = false, backView = 'client-organizations-menu' }: ClientOrgInfoProps) {
   const [organizations, setOrganizations] = useState<ClientOrganization[]>([]);
   const [filteredOrganizations, setFilteredOrganizations] = useState<ClientOrganization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,6 +115,9 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
           .eq('title', 'Billing User')
           .maybeSingle();
 
+        // For individual accounts with no separate billing user, fall back to main user
+        const effectiveBilling = billingUser ?? (org.entity_type === 'Individual' ? mainUser : null);
+
         return {
           ...org,
           main_user_name: mainUser?.first_name || null,
@@ -120,11 +125,11 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
           main_user_email: mainUser?.email || null,
           main_user_phone_office: mainUser?.phone_office || null,
           main_user_phone_mobile: mainUser?.phone_mobile || null,
-          billing_user_name: billingUser?.first_name || null,
-          billing_user_surname: billingUser?.surname || null,
-          billing_user_email: billingUser?.email || null,
-          billing_user_phone_office: billingUser?.phone_office || null,
-          billing_user_phone_mobile: billingUser?.phone_mobile || null,
+          billing_user_name: effectiveBilling?.first_name || null,
+          billing_user_surname: effectiveBilling?.surname || null,
+          billing_user_email: effectiveBilling?.email || null,
+          billing_user_phone_office: effectiveBilling?.phone_office || null,
+          billing_user_phone_mobile: effectiveBilling?.phone_mobile || null,
         };
       }));
 
@@ -243,7 +248,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
       // Update or insert billing user in organization_users table
       const billingEmail = editForm.billing_user_email || editForm.main_user_email;
       if (billingEmail) {
-        // Check if a billing user row already exists
+        // Check if a dedicated billing user row exists
         const { data: existingBilling } = await supabase
           .from('organization_users')
           .select('id')
@@ -252,6 +257,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
           .maybeSingle();
 
         if (existingBilling) {
+          // Update the dedicated billing user row
           const { error: billingUserError } = await supabase
             .from('organization_users')
             .update({
@@ -263,7 +269,8 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
             .eq('organization_id', editingId)
             .eq('title', 'Billing User');
           if (billingUserError) throw billingUserError;
-        } else {
+        } else if (billingEmail !== editForm.main_user_email) {
+          // Only insert a separate billing row if it's a different person
           const { error: billingUserError } = await supabase
             .from('organization_users')
             .insert({
@@ -277,6 +284,19 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
               is_main_user: false,
               role: 'user',
             });
+          if (billingUserError) throw billingUserError;
+        } else {
+          // Billing = main user (individual account) — update main user row with any name/phone changes
+          const { error: billingUserError } = await supabase
+            .from('organization_users')
+            .update({
+              first_name: editForm.billing_user_name,
+              surname: editForm.billing_user_surname,
+              phone_office: editForm.billing_user_phone_office || null,
+              phone_mobile: editForm.billing_user_phone_mobile || null,
+            })
+            .eq('organization_id', editingId)
+            .eq('is_main_user', true);
           if (billingUserError) throw billingUserError;
         }
       }
@@ -294,7 +314,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading organizations...</div>;
+    return <div className="text-center py-8">{clientSelfMode ? 'Loading your organisation...' : 'Loading organizations...'}</div>;
   }
 
   return (
@@ -304,7 +324,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
             <h2 className="text-base font-semibold text-gray-900">
-              {editingId ? 'Edit Client Organization Info' : 'Client Organization Info'}
+              {editingId ? (clientSelfMode ? 'Edit My Organisation' : 'Edit Client Organization Info') : (clientSelfMode ? 'My Organisation' : 'Client Organization Info')}
             </h2>
           </div>
           {editingId ? (
@@ -327,7 +347,7 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false }: Cl
           ) : (
             onNavigate && (
               <button
-                onClick={() => onNavigate('client-organizations-menu')}
+                onClick={() => onNavigate(backView)}
                 className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />

@@ -986,7 +986,7 @@ function App() {
         ) : currentView === 'client-org-info' ? (
           userRole === 'super_admin'
             ? <ClientOrgInfo key="client-org-info" onNavigate={setCurrentView} />
-            : <ClientOrgInfo key="client-org-info-self" onNavigate={setCurrentView} clientSelfMode={true} />
+            : <ClientOrgInfo key="client-org-info-self" onNavigate={setCurrentView} clientSelfMode={true} backView="backoffice" />
         ) : currentView === 'client-user-info' ? (
           <UserManagement key="client-user-info" onNavigate={setCurrentView} />
         ) : currentView === 'client-financial-info' ? (

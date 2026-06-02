@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import GarageClientIntakeForm, { IntakeFormType } from './GarageClientIntakeForm';
-import { Building2, Save, AlertCircle, CheckCircle, Copy, Printer, User, CreditCard } from 'lucide-react';
+import { Building2, Save, AlertCircle, CheckCircle, Copy, Printer, User, CreditCard, PartyPopper, LogIn, Smartphone } from 'lucide-react';
 
 interface CreateClientOrganizationProps {
   onNavigate?: (view: string) => void;
@@ -21,6 +21,8 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [signupComplete, setSignupComplete] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
   const [componentError, setComponentError] = useState<string | null>(null);
   const [showIntakeForm, setShowIntakeForm] = useState(false);
   const [intakeFormType, setIntakeFormType] = useState<IntakeFormType>('organisation');
@@ -369,6 +371,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       if (publicMode) {
         // Public self-signup: call the public edge function (no auth token needed)
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/client-self-signup`;
+        const isIndividualPublic = publicMode && accountType === 'individual';
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -376,6 +379,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
             organization,
             users,
             garage_account_number: managingGarageId ? (garageAccountNumber.trim() || null) : undefined,
+            create_billing_user_from_main: isIndividualPublic,
           }),
         });
         const result = await response.json();
@@ -428,20 +432,20 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
         }
       }
 
-      setSuccess(
-        isSameUser
-          ? 'Account created successfully!'
-          : 'Account created successfully with main user and billing user!'
-      );
-
-      setTimeout(() => {
-        if (publicMode) {
-          // Return to main menu after public signup
-          if (onNavigate) onNavigate('back-to-home');
-        } else {
+      if (publicMode) {
+        // Show congratulations screen instead of navigating away
+        setSignupEmail(mainUser.email);
+        setSignupComplete(true);
+      } else {
+        setSuccess(
+          isSameUser
+            ? 'Account created successfully!'
+            : 'Account created successfully with main user and billing user!'
+        );
+        setTimeout(() => {
           if (onNavigate) onNavigate('client-organizations-menu');
-        }
-      }, 2500);
+        }, 2500);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -451,6 +455,75 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
 
   // Wrap entire render in try-catch
   try {
+    // Congratulations screen shown after successful public signup
+    if (signupComplete) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-6 bg-gray-50">
+          <div className="max-w-lg w-full bg-white rounded-2xl shadow-lg overflow-hidden">
+            {/* Green header */}
+            <div className="bg-green-600 px-8 py-10 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-4">
+                <CheckCircle className="w-12 h-12 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white">Congratulations!</h1>
+              <p className="text-green-100 mt-1 text-sm">Your account has been set up successfully</p>
+            </div>
+
+            {/* Body */}
+            <div className="px-8 py-7 space-y-5">
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800 leading-relaxed">
+                <p className="font-semibold text-green-900 mb-1">Welcome to MyFuelApp!</p>
+                <p>
+                  Log in to the <strong>Client Portal</strong> using your email and password, then
+                  enter your vehicle &amp; driver information.
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 leading-relaxed">
+                <p className="font-semibold text-blue-900 mb-1">Your login details</p>
+                <p className="font-mono text-blue-700 break-all">{signupEmail}</p>
+                <p className="mt-1 text-xs text-blue-600">Use the password you chose during signup.</p>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-700 leading-relaxed space-y-2">
+                <div className="flex gap-2">
+                  <User className="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" />
+                  <p>
+                    The system has automatically set you up as both the <strong>Main User</strong> and{' '}
+                    <strong>Billing User</strong>.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <LogIn className="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" />
+                  <p>
+                    You can edit your user setup, nominate additional users, and update your personal
+                    information in the <strong>Backoffice</strong> after logging in.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Smartphone className="w-4 h-4 mt-0.5 text-gray-500 flex-shrink-0" />
+                  <p>
+                    A confirmation will be sent to your registered mobile number.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-8 pb-8">
+              <button
+                onClick={() => onNavigate && onNavigate('back-to-home')}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                Go to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // Step 1: Account Type Selection
     if (step === 'type-selection') {
       return (

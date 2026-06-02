@@ -65,6 +65,8 @@ interface RequestBody {
   organization: OrgPayload;
   users: UserPayload[];
   garage_account_number?: string | null;
+  // When true (individual public signup), the single main user is also inserted as Billing User
+  create_billing_user_from_main?: boolean;
 }
 
 Deno.serve(async (req: Request) => {
@@ -81,7 +83,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('Method not allowed');
     }
 
-    const { organization, users, garage_account_number }: RequestBody = await req.json();
+    const { organization, users, garage_account_number, create_billing_user_from_main }: RequestBody = await req.json();
 
     if (!organization?.name) throw new Error('Organization name is required');
     if (!users || users.length === 0) throw new Error('At least one user is required');
@@ -148,7 +150,6 @@ Deno.serve(async (req: Request) => {
         });
 
       if (accountError) {
-        // Clean up org before throwing
         await supabase.from('organizations').delete().eq('id', newOrg.id);
         throw new Error(`Failed to create garage account link: ${accountError.message}`);
       }
@@ -235,6 +236,26 @@ Deno.serve(async (req: Request) => {
       if (orgUserError) {
         await supabase.auth.admin.deleteUser(authData.user.id);
         throw new Error(`Failed to create organization user: ${orgUserError.message}`);
+      }
+
+      // For individual signups: also insert a Billing User row referencing the same person
+      if (create_billing_user_from_main && userData.is_main_user) {
+        await supabase
+          .from('organization_users')
+          .insert({
+            user_id: authData.user.id,
+            email: userData.email,
+            first_name: userData.name,
+            surname: userData.surname,
+            title: 'Billing User',
+            phone_office: userData.phone_office || null,
+            phone_mobile: userData.phone_mobile || null,
+            organization_id: newOrg.id,
+            is_main_user: false,
+            is_active: true,
+            ...permissions,
+          });
+        // Non-fatal: if billing row fails it won't block signup
       }
 
       const { error: profileError } = await supabase

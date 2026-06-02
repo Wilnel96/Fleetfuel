@@ -794,6 +794,12 @@ export default function ClientOrgInfo({ onNavigate, clientSelfMode = false, back
                             : 'N/A'}
                         </p>
                       </div>
+                      {org.entity_type === 'Individual' && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-0.5">SA ID Number</label>
+                          <p className="text-gray-900">{org.company_registration_number || 'N/A'}</p>
+                        </div>
+                      )}
                       {org.entity_type !== 'Individual' && (
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-0.5">Registration Number</label>

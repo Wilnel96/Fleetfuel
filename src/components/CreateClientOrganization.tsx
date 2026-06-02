@@ -271,7 +271,9 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
       } : {}),
     };
 
-    const isSameUser = mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
+    // For individual accounts (public mode), there is no separate billing contact — only the main user
+    const isIndividualPublic = publicMode && accountType === 'individual';
+    const isSameUser = isIndividualPublic || mainUser.email.toLowerCase().trim() === billingContact.email.toLowerCase().trim();
 
     const mainUserPayload = {
       email: mainUser.email,
@@ -341,8 +343,6 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
           if (mainUser.password !== confirmPassword) throw new Error('Passwords do not match');
         }
         if (publicMode && individualPaymentType === 'card-payment') {
-          console.log('[DEBUG] card-payment submit, mainUser:', JSON.stringify(mainUser));
-          console.log('[DEBUG] accountType:', accountType, 'individualPaymentType:', individualPaymentType, 'publicMode:', publicMode);
           if (!mainUser.email.trim()) throw new Error('Email address is required');
           if (!mainUser.password) throw new Error('Password is required');
           if (mainUser.password.length < 6) throw new Error('Password must be at least 6 characters');

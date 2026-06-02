@@ -2230,11 +2230,20 @@ export default function UserManagement({ managementMode = false, clientSelfMode 
             ))}
                   {showSyntheticBilling && mainUser && (
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-                      <div className="w-full px-4 py-3 flex items-center gap-3">
-                        <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300 rounded">Billing User</span>
-                        <span className="text-sm font-medium text-gray-900">{mainUser.first_name} {mainUser.surname}</span>
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Same as Main User</span>
-                        <span className="text-xs text-gray-500 ml-1">{mainUser.email}</span>
+                      <div className="w-full px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-300 rounded">Billing User</span>
+                          <span className="text-sm font-medium text-gray-900">{mainUser.first_name} {mainUser.surname}</span>
+                          <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">Same as Main User</span>
+                          <span className="text-xs text-gray-500">{mainUser.email}</span>
+                        </div>
+                        <button
+                          onClick={() => handleEditUser(mainUser)}
+                          className="flex items-center gap-1 px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors ml-2"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span className="text-sm">Edit</span>
+                        </button>
                       </div>
                     </div>
                   )}

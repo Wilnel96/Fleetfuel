@@ -994,7 +994,7 @@ function App() {
         ) : currentView === 'client-financial-info' ? (
           userRole === 'super_admin'
             ? <ClientFinancialInfo key="client-financial-info" onNavigate={setCurrentView} />
-            : <ClientFinancialInfo key="client-financial-info-self" onNavigate={setCurrentView} clientSelfMode={true} />
+            : <ClientFinancialInfo key="client-financial-info-self" onNavigate={setCurrentView} clientSelfMode={true} backView="backoffice" />
         ) : currentView === 'vehicles' ? (
           <VehicleManagement key="vehicles" onNavigate={setCurrentView} />
         ) : currentView === 'garages' ? (

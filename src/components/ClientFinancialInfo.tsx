@@ -42,9 +42,11 @@ interface ClientFinancialInfoProps {
   onNavigate?: (view: string) => void;
   /** When true, loads only the logged-in user's own organisation instead of the full list */
   clientSelfMode?: boolean;
+  /** Where the back button navigates to. Defaults to 'client-organizations-menu' */
+  backView?: string;
 }
 
-export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false }: ClientFinancialInfoProps) {
+export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false, backView = 'client-organizations-menu' }: ClientFinancialInfoProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [filteredOrganizations, setFilteredOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,7 +220,7 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
             <FileText className="w-6 h-6 text-emerald-600" />
             <div>
               <h2 className="text-lg font-bold text-gray-900">
-                {editingId ? 'Changing Client Financial Info' : 'Client Financial Info'}
+                {clientSelfMode ? 'Financial Information' : (editingId ? 'Changing Client Financial Info' : 'Client Financial Info')}
               </h2>
               <p className="text-gray-600 text-sm">
                 {editingId ? 'Update banking and financial details' : 'Manage banking and financial details'}
@@ -229,11 +231,14 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
             {editingId ? (
               <>
                 <button
-                  onClick={handleCancelEdit}
+                  onClick={() => {
+                    handleCancelEdit();
+                    if (onNavigate) onNavigate(backView);
+                  }}
                   className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <X className="w-5 h-5" />
-                  {saved ? 'Close' : 'Discard Changes'}
+                  <ArrowLeft className="w-5 h-5" />
+                  Back to Menu
                 </button>
                 {!saved && canEdit && (
                   <button
@@ -248,11 +253,11 @@ export default function ClientFinancialInfo({ onNavigate, clientSelfMode = false
             ) : (
               onNavigate && (
                 <button
-                  onClick={() => onNavigate('client-organizations-menu')}
+                  onClick={() => onNavigate(backView)}
                   className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
-                  Back to Client Organization Info
+                  {clientSelfMode ? 'Back to Back Office' : 'Back to Client Organization Info'}
                 </button>
               )
             )}

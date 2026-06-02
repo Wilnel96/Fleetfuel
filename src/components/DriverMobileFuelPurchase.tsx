@@ -2574,11 +2574,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                               setFormData(prev => {
                                 const unitPrice = parseFloat(prev.oilUnitPrice || '0');
                                 const qty = parseFloat(quantity || '0');
-                                const oilTotal = qty * unitPrice;
+                                const oilTotal = Math.round(qty * unitPrice * 100) / 100;
 
                                 // Update grand total with fuel + oil
-                                const fuelTotal = parseFloat(prev.liters || '0') * parseFloat(prev.pricePerLiter || '0');
-                                const grandTotal = fuelTotal + oilTotal;
+                                const fuelTotal = Math.round(parseFloat(prev.liters || '0') * parseFloat(prev.pricePerLiter || '0') * 100) / 100;
+                                const grandTotal = Math.round((fuelTotal + oilTotal) * 100) / 100;
 
                                 return {
                                   ...prev,
@@ -2608,11 +2608,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                               setFormData(prev => {
                                 const qty = parseFloat(prev.oilQuantity || '0');
                                 const price = parseFloat(unitPrice || '0');
-                                const oilTotal = qty * price;
+                                const oilTotal = Math.round(qty * price * 100) / 100;
 
                                 // Update grand total with fuel + oil
-                                const fuelTotal = parseFloat(prev.liters || '0') * parseFloat(prev.pricePerLiter || '0');
-                                const grandTotal = fuelTotal + oilTotal;
+                                const fuelTotal = Math.round(parseFloat(prev.liters || '0') * parseFloat(prev.pricePerLiter || '0') * 100) / 100;
+                                const grandTotal = Math.round((fuelTotal + oilTotal) * 100) / 100;
 
                                 return {
                                   ...prev,

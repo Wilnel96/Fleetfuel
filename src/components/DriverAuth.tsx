@@ -149,7 +149,7 @@ export default function DriverAuth({ onLogin, onBack }: DriverAuthProps) {
             <input
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => setFirstName(e.target.value.toUpperCase())}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter your first name"
               required

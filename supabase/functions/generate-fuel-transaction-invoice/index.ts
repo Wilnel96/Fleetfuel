@@ -87,10 +87,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const [orgResult, vehicleResult, driverResult, garageResult] = await Promise.all([
+    const [orgResult, vehicleResult, driverResult, garageResult, billingUserResult] = await Promise.all([
       supabase
         .from("organizations")
-        .select("name, billing_contact_email, billing_contact_name, payment_option, fuel_payment_terms, fuel_payment_interest_rate")
+        .select("name, payment_option, fuel_payment_terms, fuel_payment_interest_rate")
         .eq("id", transaction.organization_id)
         .maybeSingle(),
       supabase
@@ -108,6 +108,12 @@ Deno.serve(async (req: Request) => {
         .select("name, address_line_1, address_line_2, city, province, postal_code, vat_number")
         .eq("id", transaction.garage_id)
         .maybeSingle() : Promise.resolve({ data: null, error: null }),
+      supabase
+        .from("organization_users")
+        .select("email")
+        .eq("organization_id", transaction.organization_id)
+        .eq("is_main_user", true)
+        .maybeSingle(),
     ]);
 
     if (orgResult.error || !orgResult.data) {
@@ -154,6 +160,7 @@ Deno.serve(async (req: Request) => {
     const vehicle = vehicleResult.data;
     const driver = driverResult.data;
     const garage = garageResult.data;
+    const billingEmail = billingUserResult.data?.email || null;
 
     let additionalItems: any[] = [];
     if (transaction.has_additional_items) {
@@ -218,7 +225,7 @@ Deno.serve(async (req: Request) => {
         garage_vat_number: garage?.vat_number || "",
         odometer_reading: transaction.odometer_reading,
         transaction_date: transaction.transaction_date,
-        email_recipient: organization.billing_contact_email || null,
+        email_recipient: billingEmail,
         oil_quantity: transaction.oil_quantity || 0,
         oil_unit_price: transaction.oil_unit_price || 0,
         oil_total_amount: transaction.oil_total_amount || 0,
@@ -309,7 +316,7 @@ Amount of VAT included: R ${oilVatAmount.toFixed(2)}`;
 
     const emailSubject = `Fuel Transaction Invoice - ${invoiceNumber}`;
     const emailBody = `
-Dear ${organization.billing_contact_name || organization.name},
+Dear ${organization.name},
 
 Please find below the details of your fuel transaction invoice:
 

@@ -941,9 +941,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       return;
     }
 
-    console.log('[FuelPurchase] ✅ All required fields present, proceeding...');
-    setCurrentStep('fuel_details');
-    completeFuelTransaction();
+    console.log('[FuelPurchase] ✅ All required fields present, proceeding to PIN verification...');
+    setError('');
+    setCurrentStep('pin_entry');
   };
 
   const completeFuelTransaction = async () => {
@@ -1097,9 +1097,9 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       console.log('[FuelPurchase] ==========================================');
 
       if (paymentOption === 'Local Account' || paymentOption === 'Card Payment') {
-        // Both Local Account and Card Payment use PIN + NFC flow
-        console.log('[FuelPurchase] ✅ Moving to PIN entry step for:', paymentOption);
-        setCurrentStep('pin_entry');
+        // PIN was already verified before this point — go straight to scan_to_till
+        console.log('[FuelPurchase] ✅ Transaction created, moving to scan_to_till for:', paymentOption);
+        setCurrentStep('scan_to_till');
       }
     } catch (err: any) {
       console.error('[FuelPurchase] ❌❌❌ CRITICAL ERROR ❌❌❌');
@@ -1666,8 +1666,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
       ? 'Enter PIN and Scan to Garage Account System'
       : 'Enter PIN and Scan Card to Till';
     const pinDescription = paymentOption === 'Local Account'
-      ? 'Transaction created. Enter your PIN to proceed with local account payment.'
-      : 'Transaction created. Enter your PIN to proceed with card payment.';
+      ? 'Enter your PIN to authorise the local account payment.'
+      : 'Enter your PIN to authorise the card payment.';
 
     return (
       <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
@@ -1746,7 +1746,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
                 if (result.verified) {
                   setError('');
-                  setCurrentStep('scan_to_till');
+                  await completeFuelTransaction();
                 }
               } catch (err: any) {
                 setError(err.message || 'Failed to verify PIN');
@@ -1763,13 +1763,13 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
 
           <button
             onClick={() => {
-              setCurrentStep('garage_selection');
+              setCurrentStep('fuel_details');
               setPinInput('');
               setError('');
             }}
             className="w-full mt-3 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           >
-            Cancel
+            Back
           </button>
         </div>
       </div>

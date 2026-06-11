@@ -675,7 +675,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                           <Building2 className="w-5 h-5 text-teal-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-gray-900">Individual — Local Account</div>
+                          <div className="text-sm font-semibold text-gray-900">Individual — Local Garage Account</div>
                           <div className="text-xs text-gray-500 mt-0.5">Garage manages the account. Individual pays via a local fuel account.</div>
                         </div>
                       </div>
@@ -734,7 +734,7 @@ export default function CreateClientOrganization({ onNavigate, publicMode = fals
                           <Building2 className="w-5 h-5 text-teal-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-semibold text-gray-900">Individual — Local Account</div>
+                          <div className="text-sm font-semibold text-gray-900">Individual — Local Garage Account</div>
                           <div className="text-xs text-gray-500 mt-0.5">Garage manages the account. Individual pays via a local fuel account.</div>
                         </div>
                       </div>

@@ -398,32 +398,46 @@ export default function GarageSignup({ onBack, onSuccess }: GarageSignupProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Latitude (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.latitude}
-                    onChange={(e) => handleChange('latitude', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="-26.2041"
-                  />
-                </div>
+              <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Latitude (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.latitude}
+                      onChange={(e) => handleChange('latitude', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="-26.2041"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Longitude (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.longitude}
-                    onChange={(e) => handleChange('longitude', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="28.0473"
-                  />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Longitude (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.longitude}
+                      onChange={(e) => handleChange('longitude', e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="28.0473"
+                    />
+                  </div>
                 </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  <span className="font-medium">How to find your coordinates:</span> Open{' '}
+                  <a
+                    href="https://maps.google.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Google Maps
+                  </a>
+                  , search for your garage address, then right-click on the exact location and select the coordinates shown at the top of the menu. The first number is the Latitude and the second is the Longitude.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

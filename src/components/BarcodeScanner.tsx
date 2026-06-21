@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { Camera, RefreshCw, X, Scan, Keyboard } from 'lucide-react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import { NotFoundException } from '@zxing/library';
+import { BrowserPDF417Reader } from '@zxing/browser';
+import { DecodeHintType, BarcodeFormat } from '@zxing/library';
 
 interface BarcodeScannerProps {
   onScan: (data: string) => void;
@@ -16,7 +16,7 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
   const [isScanning, setIsScanning] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [manualInput, setManualInput] = useState('');
-  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const codeReaderRef = useRef<BrowserPDF417Reader | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
@@ -66,19 +66,20 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
 
       setIsScanning(true);
 
-      codeReaderRef.current = new BrowserMultiFormatReader();
+      const hints = new Map();
+      hints.set(DecodeHintType.TRY_HARDER, true);
+      hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.PDF_417]);
+
+      codeReaderRef.current = new BrowserPDF417Reader(hints);
 
       await codeReaderRef.current.decodeFromStream(
         stream,
         videoRef.current!,
-        (result, err) => {
+        (result, _err) => {
           if (result) {
             const text = result.getText();
             setScannedData(text);
             stopScanning();
-          }
-          if (err && !(err instanceof NotFoundException) && err.name !== 'NotFoundException') {
-            // Non-fatal scan errors — suppress, scanning continues
           }
         }
       );

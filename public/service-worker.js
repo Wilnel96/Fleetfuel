@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fleet-fuel-v2-20260107';
+const CACHE_NAME = 'fleet-fuel-v3-20260621';
 const urlsToCache = [
   '/manifest.json'
 ];
@@ -76,6 +76,6 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });

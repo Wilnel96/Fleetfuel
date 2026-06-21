@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { Fuel, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Fuel, AlertCircle, ArrowLeft, Download, Smartphone, X } from 'lucide-react';
 
 interface DriverAuthProps {
   onLogin: (driverData: DriverData) => void;
@@ -22,9 +22,55 @@ export default function DriverAuth({ onLogin, onBack }: DriverAuthProps) {
   const [year, setYear] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   const monthRef = useRef<HTMLInputElement>(null);
   const yearRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Check if already installed as PWA
+    const installed = window.matchMedia('(display-mode: standalone)').matches
+      || (window.navigator as any).standalone === true;
+    setIsInstalled(installed);
+
+    // Detect iOS
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    setIsIOS(ios);
+
+    // Listen for Chrome/Android install prompt
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+      if (!installed) setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+
+    // Show iOS banner if on iOS and not installed and not dismissed
+    if (ios && !installed && !sessionStorage.getItem('installBannerDismissed')) {
+      setShowInstallBanner(true);
+    }
+
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallBanner(false);
+        setInstallPrompt(null);
+      }
+    }
+  };
+
+  const dismissBanner = () => {
+    setShowInstallBanner(false);
+    sessionStorage.setItem('installBannerDismissed', '1');
+  };
 
   const handleDayChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
@@ -119,6 +165,39 @@ export default function DriverAuth({ onLogin, onBack }: DriverAuthProps) {
           </div>
           <p className="text-blue-100 text-sm">Driver Mobile App</p>
         </div>
+
+        {/* Install banner */}
+        {showInstallBanner && !isInstalled && (
+          <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <Smartphone className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-blue-900">Install MyFuelApp</p>
+                {isIOS ? (
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Tap the <strong>Share</strong> button in Safari, then <strong>"Add to Home Screen"</strong> to install.
+                  </p>
+                ) : (
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Install the app on your phone for quick one-tap access.
+                  </p>
+                )}
+                {!isIOS && installPrompt && (
+                  <button
+                    onClick={handleInstall}
+                    className="mt-2 flex items-center gap-1.5 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Install App
+                  </button>
+                )}
+              </div>
+              <button onClick={dismissBanner} className="text-blue-400 hover:text-blue-600 flex-shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="p-6 space-y-4">
           {onBack && (

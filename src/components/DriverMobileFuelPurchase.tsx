@@ -45,12 +45,7 @@ interface DriverMobileFuelPurchaseProps {
 
 export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete }: DriverMobileFuelPurchaseProps) {
   // ==========================================
-  // TESTING MODE CONFIGURATION
-  // ==========================================
-  // Set to true to bypass license disk scanning for testing purposes
-  // Set to false to require license disk scanning (production mode)
-  const SKIP_LICENSE_SCAN_FOR_TESTING = true;
-  // ==========================================
+  const SKIP_LICENSE_SCAN_FOR_TESTING = false;
 
   const [drawnVehicle, setDrawnVehicle] = useState<Vehicle | null>(null);
   const [licenseDiskScan, setLicenseDiskScan] = useState<ScanData | null>(null);
@@ -927,8 +922,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
   };
 
   const skipLicenseScanForTesting = async () => {
-    console.log('⚠️ BYPASSING LICENSE SCAN FOR TESTING');
-    setLicenseDiskScan({ image: '', extractedText: 'TESTING_MODE_BYPASS' });
+    setLicenseDiskScan({ image: '', extractedText: 'SCAN_SKIPPED' });
     setCurrentStep('spending_check');
     await checkSpendingLimits();
   };
@@ -1387,29 +1381,19 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           )}
 
           <div className="space-y-3">
-            {SKIP_LICENSE_SCAN_FOR_TESTING ? (
-              <>
-                <button
-                  onClick={skipLicenseScanForTesting}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-semibold transition-colors"
-                >
-                  Continue (Testing Mode - No License Scan)
-                </button>
-                <button
-                  onClick={proceedToScan}
-                  className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 py-3 rounded-lg font-semibold transition-colors text-sm"
-                >
-                  Scan License Disk (Optional)
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={proceedToScan}
-                className={`w-full ${locationMismatch ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white py-3 rounded-lg font-semibold transition-colors`}
-              >
-                Continue to Refuel
-              </button>
-            )}
+            <button
+              onClick={proceedToScan}
+              className={`w-full ${locationMismatch ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2`}
+            >
+              <Camera className="w-5 h-5" />
+              Scan License Disk &amp; Continue
+            </button>
+            <button
+              onClick={skipLicenseScanForTesting}
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition-colors text-sm"
+            >
+              Continue Without Scan
+            </button>
 
             <button
               onClick={() => {

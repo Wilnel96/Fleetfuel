@@ -43,13 +43,22 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
     setTorchOn(false);
     setTorchAvailable(false);
 
+    // Wait for the video element to be in the DOM
+    if (!videoRef.current) {
+      await new Promise<void>(resolve => setTimeout(resolve, 100));
+    }
+    if (!videoRef.current) {
+      setError('Could not initialise camera. Please tap Retry.');
+      return;
+    }
+
     try {
       const hints = new Map();
       hints.set(DecodeHintType.TRY_HARDER, true);
       hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.PDF_417]);
 
       const reader = new BrowserPDF417Reader(hints, {
-        delayBetweenScanAttempts: 200,
+        delayBetweenScanAttempts: 150,
         delayBetweenScanSuccess: 500,
       });
       readerRef.current = reader;
@@ -58,8 +67,8 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
       const constraints: MediaStreamConstraints = {
         video: {
           facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
         },
       };
 
@@ -67,7 +76,7 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
 
       const controls = await reader.decodeFromConstraints(
         constraints,
-        videoRef.current!,
+        videoRef.current,
         (result, err, ctrl) => {
           if (!controlsRef.current) {
             // Already stopped — ignore stale callbacks
@@ -106,15 +115,16 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
       readerRef.current = null;
 
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setError('Camera permission denied. Please allow camera access in your browser settings and tap Retry.');
+        setError('Camera permission denied. On your phone, go to Settings > Apps > Browser > Permissions and enable Camera, then tap Retry.');
       } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        setError('No camera found on this device. Please enter the registration number manually.');
-      } else if (err.name === 'OverconstrainedError') {
-        // Retry without ideal constraints
-        setError('Camera could not start. Retrying with basic settings...');
+        setError('No camera found on this device. Enter the registration number manually using the button below.');
+      } else if (err.name === 'OverconstrainedError' || err.name === 'ConstraintNotSatisfiedError') {
+        setError('Camera could not start with HD settings. Retrying with basic settings...');
         setTimeout(() => startScanningBasic(), 500);
+      } else if (err.message?.includes('Could not start video source') || err.name === 'AbortError') {
+        setError('Camera is in use by another app. Close other apps using the camera then tap Retry.');
       } else {
-        setError('Could not start camera. Please enter the registration number manually.');
+        setError(`Camera error: ${err.message || err.name}. Tap Retry or enter manually.`);
       }
     }
   }, [stopScanning]);

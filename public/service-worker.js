@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fleet-fuel-v3-20260622';
+const CACHE_NAME = 'fleet-fuel-v4-20260622';
 const urlsToCache = [
   '/manifest.json'
 ];

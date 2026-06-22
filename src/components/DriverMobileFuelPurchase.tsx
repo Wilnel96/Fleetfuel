@@ -419,21 +419,21 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         console.error('Error fetching garage account:', garageAccountError);
       }
 
-      // Payment method is determined by the organization's configured payment_option.
-      // A local account record existing for this garage does NOT override the org's payment method —
-      // an org may have an account set up historically but now pays by card.
-      if (orgPaymentOption === 'Local Account') {
-        if (!garageAccount) {
-          setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
-          setCurrentStep('garage_selection');
-          return;
-        }
+      // Payment method: if a local account exists at this specific garage, use it —
+      // this allows an org to have both card payment (default) and local accounts at
+      // specific garages. The garage-specific account always takes precedence.
+      if (garageAccount) {
         setPaymentOption('Local Account');
         setIsLocalAccount(true);
         setGarageAccountNumber(garageAccount.account_number);
-        console.log('[FuelPurchase] Payment flow: Local Account (PIN + NFC + Account Number)');
+        console.log('[FuelPurchase] Payment flow: Local Account at this garage (overrides org default)');
+      } else if (orgPaymentOption === 'Local Account') {
+        // Org default is local account but no account exists at this garage
+        setError(`No local account exists for ${selectedGarage.name}. Please contact your administrator.`);
+        setCurrentStep('garage_selection');
+        return;
       } else {
-        // Card payment (or EFT — either way, use the stored payment card)
+        // No local account at this garage — use the org's default card
         const { data: paymentCard, error: cardError } = await supabase
           .from('organization_payment_cards')
           .select('*')
@@ -452,7 +452,7 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         setPaymentOption('Card Payment');
         setIsLocalAccount(false);
         setEncryptedCardData(paymentCard);
-        console.log('[FuelPurchase] Payment flow: Card Payment (PIN + NFC + Encrypted Card)');
+        console.log('[FuelPurchase] Payment flow: Card Payment (no local account at this garage)');
       }
 
       const fuelPrice = selectedGarage.fuel_prices?.[drawnVehicle.fuel_type || ''] || 0;

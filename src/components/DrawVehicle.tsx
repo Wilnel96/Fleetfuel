@@ -129,7 +129,11 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
     const result = await findVehicleByLicenseDisk(barcodeData);
     if (!result) {
-      setError(`Vehicle not found. The registration "${barcodeData.trim()}" does not match any active vehicle in your fleet. Please use the dropdown below to select the vehicle manually.`);
+      setError(`Vehicle not found. "${barcodeData.trim()}" does not match any active vehicle. Please use the dropdown below to select the vehicle manually.`);
+      return;
+    }
+    if ('errorMessage' in result) {
+      setError(result.errorMessage);
       return;
     }
 
@@ -389,16 +393,24 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     return true;
   };
 
-  const checkLicenseExpiry = (vehicle: Vehicle): boolean => {
+  const isLicenseExpired = (vehicle: Vehicle): boolean => {
     const expiryDate = new Date(vehicle.license_disk_expiry);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     expiryDate.setHours(0, 0, 0, 0);
-    return expiryDate >= today;
+    return expiryDate < today;
   };
 
-  const findVehicleByLicenseDisk = async (barcodeData: string): Promise<{ vehicle: Vehicle } | null> => {
+  const findVehicleByLicenseDisk = async (barcodeData: string): Promise<{ vehicle: Vehicle } | { errorMessage: string } | null> => {
     const cleanInput = barcodeData.trim().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
+
+    const checkAndReturn = (vehicle: Vehicle): { vehicle: Vehicle } | { errorMessage: string } => {
+      if (isLicenseExpired(vehicle)) {
+        const expiry = new Date(vehicle.license_disk_expiry).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        return { errorMessage: `Vehicle license disk for ${vehicle.registration_number} expired on ${expiry}. This vehicle cannot be drawn until the license is renewed.` };
+      }
+      return { vehicle };
+    };
 
     // Try barcode field matching (for actual scanned PDF417 data with % separators)
     if (barcodeData.includes('%')) {
@@ -407,10 +419,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
         const vehicleReg = vehicle.registration_number.toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
         for (const field of barcodeFields) {
           const cleanField = field.trim().toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
-          if (cleanField && cleanField === vehicleReg) {
-            if (!checkLicenseExpiry(vehicle)) { setError('Vehicle License Expired'); return null; }
-            return { vehicle };
-          }
+          if (cleanField && cleanField === vehicleReg) return checkAndReturn(vehicle);
         }
       }
     }
@@ -418,10 +427,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     // Try in-memory array match (direct registration lookup)
     for (const vehicle of vehicles) {
       const vehicleReg = vehicle.registration_number.toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
-      if (cleanInput === vehicleReg) {
-        if (!checkLicenseExpiry(vehicle)) { setError('Vehicle License Expired'); return null; }
-        return { vehicle };
-      }
+      if (cleanInput === vehicleReg) return checkAndReturn(vehicle);
     }
 
     // Last resort: query database directly (handles stale closure or any edge case)
@@ -434,10 +440,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
     if (dbVehicles) {
       for (const vehicle of dbVehicles) {
         const vehicleReg = vehicle.registration_number.toUpperCase().replace(/\s+/g, '').replace(/-/g, '');
-        if (cleanInput === vehicleReg || vehicleReg.includes(cleanInput)) {
-          if (!checkLicenseExpiry(vehicle)) { setError('Vehicle License Expired'); return null; }
-          return { vehicle };
-        }
+        if (cleanInput === vehicleReg || vehicleReg.includes(cleanInput)) return checkAndReturn(vehicle);
       }
     }
 

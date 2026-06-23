@@ -284,6 +284,8 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       ],
       'organizations': [
         { name: 'name', type: 'string' },
+        { name: 'entity_type', type: 'string' },
+        { name: 'entity_type_other', type: 'string' },
         { name: 'company_registration_number', type: 'string' },
         { name: 'vat_number', type: 'string' },
         { name: 'website', type: 'string' },
@@ -875,6 +877,8 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
       'previous_payment_method': 'Previous Payment Method',
       'credit_control_enabled': 'Credit Control Enabled',
       'suspend_services_after_days': 'Suspend Services After Days',
+      'entity_type': 'Entity Type',
+      'entity_type_other': 'Entity Type (Other)',
       'company_registration_number': 'Company Registration Number',
       'vat_number': 'VAT Number',
       'website': 'Website',

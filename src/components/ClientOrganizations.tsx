@@ -816,6 +816,7 @@ export default function ClientOrganizations() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">-- Select --</option>
+                    <option value="Individual">Individual</option>
                     <option value="Company">Company</option>
                     <option value="Closed Corporation">Closed Corporation</option>
                     <option value="Trust">Trust</option>

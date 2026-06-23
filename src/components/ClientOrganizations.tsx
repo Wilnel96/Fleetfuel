@@ -1932,6 +1932,9 @@ export default function ClientOrganizations() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Registration Number
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Entity Type
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -1940,7 +1943,7 @@ export default function ClientOrganizations() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredOrganizations.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
                   {searchTerm ? 'No organizations match your search.' : 'No client organizations yet. Click "Add Client Organization" to get started.'}
                 </td>
               </tr>
@@ -1955,6 +1958,13 @@ export default function ClientOrganizations() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {org.company_registration_number || '-'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {org.entity_type
+                      ? org.entity_type === 'Other'
+                        ? `Other${org.entity_type_other ? ` — ${org.entity_type_other}` : ''}`
+                        : org.entity_type
+                      : '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button

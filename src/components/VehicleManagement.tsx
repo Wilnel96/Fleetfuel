@@ -51,6 +51,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   const [canAddVehicle, setCanAddVehicle] = useState(false);
   const [canEditVehicle, setCanEditVehicle] = useState(false);
   const [canDeleteVehicle, setCanDeleteVehicle] = useState(false);
+  const [canReactivateVehicle, setCanReactivateVehicle] = useState(false);
   const [showOrgSelector, setShowOrgSelector] = useState(false);
   const [loadingOrganizations, setLoadingOrganizations] = useState(true);
   const [showLicenseExplanation, setShowLicenseExplanation] = useState(false);
@@ -143,10 +144,12 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
         setCanAddVehicle(full || orgUser?.can_add_vehicles || false);
         setCanEditVehicle(full || orgUser?.can_edit_vehicles || false);
         setCanDeleteVehicle(full || orgUser?.can_delete_vehicles || false);
+        setCanReactivateVehicle(full); // only main/secondary main users can reactivate
       } else {
         setCanAddVehicle(true);
         setCanEditVehicle(true);
         setCanDeleteVehicle(true);
+        setCanReactivateVehicle(true); // super admins can always reactivate
       }
 
       // Check if user is in management organization
@@ -1018,7 +1021,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                 <td className="px-6 py-4 whitespace-nowrap">
                   {vehicle.deleted_at ? (
                     <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                      Inactive
+                      Deleted
                     </span>
                   ) : (
                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
@@ -1033,14 +1036,18 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-2">
                     {vehicle.deleted_at ? (
-                      <button
-                        onClick={() => handleReactivate(vehicle.id)}
-                        className="flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
-                        title="Reactivate Vehicle"
-                      >
-                        <RotateCcw className="w-4 h-4" />
-                        Reactivate
-                      </button>
+                      canReactivateVehicle ? (
+                        <button
+                          onClick={() => handleReactivate(vehicle.id)}
+                          className="flex items-center gap-1 px-3 py-1 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                          title="Reactivate Vehicle"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          Reactivate
+                        </button>
+                      ) : (
+                        <span className="text-xs text-gray-400 italic">Main User authorization required</span>
+                      )
                     ) : (
                       <>
                         {canEditVehicle && (

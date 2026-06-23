@@ -39,6 +39,41 @@ import { DriverData } from './components/DriverAuth';
 type UserMode = 'admin' | 'driver' | 'garage' | null;
 type ClientPortalType = 'card' | 'account' | 'both' | null;
 
+function SuperAdminReportsMenu({ onNavigate }: { onNavigate: (view: string) => void }) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-2">
+        <button
+          onClick={() => onNavigate('dashboard')}
+          className="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 text-sm"
+        >
+          ← Back to Main Menu
+        </button>
+      </div>
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">Reports</h1>
+        <p className="text-sm text-gray-500 mt-1">Select a report type</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <button
+          onClick={() => onNavigate('reports')}
+          className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-5 text-left transition-colors shadow-sm"
+        >
+          <h3 className="font-semibold text-gray-900 mb-1">Consolidated Reports</h3>
+          <p className="text-sm text-gray-500">Fuel usage, transactions, and system-wide analytics</p>
+        </button>
+        <button
+          onClick={() => onNavigate('custom-reports')}
+          className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-5 text-left transition-colors shadow-sm"
+        >
+          <h3 className="font-semibold text-gray-900 mb-1">Custom Report Builder</h3>
+          <p className="text-sm text-gray-500">Build and export custom reports from any table</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [session, setSession] = useState<any>(null);
   const [driverData, setDriverData] = useState<DriverData | null>(null);
@@ -1016,7 +1051,11 @@ function App() {
             ? <FuelInvoicesPage key="fuel-invoices-admin" onBack={() => setCurrentView(null)} />
             : <ClientFuelInvoices key="fuel-invoices" onNavigate={setCurrentView} />
         ) : currentView === 'reports-menu' ? (
-          <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" paymentOption={paymentOption} />
+          userRole === 'super_admin' ? (
+            <SuperAdminReportsMenu key="reports-menu" onNavigate={setCurrentView} />
+          ) : (
+            <ClientDashboard key="reports-menu" onNavigate={setCurrentView} onSignOut={handleAdminSignOut} initialView="reports" paymentOption={paymentOption} />
+          )
         ) : currentView === 'reports' ? (
           userRole === 'super_admin' ? <ConsolidatedReports key="reports" onNavigate={setCurrentView} /> : <ReportsDashboard key="reports" onNavigate={setCurrentView} />
         ) : currentView === 'backoffice' ? (

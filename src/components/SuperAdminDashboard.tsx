@@ -42,18 +42,11 @@ export default function SuperAdminDashboard({ onNavigate }: SuperAdminDashboardP
       color: 'orange',
     },
     {
-      id: 'reports',
+      id: 'reports-menu',
       title: 'Reports',
-      description: 'Consolidated system reports',
+      description: 'Consolidated reports and custom report builder',
       icon: FileText,
       color: 'amber',
-    },
-    {
-      id: 'custom-reports',
-      title: 'Custom Report Builder',
-      description: 'Build custom reports from any table',
-      icon: FileText,
-      color: 'violet',
     },
     {
       id: 'backoffice',

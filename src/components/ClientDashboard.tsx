@@ -321,7 +321,7 @@ export default function ClientDashboard({ onNavigate, onSignOut, paymentOption, 
 
         {canAccessReports && (
           <button
-            onClick={() => { setShowReportsMenu(true); onNavigate('reports-menu'); }}
+            onClick={() => setShowReportsMenu(true)}
             className="bg-white hover:bg-gray-50 border border-gray-200 rounded-lg p-4 text-left transition-colors"
           >
             <div className="flex items-center gap-3 mb-2">

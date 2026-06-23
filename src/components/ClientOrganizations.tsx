@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Building2, Plus, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, Trash2 } from 'lucide-react';
+import { Building2, Plus, CreditCard as Edit2, Save, X, AlertCircle, CheckCircle, Search, Trash2, Store } from 'lucide-react';
 
 interface ClientOrganization {
   id: string;
@@ -28,6 +28,8 @@ interface ClientOrganization {
   year_end_day: number | null;
   monthly_fee_per_vehicle: number | null;
   parent_org_id: string | null;
+  is_garage_managed: boolean | null;
+  managing_garage_id: string | null;
   bank_name: string | null;
   bank_account_holder: string | null;
   bank_account_number: string | null;
@@ -131,6 +133,7 @@ export default function ClientOrganizations() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [viewingPermissionsUserId, setViewingPermissionsUserId] = useState<string | null>(null);
+  const [garageNames, setGarageNames] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -246,6 +249,22 @@ export default function ClientOrganizations() {
 
         console.log('Loaded organizations:', data);
         setOrganizations(data || []);
+
+        const garageIds = (data || [])
+          .filter(o => o.managing_garage_id)
+          .map(o => o.managing_garage_id as string);
+
+        if (garageIds.length > 0) {
+          const { data: garages } = await supabase
+            .from('garages')
+            .select('id, name')
+            .in('id', garageIds);
+          if (garages) {
+            const map: Record<string, string> = {};
+            garages.forEach(g => { map[g.id] = g.name; });
+            setGarageNames(map);
+          }
+        }
       }
     } catch (err) {
       console.error('Load organizations error:', err);
@@ -753,9 +772,25 @@ export default function ClientOrganizations() {
       {showForm && (
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">
-              {editingId ? 'Edit Client Organization' : 'New Client Organization'}
-            </h2>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                {editingId ? 'Edit Client Organization' : 'New Client Organization'}
+              </h2>
+              {editingId && (() => {
+                const org = organizations.find(o => o.id === editingId);
+                if (org?.is_garage_managed && org.managing_garage_id) {
+                  return (
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-medium">
+                        <Store className="w-3 h-3" />
+                        Garage Managed Client — {garageNames[org.managing_garage_id] || org.managing_garage_id}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
             <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
               <X className="w-6 h-6" />
             </button>
@@ -1936,6 +1971,9 @@ export default function ClientOrganizations() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Entity Type
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Managing Garage
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
@@ -1944,7 +1982,7 @@ export default function ClientOrganizations() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredOrganizations.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
                   {searchTerm ? 'No organizations match your search.' : 'No client organizations yet. Click "Add Client Organization" to get started.'}
                 </td>
               </tr>
@@ -1966,6 +2004,16 @@ export default function ClientOrganizations() {
                         ? `Other${org.entity_type_other ? ` — ${org.entity_type_other}` : ''}`
                         : org.entity_type
                       : '-'}
+                  </td>
+                  <td className="px-6 py-4 text-sm">
+                    {org.is_garage_managed && org.managing_garage_id ? (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full text-xs font-medium">
+                        <Store className="w-3 h-3" />
+                        {garageNames[org.managing_garage_id] || 'Loading...'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <button

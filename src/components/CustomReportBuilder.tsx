@@ -90,7 +90,7 @@ export default function CustomReportBuilder({ onNavigate }: CustomReportBuilderP
         { name: 'vehicle_exceptions', displayName: 'Vehicle Exceptions' },
         { name: 'garages', displayName: 'Garages' },
         ...(clientOrg ? [] : [
-          { name: 'organizations', displayName: 'Organizations' },
+          { name: 'organizations', displayName: 'Client Organizations' },
           { name: 'daily_eft_batches', displayName: 'EFT Batches' },
           { name: 'eft_batch_items', displayName: 'EFT Batch Items' }
         ]),

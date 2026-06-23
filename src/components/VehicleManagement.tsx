@@ -58,6 +58,8 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
   const [totalCount, setTotalCount] = useState(0);
   const [pageSize] = useState(50);
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(null);
+  const [regNumberStatus, setRegNumberStatus] = useState<{ available: boolean; reason: string; message: string } | null>(null);
+  const [checkingRegNumber, setCheckingRegNumber] = useState(false);
 
   const [formData, setFormData] = useState({
     registration_number: '',
@@ -343,7 +345,13 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
       resetForm();
       loadVehicles();
     } catch (error: any) {
-      alert(error.message);
+      let msg = error.message || 'An error occurred';
+      if (msg.includes('vehicles_registration_number_active_unique') || msg.includes('duplicate key') && msg.includes('registration')) {
+        msg = 'This registration number is already registered to an active vehicle. If the vehicle was sold, the previous owner must first delete/deactivate it before it can be re-registered.';
+      } else if (msg.includes('vehicles_org_vin_unique') || msg.includes('duplicate key') && msg.includes('vin')) {
+        msg = 'A vehicle with this VIN number is already registered to your organisation.';
+      }
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -406,6 +414,22 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
     }
   };
 
+  const checkRegNumberAvailability = async (regNumber: string) => {
+    if (!regNumber.trim() || editingVehicle) return;
+    setCheckingRegNumber(true);
+    setRegNumberStatus(null);
+    try {
+      const { data } = await supabase.rpc('check_registration_number_availability', {
+        p_reg_number: regNumber.trim(),
+      });
+      if (data) setRegNumberStatus(data as any);
+    } catch {
+      // silently ignore check failures
+    } finally {
+      setCheckingRegNumber(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       registration_number: '',
@@ -431,6 +455,7 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
     });
     setEditingVehicle(null);
     setShowForm(false);
+    setRegNumberStatus(null);
   };
 
   return (
@@ -512,11 +537,34 @@ export default function VehicleManagement({ onNavigate }: VehicleManagementProps
                     <input
                       type="text"
                       value={formData.registration_number}
-                      onChange={(e) => setFormData({ ...formData, registration_number: e.target.value.toUpperCase() })}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm uppercase"
+                      onChange={(e) => {
+                        setFormData({ ...formData, registration_number: e.target.value.toUpperCase() });
+                        setRegNumberStatus(null);
+                      }}
+                      onBlur={(e) => checkRegNumberAvailability(e.target.value)}
+                      className={`w-full border rounded-lg px-3 py-1.5 text-sm uppercase ${
+                        regNumberStatus && !regNumberStatus.available
+                          ? 'border-red-400 bg-red-50'
+                          : regNumberStatus?.reason === 'previously_registered'
+                          ? 'border-amber-400 bg-amber-50'
+                          : 'border-gray-300'
+                      }`}
                       placeholder="ABC 123 GP"
                       required
                     />
+                    {checkingRegNumber && (
+                      <p className="text-xs text-gray-500 mt-0.5">Checking...</p>
+                    )}
+                    {regNumberStatus && !checkingRegNumber && (
+                      <p className={`text-xs mt-0.5 ${
+                        !regNumberStatus.available ? 'text-red-600' :
+                        regNumberStatus.reason === 'previously_registered' ? 'text-amber-700' :
+                        'text-green-600'
+                      }`}>
+                        {regNumberStatus.reason === 'previously_registered' && '⚠ '}
+                        {regNumberStatus.message}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-0.5">

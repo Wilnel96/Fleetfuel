@@ -13,6 +13,7 @@ export interface DriverData {
   organizationId: string;
   token: string;
   hasPIN?: boolean;
+  requireLicenseScan?: boolean;
 }
 
 export default function DriverAuth({ onLogin, onBack }: DriverAuthProps) {

@@ -91,6 +91,7 @@ Deno.serve(async (req: Request) => {
           lastName: driver.surname,
           organizationId: driver.organization_id,
           hasPIN: paymentSettings?.is_pin_active || false,
+          requireLicenseScan: driver.require_license_scan !== false,
         },
       }),
       {

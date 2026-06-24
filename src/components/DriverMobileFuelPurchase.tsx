@@ -922,9 +922,15 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
     setLoading(false);
   };
 
-  const proceedToScan = () => {
-    setCurrentStep('license_scan');
-    setShowBarcodeScanner(true);
+  const proceedToScan = async () => {
+    if (driver.requireLicenseScan === false) {
+      setLicenseDiskScan({ image: '', extractedText: 'SCAN_NOT_REQUIRED' });
+      setCurrentStep('spending_check');
+      await checkSpendingLimits();
+    } else {
+      setCurrentStep('license_scan');
+      setShowBarcodeScanner(true);
+    }
   };
 
   const skipLicenseScanForTesting = async () => {
@@ -1392,14 +1398,16 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
               className={`w-full ${locationMismatch ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2`}
             >
               <Camera className="w-5 h-5" />
-              Scan License Disk &amp; Continue
+              {driver.requireLicenseScan === false ? 'Continue' : 'Scan License Disk & Continue'}
             </button>
-            <button
-              onClick={skipLicenseScanForTesting}
-              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition-colors text-sm"
-            >
-              Continue Without Scan
-            </button>
+            {driver.requireLicenseScan !== false && (
+              <button
+                onClick={skipLicenseScanForTesting}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition-colors text-sm"
+              >
+                Continue Without Scan
+              </button>
+            )}
 
             <button
               onClick={() => {

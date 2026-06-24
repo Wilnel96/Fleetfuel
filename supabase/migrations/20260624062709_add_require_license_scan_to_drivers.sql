@@ -1,0 +1,1 @@
+ALTER TABLE drivers ADD COLUMN IF NOT EXISTS require_license_scan boolean NOT NULL DEFAULT true;

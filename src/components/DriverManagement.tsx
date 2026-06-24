@@ -27,6 +27,7 @@ interface Driver {
   prdp_type: string | null;
   prdp_expiry_date: string | null;
   medical_certificate_on_file: boolean;
+  require_license_scan: boolean;
   status: string;
   deleted_at?: string | null;
   created_at: string;
@@ -60,6 +61,7 @@ interface DriverFormData {
   prdp_type: string;
   prdp_expiry_date: string;
   medical_certificate_on_file: boolean;
+  require_license_scan: boolean;
   status: string;
   organization_id?: string;
 }
@@ -144,6 +146,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
     prdp_type: '',
     prdp_expiry_date: '',
     medical_certificate_on_file: false,
+    require_license_scan: true,
     status: 'active',
     organization_id: '',
   });
@@ -397,6 +400,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
         prdp_type: driver.prdp_type || '',
         prdp_expiry_date: driver.prdp_expiry_date || '',
         medical_certificate_on_file: driver.medical_certificate_on_file,
+        require_license_scan: driver.require_license_scan !== false,
         status: driver.status,
       });
 
@@ -430,6 +434,7 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
         prdp_type: '',
         prdp_expiry_date: '',
         medical_certificate_on_file: false,
+        require_license_scan: true,
         status: 'active',
         organization_id: orgId || '',
       });
@@ -1387,6 +1392,19 @@ export default function DriverManagement({ onNavigate }: DriverManagementProps =
                     <option value="no">No</option>
                     <option value="yes">Yes</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">License Disk Scan Required</label>
+                  <select
+                    value={formData.require_license_scan ? 'yes' : 'no'}
+                    onChange={(e) => setFormData({ ...formData, require_license_scan: e.target.value === 'yes' })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="yes">Compulsory – must scan license disk</option>
+                    <option value="no">Not required – driver may skip scan</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">Set to "Not required" for drivers (e.g. a CEO or spouse) who should not be required to scan the license disk when refuelling.</p>
                 </div>
 
                 <div>

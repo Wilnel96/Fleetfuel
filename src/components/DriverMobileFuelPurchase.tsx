@@ -725,6 +725,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
         setSpendingLimitInfo(null);
       }
 
+      // Pre-populate price so the user can edit it freely without the || fallback snapping back
+      if (fuelPrice > 0) {
+        setFormData(prev => ({ ...prev, pricePerLiter: fuelPrice.toFixed(2) }));
+      }
+
       // Proceed to authorized
       setCurrentStep('authorized');
     } catch (err) {
@@ -1528,9 +1533,11 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
           <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Authorized to Refuel</h2>
 
           <div className="bg-green-50 rounded-lg p-4 mb-6">
-            <p className="text-sm font-medium text-green-900 mb-2 text-center">
-              License disk verified successfully
-            </p>
+            {driver.requireLicenseScan !== false && (
+              <p className="text-sm font-medium text-green-900 mb-2 text-center">
+                License disk verified successfully
+              </p>
+            )}
             <p className="text-xs text-green-700 text-center">
               You are authorized to refuel at the selected garage
             </p>
@@ -1576,12 +1583,10 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-gray-700">R</span>
                       <input
-                        type="number"
+                        type="text"
                         inputMode="decimal"
-                        step="0.01"
-                        min="0"
                         placeholder="e.g. 22.50"
-                        value={formData.pricePerLiter || (spendingLimitInfo.pricePerLiter > 0 ? spendingLimitInfo.pricePerLiter.toFixed(2) : '')}
+                        value={formData.pricePerLiter}
                         onChange={e => {
                           const price = e.target.value;
                           setFormData(prev => ({ ...prev, pricePerLiter: price }));
@@ -2445,9 +2450,8 @@ export default function DriverMobileFuelPurchase({ driver, onLogout, onComplete 
                       )}
                     </label>
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.pricePerLiter}
                       onChange={(e) => {
                         const newPrice = e.target.value;

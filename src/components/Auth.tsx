@@ -42,11 +42,12 @@ export default function Auth({ onBack, onSignup, onPasswordReset, portalError, p
       // Clear any stale flags
       localStorage.removeItem('pendingGarageLogin');
 
-      // onAuthStateChange in App.tsx fires SIGNED_IN and handles navigation.
-      // Keep loading=true so the button stays disabled until the component unmounts.
-      // If the component somehow stays mounted (e.g. RLS blocks profile load),
-      // the 10-second emergency timeout in App.tsx will recover.
-      // Nothing more to do here — do NOT call setLoading(false).
+      // onAuthStateChange in App.tsx handles navigation after SIGNED_IN fires.
+      // Safety timeout: if navigation hasn't happened in 8s, reset so user isn't stuck.
+      setTimeout(() => {
+        setLoading(false);
+        setError('Sign-in succeeded but the app did not respond. Please refresh and try again.');
+      }, 8000);
 
     } catch (err: any) {
       console.error('[Auth] Auth error:', err);

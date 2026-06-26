@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Look up the garage's organization_id
+    // Look up the garage
     const { data: garage, error: garageError } = await supabase
       .from("garages")
       .select("id, name, organization_id")
@@ -71,32 +71,48 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Garage must have an organization_id to link users to it
-    if (!garage.organization_id) {
-      return new Response(JSON.stringify({ error: "This garage does not have an organisation linked. Save the garage first, then add portal users." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Auto-create a garage organisation if one doesn't exist yet
+    let orgId = garage.organization_id;
+    if (!orgId) {
+      const { data: newOrg, error: orgErr } = await supabase
+        .from("organizations")
+        .insert({
+          name: garage.name,
+          organization_type: "garage",
+          is_management_org: false,
+          status: "active",
+        })
+        .select("id")
+        .single();
+
+      if (orgErr || !newOrg) {
+        throw new Error(`Failed to create garage organisation: ${orgErr?.message}`);
+      }
+
+      orgId = newOrg.id;
+
+      // Link the garage to its new organisation
+      await supabase
+        .from("garages")
+        .update({ organization_id: orgId })
+        .eq("id", garageId);
     }
 
-    const orgId = garage.organization_id;
     const email = contact.email.trim().toLowerCase();
 
     // Check if auth user already exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users.find((u) => u.email === email);
+    const existingUser = existingUsers?.users.find((u: any) => u.email === email);
 
     let authUserId: string;
 
     if (existingUser) {
-      // Update password
       const { error: updateErr } = await supabase.auth.admin.updateUserById(existingUser.id, {
         password: contact.password,
       });
       if (updateErr) throw new Error(`Failed to update password: ${updateErr.message}`);
       authUserId = existingUser.id;
     } else {
-      // Create new auth user
       const { data: newUser, error: createErr } = await supabase.auth.admin.createUser({
         email,
         password: contact.password,
@@ -115,8 +131,7 @@ Deno.serve(async (req: Request) => {
     await supabase.from("profiles").upsert({
       id: authUserId,
       role: "garage_user",
-      name: contact.name,
-      surname: contact.surname,
+      full_name: `${contact.name} ${contact.surname}`.trim(),
       organization_id: orgId,
     }, { onConflict: "id" });
 
@@ -158,7 +173,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, userId: authUserId }), {
+    return new Response(JSON.stringify({ success: true, userId: authUserId, orgId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: any) {

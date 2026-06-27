@@ -29,6 +29,9 @@ interface FuelInvoice {
   fuel_amount?: number;
   client_name?: string;
   client_address?: string;
+  client_vat_number?: string;
+  payment_option?: string;
+  card_last_four_digits?: string;
 }
 
 interface ClientFuelInvoicesProps {
@@ -140,6 +143,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         garage_address: invoice.garage_address,
         client_name: invoice.client_name,
         client_address: invoice.client_address,
+        client_vat_number: invoice.client_vat_number,
         fuel_type: invoice.fuel_type,
         liters: invoice.liters,
         price_per_liter: invoice.price_per_liter,
@@ -150,6 +154,8 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         oil_brand: invoice.oil_brand,
         oil_unit_price: invoice.oil_unit_price,
         oil_total_amount: invoice.oil_total_amount,
+        payment_option: invoice.payment_option,
+        card_last_four_digits: invoice.card_last_four_digits,
       };
 
       const pdfBlob = await generateFuelInvoicePDF(invoiceData);
@@ -264,6 +270,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         garage_address: invoice.garage_address,
         client_name: invoice.client_name,
         client_address: invoice.client_address,
+        client_vat_number: invoice.client_vat_number,
         fuel_type: invoice.fuel_type,
         liters: invoice.liters,
         price_per_liter: invoice.price_per_liter,
@@ -273,7 +280,9 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         oil_type: invoice.oil_type,
         oil_brand: invoice.oil_brand,
         oil_unit_price: invoice.oil_unit_price,
-        oil_total_amount: invoice.oil_total_amount
+        oil_total_amount: invoice.oil_total_amount,
+        payment_option: invoice.payment_option,
+        card_last_four_digits: invoice.card_last_four_digits,
       });
 
       downloadPDFBlob(pdfBlob, `fuel-invoice-${invoice.invoice_number}.pdf`);
@@ -310,6 +319,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         garage_address: invoice.garage_address,
         client_name: invoice.client_name,
         client_address: invoice.client_address,
+        client_vat_number: invoice.client_vat_number,
         fuel_type: invoice.fuel_type,
         liters: invoice.liters,
         price_per_liter: invoice.price_per_liter,
@@ -320,6 +330,8 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         oil_brand: invoice.oil_brand,
         oil_unit_price: invoice.oil_unit_price,
         oil_total_amount: invoice.oil_total_amount,
+        payment_option: invoice.payment_option,
+        card_last_four_digits: invoice.card_last_four_digits,
       }, 15, { compact: true });
     });
 
@@ -366,6 +378,7 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         garage_address: invoice.garage_address,
         client_name: invoice.client_name,
         client_address: invoice.client_address,
+        client_vat_number: invoice.client_vat_number,
         fuel_type: invoice.fuel_type,
         liters: invoice.liters,
         price_per_liter: invoice.price_per_liter,
@@ -376,6 +389,8 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
         oil_brand: invoice.oil_brand,
         oil_unit_price: invoice.oil_unit_price,
         oil_total_amount: invoice.oil_total_amount,
+        payment_option: invoice.payment_option,
+        card_last_four_digits: invoice.card_last_four_digits,
       }, 15, { compact: true });
     });
 
@@ -472,6 +487,9 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
                 {selectedInvoice.client_address && selectedInvoice.client_address.split('\n').filter(Boolean).map((line, i) => (
                   <div key={i} className="text-gray-700 text-sm">{line}</div>
                 ))}
+                {selectedInvoice.client_vat_number && (
+                  <div className="text-gray-600 text-sm">VAT No: {selectedInvoice.client_vat_number}</div>
+                )}
               </div>
             </div>
           )}
@@ -574,6 +592,14 @@ export default function ClientFuelInvoices({ onNavigate }: ClientFuelInvoicesPro
               </div>
             </div>
           </div>
+
+          {(selectedInvoice.payment_option === 'Card Payment' || selectedInvoice.payment_option === 'Local Account') && (
+            <div className={`mt-4 rounded-lg p-3 text-center font-semibold text-sm ${selectedInvoice.payment_option === 'Card Payment' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-blue-50 text-blue-800 border border-blue-200'}`}>
+              {selectedInvoice.payment_option === 'Card Payment'
+                ? `Paid by Credit/Debit Card${selectedInvoice.card_last_four_digits ? `  •  **** **** **** ${selectedInvoice.card_last_four_digits}` : ''}`
+                : 'Local Account Invoice — To be paid'}
+            </div>
+          )}
 
           <div className="mt-6 text-base text-gray-600 text-center">
             <p>This invoice is for accounting and tax compliance purposes.</p>

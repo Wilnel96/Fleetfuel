@@ -74,7 +74,10 @@ interface FuelInvoice {
   payment_due_date?: string;
   client_name?: string;
   client_address?: string;
+  client_vat_number?: string;
   organization_id?: string;
+  payment_option?: string;
+  card_last_four_digits?: string;
 }
 
 interface FeeInvoice {
@@ -662,9 +665,12 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         // Preserve client identity fields from the RPC result
         client_name: invoice.client_name || '',
         client_address: invoice.client_address || '',
+        client_vat_number: invoice.client_vat_number || undefined,
         organization_id: invoice.organization_id || '',
         oil_brand: invoice.oil_brand || undefined,
         garage_vat_number: invoice.garage_vat_number || undefined,
+        payment_option: invoice.payment_option || undefined,
+        card_last_four_digits: invoice.card_last_four_digits || undefined,
       }));
 
       setFinancialInvoices(transformedData);
@@ -737,19 +743,21 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
           ].filter(Boolean).join(', ')
         : '';
 
-      // Resolve client name/address — prefer stored values, fall back to org lookup for older invoices
+      // Resolve client name/address/vat — prefer stored values, fall back to org lookup for older invoices
       let clientName = invoice.client_name || '';
       let clientAddress = invoice.client_address || '';
+      let clientVatNumber = invoice.client_vat_number || '';
 
-      if ((!clientName || !clientAddress) && invoice.organization_id) {
+      if ((!clientName || !clientAddress || !clientVatNumber) && invoice.organization_id) {
         const { data: orgData } = await supabase
           .from('organizations')
-          .select('name, address_line_1, address_line_2, city, province, postal_code')
+          .select('name, address_line_1, address_line_2, city, province, postal_code, vat_number')
           .eq('id', invoice.organization_id)
           .maybeSingle();
 
         if (orgData) {
           if (!clientName) clientName = orgData.name;
+          if (!clientVatNumber) clientVatNumber = orgData.vat_number || '';
           if (!clientAddress) {
             clientAddress = [
               orgData.address_line_1,
@@ -773,6 +781,7 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         garage_address: garageAddress,
         client_name: clientName || undefined,
         client_address: clientAddress || undefined,
+        client_vat_number: clientVatNumber || undefined,
         fuel_type: invoice.fuel_type,
         liters: invoice.liters,
         price_per_liter: invoice.price_per_liter,
@@ -782,7 +791,9 @@ export default function GarageLocalAccounts({ garageId, garageName, garageEmail,
         oil_type: invoice.oil_type,
         oil_brand: invoice.oil_brand,
         oil_unit_price: invoice.oil_unit_price,
-        oil_total_amount: invoice.oil_total_amount
+        oil_total_amount: invoice.oil_total_amount,
+        payment_option: invoice.payment_option,
+        card_last_four_digits: invoice.card_last_four_digits,
       });
 
       downloadPDFBlob(pdfBlob, `fuel-invoice-${invoice.invoice_number}.pdf`);

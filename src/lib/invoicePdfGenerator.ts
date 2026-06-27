@@ -11,6 +11,7 @@ export interface InvoiceData {
   garage_address: string;
   client_name?: string;
   client_address?: string;
+  client_vat_number?: string;
   fuel_type: string;
   liters: number | string;
   price_per_liter: number | string;
@@ -21,6 +22,8 @@ export interface InvoiceData {
   oil_brand?: string;
   oil_unit_price?: number | string;
   oil_total_amount?: number | string;
+  payment_option?: string;
+  card_last_four_digits?: string;
 }
 
 export function renderInvoiceToPDF(
@@ -101,7 +104,8 @@ export function renderInvoiceToPDF(
 
     y += gap - 1;
     const clientLines = invoice.client_address ? invoice.client_address.split('\n').filter(Boolean) : [];
-    const clientBoxHeight = (compact ? 5 : 6) + clientLines.length * (compact ? 4 : 5) + 3;
+    const hasClientVat = !!invoice.client_vat_number;
+    const clientBoxHeight = (compact ? 5 : 6) + clientLines.length * (compact ? 4 : 5) + (hasClientVat ? (compact ? 4 : 5) : 0) + 3;
     pdf.setFillColor(249, 250, 251);
     pdf.rect(margin, y, contentWidth, clientBoxHeight, 'F');
 
@@ -117,6 +121,14 @@ export function renderInvoiceToPDF(
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(75, 85, 99);
       pdf.text(line, margin + 3, y);
+    }
+
+    if (hasClientVat) {
+      y += compact ? 4 : 5;
+      pdf.setFontSize(compact ? 7 : 9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(75, 85, 99);
+      pdf.text(`VAT No: ${invoice.client_vat_number}`, margin + 3, y);
     }
 
     y += compact ? 6 : 8;
@@ -310,6 +322,35 @@ export function renderInvoiceToPDF(
   pdf.text(`R ${parseFloat(invoice.total_amount.toString()).toFixed(2)}`, pageWidth - margin - 5, y, { align: 'right' });
 
   y += compact ? 14 : 18;
+
+  // ── PAYMENT STATUS ───────────────────────────────────────────────────────────
+  const isCardPayment = invoice.payment_option === 'Card Payment';
+  const isLocalAccount = invoice.payment_option === 'Local Account';
+  if (isCardPayment || isLocalAccount) {
+    const boxColor: [number, number, number] = isCardPayment ? [240, 253, 244] : [239, 246, 255];
+    const borderColor: [number, number, number] = isCardPayment ? [134, 239, 172] : [147, 197, 253];
+    const textColor: [number, number, number] = isCardPayment ? [22, 101, 52] : [30, 64, 175];
+    const boxH = compact ? 10 : 12;
+    pdf.setFillColor(...boxColor);
+    pdf.setDrawColor(...borderColor);
+    pdf.setLineWidth(0.4);
+    pdf.roundedRect(margin, y, contentWidth, boxH, 2, 2, 'FD');
+    y += compact ? 6 : 8;
+    pdf.setFontSize(compact ? 8 : 9);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...textColor);
+    let paymentText: string;
+    if (isCardPayment) {
+      paymentText = invoice.card_last_four_digits
+        ? `Paid by Credit/Debit Card  •  **** **** **** ${invoice.card_last_four_digits}`
+        : 'Paid by Credit/Debit Card';
+    } else {
+      paymentText = 'Local Account Invoice — To be paid';
+    }
+    pdf.text(paymentText, pageWidth / 2, y, { align: 'center' });
+    y += compact ? 6 : 8;
+  }
+
   pdf.setFontSize(compact ? 7 : 9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(75, 85, 99);

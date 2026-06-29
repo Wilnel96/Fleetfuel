@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Camera, RefreshCw, X, Keyboard, Zap, CheckCircle, Wifi } from 'lucide-react';
+import { Camera, RefreshCw, X, Keyboard, Zap, CheckCircle, Wifi, AlertCircle } from 'lucide-react';
 import { BrowserPDF417Reader } from '@zxing/browser';
 import { DecodeHintType, BarcodeFormat } from '@zxing/library';
 
@@ -7,11 +7,6 @@ interface BarcodeScannerProps {
   onScan: (data: string) => void;
   onCancel: () => void;
   label: string;
-}
-
-// Returns true if Chrome/Android native BarcodeDetector is available
-function hasNativeDetector(): boolean {
-  return typeof window !== 'undefined' && 'BarcodeDetector' in window;
 }
 
 export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScannerProps) {
@@ -32,6 +27,13 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
   const [framesScanned, setFramesScanned] = useState(0);
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+  const [showDebug, setShowDebug] = useState(false);
+
+  const addDebug = useCallback((msg: string) => {
+    const ts = new Date().toLocaleTimeString('en-ZA', { hour12: false });
+    setDebugInfo(prev => [...prev.slice(-29), `[${ts}] ${msg}`]);
+  }, []);
 
   const stopAll = useCallback(() => {
     activeRef.current = false;
@@ -53,18 +55,20 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
 
   const handleFound = useCallback((data: string) => {
     if (!data || !data.trim()) return;
+    addDebug(`FOUND: ${data.substring(0, 40)}...`);
     stopAll();
     setScannedData(data.trim());
-  }, [stopAll]);
+  }, [stopAll, addDebug]);
 
-  // ---------- Native BarcodeDetector scan loop (Chrome / Android) ----------
+  // ---------- Native BarcodeDetector scan loop ----------
   const runNativeLoop = useCallback(async () => {
     const detector = detectorRef.current;
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!detector || !video || !canvas || !activeRef.current) return;
+
     if (video.readyState < 2 || !video.videoWidth) {
-      scanTimerRef.current = setTimeout(runNativeLoop, 150);
+      scanTimerRef.current = setTimeout(runNativeLoop, 200);
       return;
     }
 
@@ -80,45 +84,57 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
     try {
       const barcodes: any[] = await detector.detect(canvas);
       if (barcodes && barcodes.length > 0) {
-        const found =
-          barcodes.find(b => (b.format || '').toLowerCase().includes('pdf')) ||
-          barcodes[0];
+        const found = barcodes.find(b =>
+          (b.format || '').toLowerCase().includes('pdf') ||
+          (b.format || '').toLowerCase().includes('417')
+        ) || barcodes[0];
         if (found?.rawValue) {
+          addDebug(`Native detected: ${found.format} = ${found.rawValue.substring(0, 30)}`);
           handleFound(found.rawValue);
           return;
         }
       }
-    } catch (_) {}
+    } catch (e: any) {
+      addDebug(`Native detect error: ${e?.message || e}`);
+    }
 
     if (activeRef.current) {
-      scanTimerRef.current = setTimeout(runNativeLoop, 120);
+      scanTimerRef.current = setTimeout(runNativeLoop, 150);
     }
-  }, [handleFound]);
+  }, [handleFound, addDebug]);
 
-  const startNativeScanning = useCallback(async (stream: MediaStream): Promise<boolean> => {
-    if (!hasNativeDetector()) return false;
+  // Returns true if native BarcodeDetector supports a PDF417-like format
+  const tryNativeScanning = useCallback(async (stream: MediaStream): Promise<boolean> => {
+    if (!('BarcodeDetector' in window)) {
+      addDebug('BarcodeDetector API not available');
+      return false;
+    }
+
+    let supported: string[] = [];
     try {
-      let formats: string[] = [];
-      try {
-        formats = await (window as any).BarcodeDetector.getSupportedFormats();
-      } catch (_) {}
+      supported = await (window as any).BarcodeDetector.getSupportedFormats();
+      addDebug(`Native formats: ${supported.join(', ')}`);
+    } catch (e) {
+      addDebug('getSupportedFormats failed');
+      return false;
+    }
 
-      let detector: any;
-      if (formats.length > 0) {
-        // Use all supported formats — pdf417 data arrives as whatever format string Chrome uses
-        detector = new (window as any).BarcodeDetector({ formats });
-      } else {
-        detector = new (window as any).BarcodeDetector();
-      }
-      detectorRef.current = detector;
+    const pdfFormat = supported.find(f =>
+      f.toLowerCase().includes('pdf') || f.toLowerCase().includes('417')
+    );
+    if (!pdfFormat) {
+      addDebug('PDF417 NOT in native supported formats — skipping native');
+      return false;
+    }
+
+    addDebug(`Using native with format: ${pdfFormat}`);
+    try {
+      detectorRef.current = new (window as any).BarcodeDetector({ formats: [pdfFormat] });
     } catch {
       return false;
     }
 
-    setScanMethod('native');
-    setIsScanning(true);
-
-    // Check torch availability on the camera track
+    // Torch check
     const track = stream.getVideoTracks()[0];
     if (track) {
       try {
@@ -127,39 +143,83 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
       } catch (_) {}
     }
 
+    setScanMethod('native');
+    setIsScanning(true);
     runNativeLoop();
     return true;
-  }, [runNativeLoop]);
+  }, [runNativeLoop, addDebug]);
 
-  // ---------- ZXing fallback ----------
-  const startZxingScanning = useCallback(async (stream: MediaStream) => {
+  // ---------- ZXing via decodeFromVideoDevice (reliable, managed) ----------
+  const startZxingScanning = useCallback(async () => {
     if (!videoRef.current) return;
-    setScanMethod('zxing');
-    setIsScanning(true);
+    addDebug('Starting ZXing PDF417 scanner...');
 
     const hints = new Map();
     hints.set(DecodeHintType.TRY_HARDER, true);
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.PDF_417]);
 
     const reader = new BrowserPDF417Reader(hints, {
-      delayBetweenScanAttempts: 100,
+      delayBetweenScanAttempts: 150,
       delayBetweenScanSuccess: 500,
     });
 
+    setScanMethod('zxing');
+    setIsScanning(true);
+
     try {
-      const controls = await reader.decodeFromStream(
-        stream,
+      // Get list of devices so we can pick the environment-facing camera
+      const devices = await BrowserPDF417Reader.listVideoInputDevices();
+      addDebug(`Video devices: ${devices.map(d => d.label || d.deviceId.substring(0, 8)).join(' | ')}`);
+
+      // Prefer the back/environment camera
+      const backCamera = devices.find(d =>
+        d.label.toLowerCase().includes('back') ||
+        d.label.toLowerCase().includes('environment') ||
+        d.label.toLowerCase().includes('rear')
+      ) || devices[devices.length - 1]; // last device is usually back camera
+
+      const deviceId = backCamera?.deviceId;
+      addDebug(`Using camera: ${backCamera?.label || deviceId || 'default'}`);
+
+      const controls = await reader.decodeFromVideoDevice(
+        deviceId,
         videoRef.current,
-        (result) => {
-          if (result && activeRef.current) handleFound(result.getText());
+        (result, err) => {
+          if (result && activeRef.current) {
+            addDebug(`ZXing result: ${result.getText().substring(0, 40)}`);
+            handleFound(result.getText());
+          }
+          if (err && !(err as any).message?.includes('No MultiFormat Readers')) {
+            // Only log unexpected errors, not the normal "no code found" errors
+            if (!(err as any).message?.includes('NotFoundException')) {
+              addDebug(`ZXing err: ${(err as any).message?.substring(0, 50)}`);
+            }
+          }
         }
       );
       zxingControlsRef.current = controls;
+
+      // Expose stream to streamRef so torch works
+      const videoEl = videoRef.current;
+      if (videoEl?.srcObject instanceof MediaStream) {
+        streamRef.current = videoEl.srcObject;
+        const track = streamRef.current.getVideoTracks()[0];
+        if (track) {
+          try {
+            const caps = track.getCapabilities() as any;
+            if (caps?.torch) setTorchAvailable(true);
+          } catch (_) {}
+        }
+      }
+
       if (typeof (controls as any).switchTorch === 'function') setTorchAvailable(true);
-    } catch (e) {
-      console.error('ZXing error:', e);
+      addDebug('ZXing decodeFromVideoDevice started OK');
+    } catch (e: any) {
+      addDebug(`ZXing start failed: ${e?.message || e}`);
+      setError(`Scanner error: ${e?.message || 'Could not start camera'}. Tap Retry or enter manually.`);
+      setIsScanning(false);
     }
-  }, [handleFound]);
+  }, [handleFound, addDebug]);
 
   // ---------- Main start ----------
   const startScanning = useCallback(async () => {
@@ -172,54 +232,76 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
     setTorchAvailable(false);
     setScanMethod(null);
     detectorRef.current = null;
+    addDebug('--- Starting scan ---');
 
-    await new Promise<void>(r => setTimeout(r, 80));
+    await new Promise<void>(r => setTimeout(r, 100));
     if (!videoRef.current) {
       setError('Camera could not initialise. Tap Retry.');
       return;
     }
 
-    let stream: MediaStream | null = null;
-    // Try HD first, fall back to default
-    for (const hd of [true, false]) {
+    // For ZXing decodeFromVideoDevice, we don't need to get the stream ourselves —
+    // ZXing manages it. But for native BarcodeDetector we do need our own stream.
+    if ('BarcodeDetector' in window) {
+      // Try native first — get our own stream
+      let stream: MediaStream | null = null;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: hd ? {
+          video: {
             facingMode: { ideal: 'environment' },
             width: { ideal: 1920, min: 1280 },
             height: { ideal: 1080, min: 720 },
-          } : { facingMode: { ideal: 'environment' } },
+          },
         });
-        break;
-      } catch (_) {}
-    }
-
-    if (!stream) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      } catch (err: any) {
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          setError('Camera permission denied. In your browser settings, allow camera access for this site, then tap Retry.');
-        } else if (err.name === 'NotFoundError') {
-          setError('No camera found. Enter the registration number manually.');
-        } else {
-          setError(`Camera error: ${err.message || err.name}. Tap Retry or enter manually.`);
+      } catch (_) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+          });
+        } catch (_2) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          } catch (err: any) {
+            handleCameraError(err);
+            return;
+          }
         }
-        return;
       }
+
+      if (stream) {
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          try { await videoRef.current.play(); } catch (_) {}
+        }
+
+        const nativeOk = await tryNativeScanning(stream);
+        if (nativeOk) return;
+
+        // Native didn't support PDF417 — stop the manual stream and let ZXing manage its own
+        addDebug('Native skipped — falling back to ZXing');
+        stream.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+        if (videoRef.current) videoRef.current.srcObject = null;
+      }
+    } else {
+      addDebug('No BarcodeDetector — using ZXing directly');
     }
 
-    streamRef.current = stream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      try { await videoRef.current.play(); } catch (_) {}
-    }
+    // ZXing manages its own stream via decodeFromVideoDevice
+    await startZxingScanning();
+  }, [stopAll, tryNativeScanning, startZxingScanning, addDebug]);
 
-    const nativeOk = await startNativeScanning(stream);
-    if (!nativeOk) {
-      await startZxingScanning(stream);
+  function handleCameraError(err: any) {
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      setError('Camera permission denied. In your browser settings, allow camera access for this site, then tap Retry.');
+    } else if (err.name === 'NotFoundError') {
+      setError('No camera found. Enter the registration number manually.');
+    } else {
+      setError(`Camera error: ${err.message || err.name}. Tap Retry or enter manually.`);
     }
-  }, [stopAll, startNativeScanning, startZxingScanning]);
+    addDebug(`Camera error: ${err.name} - ${err.message}`);
+  }
 
   useEffect(() => {
     startScanning();
@@ -228,7 +310,6 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
 
   const handleToggleTorch = async () => {
     const next = !torchOn;
-    // Try native track torch
     const track = streamRef.current?.getVideoTracks()[0];
     if (track) {
       try {
@@ -237,7 +318,6 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
         return;
       } catch (_) {}
     }
-    // ZXing torch fallback
     if (zxingControlsRef.current?.switchTorch) {
       try { await zxingControlsRef.current.switchTorch(next); setTorchOn(next); } catch (_) {}
     }
@@ -271,13 +351,22 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
         <div className="flex-1 min-w-0">
           <h2 className="text-white text-base font-semibold truncate">{label}</h2>
           {scanMethod && (
-            <p className="text-gray-400 text-xs mt-0.5 flex items-center gap-1">
-              <Wifi className="w-3 h-3 flex-shrink-0" />
-              {scanMethod === 'native' ? 'Hardware scanner active' : 'Software scanner active'}
-              {framesScanned > 0 && (
-                <span className="ml-1 text-green-400">{framesScanned} frames processed</span>
-              )}
-            </p>
+            <button
+              onClick={() => setShowDebug(d => !d)}
+              className="text-left"
+            >
+              <p className="text-gray-400 text-xs mt-0.5 flex items-center gap-1">
+                <Wifi className="w-3 h-3 flex-shrink-0" />
+                {scanMethod === 'native' ? 'Hardware scanner active' : 'ZXing scanner active'}
+                {framesScanned > 0 && (
+                  <span className="ml-1 text-green-400">{framesScanned} frames</span>
+                )}
+                <span className="ml-1 text-gray-500 underline text-xs">debug</span>
+              </p>
+            </button>
+          )}
+          {!scanMethod && !error && (
+            <p className="text-gray-500 text-xs mt-0.5">Initialising camera...</p>
           )}
         </div>
         <button onClick={handleCancel} className="text-white hover:text-gray-300 p-1 ml-3 flex-shrink-0">
@@ -285,10 +374,23 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
         </button>
       </div>
 
+      {/* Debug panel */}
+      {showDebug && (
+        <div className="bg-gray-950 border-b border-gray-800 px-3 py-2 max-h-40 overflow-y-auto flex-shrink-0">
+          {debugInfo.length === 0 ? (
+            <p className="text-gray-500 text-xs">No debug info yet.</p>
+          ) : (
+            debugInfo.map((line, i) => (
+              <p key={i} className="text-green-400 text-xs font-mono leading-tight">{line}</p>
+            ))
+          )}
+        </div>
+      )}
+
       {!showManual ? (
         <>
           <div className="flex-1 bg-black relative overflow-hidden">
-            {/* Hidden canvas used for native BarcodeDetector frame capture */}
+            {/* Hidden canvas for native BarcodeDetector frame capture */}
             <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
 
             {/* Live video feed */}
@@ -308,15 +410,13 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
             {/* Scan overlay */}
             {!scannedData && isScanning && (
               <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center px-4">
-                {/* Wide rectangle target — PDF417 barcodes are wide, not square */}
+                {/* Wide rectangle — PDF417 barcodes are wide, ~3:1 to 5:1 aspect */}
                 <div className="relative w-full max-w-sm" style={{ aspectRatio: '4.5 / 1' }}>
                   <div className="absolute inset-0 border-2 border-green-400/40 rounded" />
-                  {/* Corner accents */}
                   <div className="absolute top-0 left-0 w-7 h-7 border-t-4 border-l-4 border-green-400 rounded-tl-sm" />
                   <div className="absolute top-0 right-0 w-7 h-7 border-t-4 border-r-4 border-green-400 rounded-tr-sm" />
                   <div className="absolute bottom-0 left-0 w-7 h-7 border-b-4 border-l-4 border-green-400 rounded-bl-sm" />
                   <div className="absolute bottom-0 right-0 w-7 h-7 border-b-4 border-r-4 border-green-400 rounded-br-sm" />
-                  {/* Animated red scan line */}
                   <div
                     className="absolute left-1 right-1 h-0.5 bg-red-500 opacity-90"
                     style={{ animation: 'scanline 1.6s ease-in-out infinite' }}
@@ -325,12 +425,15 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
 
                 <div className="mt-4 bg-black/75 rounded-xl px-4 py-2 flex items-center gap-2">
                   <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse flex-shrink-0" />
-                  <span className="text-white text-sm font-medium">Scanning for PDF417 barcode</span>
+                  <span className="text-white text-sm font-medium">
+                    {scanMethod === 'native' ? 'Hardware scanning' : 'Scanning for PDF417 barcode'}
+                  </span>
                 </div>
 
                 <div className="mt-2 bg-black/60 rounded-lg px-3 py-1.5 text-center max-w-xs">
                   <p className="text-gray-300 text-xs leading-relaxed">
-                    The barcode is the <strong className="text-white">stack of thin lines</strong> on the bottom-right of the license disk sticker
+                    Hold the barcode steady inside the frame.<br />
+                    The barcode is the <strong className="text-white">stack of thin lines</strong> on the bottom-right of the license disk
                   </p>
                 </div>
               </div>
@@ -380,8 +483,9 @@ export default function BarcodeScanner({ onScan, onCancel, label }: BarcodeScann
 
           {/* Error banner */}
           {error && (
-            <div className="bg-red-700 text-white px-4 py-3 flex-shrink-0">
-              <p className="text-sm text-center leading-snug">{error}</p>
+            <div className="bg-red-700 text-white px-4 py-3 flex-shrink-0 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <p className="text-sm leading-snug">{error}</p>
             </div>
           )}
 

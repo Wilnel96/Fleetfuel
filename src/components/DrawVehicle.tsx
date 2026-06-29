@@ -46,6 +46,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const [missingPrdpCategories, setMissingPrdpCategories] = useState<string[]>([]);
   const [unreturnedVehicleWarning, setUnreturnedVehicleWarning] = useState(false);
   const [previousDriverInfo, setPreviousDriverInfo] = useState<{ name: string; daysUnreturned: number; lastDrawDate: string } | null>(null);
+  const [requireLicenseScan, setRequireLicenseScan] = useState(false);
 
   useEffect(() => {
     loadVehicles();
@@ -69,12 +70,13 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   const loadDriverLicenseCode = async () => {
     const { data: driver } = await supabase
       .from('drivers')
-      .select('license_type, has_prdp, prdp_type')
+      .select('license_type, has_prdp, prdp_type, require_license_scan')
       .eq('id', driverId)
       .maybeSingle();
 
     if (driver) {
       setDriverLicenseCode(driver.license_type || 'Code B');
+      setRequireLicenseScan(driver.require_license_scan ?? false);
 
       if (driver.has_prdp && driver.prdp_type) {
         setDriverPrdpCategories([driver.prdp_type]);
@@ -328,20 +330,22 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   };
 
   const checkDriverLicenseQualifies = async (driverId: string, vehicle: Vehicle): Promise<boolean> => {
-    // Get driver's license type
-    const { data: driver } = await supabase
-      .from('drivers')
-      .select('license_type')
-      .eq('id', driverId)
-      .maybeSingle();
+    // Use already-loaded license code when available; fall back to DB only if not yet set
+    let licenseCode = driverLicenseCode;
+    if (!licenseCode) {
+      const { data: driver } = await supabase
+        .from('drivers')
+        .select('license_type')
+        .eq('id', driverId)
+        .maybeSingle();
 
-    if (!driver) {
-      console.error('checkDriverLicenseQualifies: Driver not found');
-      return false;
+      if (!driver) {
+        console.error('checkDriverLicenseQualifies: Driver not found');
+        return false;
+      }
+      licenseCode = driver.license_type || 'Code B';
+      setDriverLicenseCode(licenseCode);
     }
-
-    const licenseCode = driver.license_type || 'Code B';
-    setDriverLicenseCode(licenseCode);
 
     const vehicleLicenseRequired = vehicle.license_code_required || 'Code B';
 
@@ -870,61 +874,85 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
               {selectedVehicle && (
                 <button
                   onClick={async () => {
-                    // Check if vehicle was not returned by another driver
-                    const unreturnedCheck = await checkUnreturnedByOtherDriver(selectedVehicle.id);
-                    if (unreturnedCheck?.hasUnreturnedDraw) {
-                      setPreviousDriverInfo({
-                        name: unreturnedCheck.driverName,
-                        daysUnreturned: unreturnedCheck.daysUnreturned,
-                        lastDrawDate: unreturnedCheck.lastDrawDate
-                      });
-                      setUnreturnedVehicleWarning(true);
-                      setStep('confirm-unreturned-vehicle');
-                      return;
+                    setLoading(true);
+                    setError('');
+                    try {
+                      // Run unreturned check and license check in parallel
+                      const [unreturnedCheck, isQualified] = await Promise.all([
+                        checkUnreturnedByOtherDriver(selectedVehicle.id),
+                        checkDriverLicenseQualifies(driverId, selectedVehicle),
+                      ]);
+
+                      if (unreturnedCheck?.hasUnreturnedDraw) {
+                        setPreviousDriverInfo({
+                          name: unreturnedCheck.driverName,
+                          daysUnreturned: unreturnedCheck.daysUnreturned,
+                          lastDrawDate: unreturnedCheck.lastDrawDate
+                        });
+                        setUnreturnedVehicleWarning(true);
+                        setStep('confirm-unreturned-vehicle');
+                        return;
+                      }
+
+                      if (!isQualified) {
+                        setLicenseWarning(true);
+                        setStep('confirm-license-warning');
+                        return;
+                      }
+
+                      setLicenseWarning(false);
+
+                      const hasPrdp = checkDriverPrdpQualifies(selectedVehicle);
+                      if (!hasPrdp) {
+                        setPrdpWarning(true);
+                        setStep('confirm-prdp-warning');
+                        return;
+                      }
+
+                      setPrdpWarning(false);
+                      await loadExpectedOdometer(selectedVehicle.id);
+                      setStep('enter-odometer');
+                    } finally {
+                      setLoading(false);
                     }
-
-                    const isQualified = await checkDriverLicenseQualifies(driverId, selectedVehicle);
-                    if (!isQualified) {
-                      setLicenseWarning(true);
-                      setStep('confirm-license-warning');
-                      return;
-                    }
-
-                    setLicenseWarning(false);
-
-                    const hasPrdp = checkDriverPrdpQualifies(selectedVehicle);
-                    if (!hasPrdp) {
-                      setPrdpWarning(true);
-                      setStep('confirm-prdp-warning');
-                      return;
-                    }
-
-                    setPrdpWarning(false);
-                    await loadExpectedOdometer(selectedVehicle.id);
-                    setStep('enter-odometer');
                   }}
-                  className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                  disabled={loading}
+                  className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
-                  Continue to Odometer Reading
+                  {loading ? 'Checking...' : 'Continue to Odometer Reading'}
                 </button>
               )}
 
-              <div className="relative my-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">or</span>
-                </div>
-              </div>
+              {/* Show scan button as prominent CTA only when no vehicle has been selected yet,
+                  or when license scan is required. After manual selection it becomes a secondary option. */}
+              {!selectedVehicle ? (
+                <>
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">or</span>
+                    </div>
+                  </div>
 
-              <button
-                onClick={handleScanStart}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-blue-700 transition-colors"
-              >
-                <Camera className="w-6 h-6" />
-                Scan License Disk Barcode
-              </button>
+                  <button
+                    onClick={handleScanStart}
+                    className="w-full bg-blue-600 text-white py-4 rounded-lg flex items-center justify-center gap-3 hover:bg-blue-700 transition-colors"
+                  >
+                    <Camera className="w-6 h-6" />
+                    Scan License Disk Barcode
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleScanStart}
+                  className="w-full border border-blue-300 text-blue-600 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-50 transition-colors text-sm mt-2"
+                >
+                  <Camera className="w-4 h-4" />
+                  Scan License Disk Barcode (optional)
+                </button>
+              )}
             </div>
           </div>
         )}

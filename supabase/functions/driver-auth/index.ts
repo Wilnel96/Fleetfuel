@@ -54,6 +54,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Invalidate all existing sessions for this driver before creating a new one.
+    // This enforces single-device login — the previous device will be kicked out.
+    await supabase
+      .from('driver_sessions')
+      .delete()
+      .eq('driver_id', driver.id);
+
     const token = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 8);

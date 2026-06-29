@@ -120,6 +120,40 @@ function App() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loginPortalRef = useRef<'client' | 'system_admin' | null>(null);
   const pendingViewRef = useRef<typeof currentView>(null);
+  const driverSessionPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Validates a driver token against the DB. Returns true if still valid.
+  const validateDriverSession = async (token: string): Promise<boolean> => {
+    const { data } = await supabase
+      .from('driver_sessions')
+      .select('id')
+      .eq('token', token)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+    return !!data;
+  };
+
+  const handleDriverSessionExpired = () => {
+    localStorage.removeItem('driverToken');
+    localStorage.removeItem('driverData');
+    if (driverSessionPollRef.current) {
+      clearInterval(driverSessionPollRef.current);
+      driverSessionPollRef.current = null;
+    }
+    setDriverData(null);
+    setUserMode(null);
+    setShowModeSelection(true);
+    setLoading(false);
+    alert('You have been logged out because this account was signed in on another device.');
+  };
+
+  const startDriverSessionPoll = (token: string) => {
+    if (driverSessionPollRef.current) clearInterval(driverSessionPollRef.current);
+    driverSessionPollRef.current = setInterval(async () => {
+      const valid = await validateDriverSession(token);
+      if (!valid) handleDriverSessionExpired();
+    }, 60_000);
+  };
 
   useEffect(() => {
     const emergencyTimeout = setTimeout(() => {
@@ -130,6 +164,13 @@ function App() {
     return () => clearTimeout(emergencyTimeout);
   }, []);
 
+  // Clean up session poll on unmount
+  useEffect(() => {
+    return () => {
+      if (driverSessionPollRef.current) clearInterval(driverSessionPollRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     let mounted = true;
 
@@ -138,19 +179,31 @@ function App() {
     const storedGarageData = localStorage.getItem('garageData');
 
     if (storedDriverToken && storedDriverData) {
-      try {
-        const driver = JSON.parse(storedDriverData);
-        setDriverData({ ...driver, token: storedDriverToken });
-        setUserMode('driver');
-        setShowModeSelection(false);
-        setLoading(false);
-        console.log('Driver session restored from localStorage');
-        return;
-      } catch (e) {
-        console.error('Failed to restore driver session:', e);
-        localStorage.removeItem('driverToken');
-        localStorage.removeItem('driverData');
-      }
+      // Validate the stored token before restoring session
+      validateDriverSession(storedDriverToken).then(valid => {
+        if (!mounted) return;
+        if (!valid) {
+          localStorage.removeItem('driverToken');
+          localStorage.removeItem('driverData');
+          setLoading(false);
+          return;
+        }
+        try {
+          const driver = JSON.parse(storedDriverData);
+          setDriverData({ ...driver, token: storedDriverToken });
+          setUserMode('driver');
+          setShowModeSelection(false);
+          startDriverSessionPoll(storedDriverToken);
+          setLoading(false);
+          console.log('Driver session restored from localStorage');
+        } catch (e) {
+          console.error('Failed to restore driver session:', e);
+          localStorage.removeItem('driverToken');
+          localStorage.removeItem('driverData');
+          setLoading(false);
+        }
+      });
+      return;
     }
 
     if (storedGarageData) {
@@ -612,6 +665,7 @@ function App() {
     setDriverData(driver);
     setUserMode('driver');
     setShowModeSelection(false);
+    startDriverSessionPoll(driver.token);
   };
 
   const handleDriverUpdate = (updatedDriver: DriverData) => {

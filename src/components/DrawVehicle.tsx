@@ -245,34 +245,27 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   };
 
   const checkAnyActiveDrawing = async (driverId: string): Promise<string | null> => {
-    const { data: draws } = await supabase
-      .from('vehicle_transactions')
-      .select(`
-        id,
-        vehicle_id,
-        vehicles!inner(registration_number)
-      `)
-      .eq('driver_id', driverId)
-      .eq('transaction_type', 'draw')
-      .is('related_transaction_id', null)
-      .order('created_at', { ascending: false });
+    // Fetch all draws and all returns for this driver in parallel (2 queries instead of N+1)
+    const [{ data: draws }, { data: returns }] = await Promise.all([
+      supabase
+        .from('vehicle_transactions')
+        .select('id, vehicles!inner(registration_number)')
+        .eq('driver_id', driverId)
+        .eq('transaction_type', 'draw')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('vehicle_transactions')
+        .select('related_transaction_id')
+        .eq('driver_id', driverId)
+        .eq('transaction_type', 'return')
+        .not('related_transaction_id', 'is', null),
+    ]);
 
     if (!draws || draws.length === 0) return null;
 
-    for (const draw of draws) {
-      const { data: returnTransaction } = await supabase
-        .from('vehicle_transactions')
-        .select('id')
-        .eq('related_transaction_id', draw.id)
-        .eq('transaction_type', 'return')
-        .maybeSingle();
-
-      if (!returnTransaction) {
-        return draw.vehicles.registration_number;
-      }
-    }
-
-    return null;
+    const returnedDrawIds = new Set((returns || []).map(r => r.related_transaction_id));
+    const unreturnedDraw = draws.find(d => !returnedDrawIds.has(d.id));
+    return unreturnedDraw ? (unreturnedDraw.vehicles as any).registration_number : null;
   };
 
   const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
@@ -838,18 +831,23 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                     const vehicle = vehicles.find(v => v.id === e.target.value);
                     if (vehicle) {
                       setError('');
-                      const anyDrawnVehicle = await checkAnyActiveDrawing(driverId);
+                      setSelectedVehicle(vehicle);
+                      // Run all three checks in parallel
+                      const [anyDrawnVehicle, hasActiveDrawing] = await Promise.all([
+                        checkAnyActiveDrawing(driverId),
+                        checkActiveDrawing(vehicle.id, driverId),
+                        loadExpectedOdometer(vehicle.id),
+                      ]);
                       if (anyDrawnVehicle) {
                         setError(`You already have a vehicle drawn (${anyDrawnVehicle}). Please return it before drawing another vehicle.`);
+                        setSelectedVehicle(null);
                         return;
                       }
-                      const hasActiveDrawing = await checkActiveDrawing(vehicle.id, driverId);
                       if (hasActiveDrawing) {
                         setError('This vehicle is already drawn by you. Please return it before drawing again.');
+                        setSelectedVehicle(null);
                         return;
                       }
-                      setSelectedVehicle(vehicle);
-                      await loadExpectedOdometer(vehicle.id);
                     }
                   }}
                   className="w-full border-2 border-gray-300 rounded-lg px-4 py-4 text-base bg-white appearance-none cursor-pointer focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"

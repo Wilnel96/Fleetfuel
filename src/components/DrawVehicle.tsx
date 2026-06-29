@@ -1018,7 +1018,7 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                 onChange={(e) => setTripDescription(e.target.value)}
                 className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-base bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                 style={{ fontSize: '16px', minHeight: '80px' }}
-                placeholder="e.g., Delivery of parcels to Swellendam"
+                placeholder="e.g., Delivery of parcels"
                 rows={3}
                 maxLength={500}
               />

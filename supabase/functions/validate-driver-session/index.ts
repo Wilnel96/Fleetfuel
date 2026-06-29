@@ -26,6 +26,19 @@ Deno.serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    if (req.method === 'DELETE') {
+      await supabase
+        .from('driver_sessions')
+        .delete()
+        .eq('token', token);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // POST — validate session
     const { data } = await supabase
       .from('driver_sessions')
       .select('id')

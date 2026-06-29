@@ -689,10 +689,26 @@ function App() {
 
   const handleDriverLogout = async () => {
     console.log('Driver logout initiated');
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Error clearing Supabase session:', error);
+    const token = localStorage.getItem('driverToken');
+    if (token) {
+      try {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        await fetch(`${supabaseUrl}/functions/v1/validate-driver-session`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseAnonKey}`,
+          },
+          body: JSON.stringify({ token }),
+        });
+      } catch (error) {
+        console.error('Error deleting driver session:', error);
+      }
+    }
+    if (driverSessionPollRef.current) {
+      clearInterval(driverSessionPollRef.current);
+      driverSessionPollRef.current = null;
     }
     clearAllSessionState();
     console.log('Driver logout complete, state reset');

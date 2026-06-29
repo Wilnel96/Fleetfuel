@@ -276,36 +276,30 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
   };
 
   const checkUnreturnedByOtherDriver = async (vehicleId: string): Promise<{ hasUnreturnedDraw: boolean; driverName: string; daysUnreturned: number; lastDrawDate: string; previousDriverId: string; drawTransactionId: string } | null> => {
-    // Get all draws for this vehicle
-    const { data: draws } = await supabase
-      .from('vehicle_transactions')
-      .select('id, driver_id, created_at')
-      .eq('vehicle_id', vehicleId)
-      .eq('transaction_type', 'draw')
-      .order('created_at', { ascending: false });
+    // Fetch all draws and all returns for this vehicle in parallel (2 queries instead of N+1)
+    const [{ data: draws }, { data: returns }] = await Promise.all([
+      supabase
+        .from('vehicle_transactions')
+        .select('id, driver_id, created_at')
+        .eq('vehicle_id', vehicleId)
+        .eq('transaction_type', 'draw')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('vehicle_transactions')
+        .select('related_transaction_id')
+        .eq('vehicle_id', vehicleId)
+        .eq('transaction_type', 'return')
+        .not('related_transaction_id', 'is', null),
+    ]);
 
     if (!draws || draws.length === 0) return null;
 
-    // Find the most recent draw that has no return
-    let lastDraw = null;
-    for (const draw of draws) {
-      const { data: returnData } = await supabase
-        .from('vehicle_transactions')
-        .select('id')
-        .eq('related_transaction_id', draw.id)
-        .eq('transaction_type', 'return')
-        .limit(1)
-        .maybeSingle();
+    const returnedDrawIds = new Set((returns || []).map(r => r.related_transaction_id));
 
-      if (!returnData) {
-        lastDraw = draw;
-        break;
-      }
-    }
-
+    // Find the most recent draw that has no corresponding return
+    const lastDraw = draws.find(d => !returnedDrawIds.has(d.id));
     if (!lastDraw) return null;
 
-    // Vehicle has not been returned, get the driver's name
     const { data: driver } = await supabase
       .from('drivers')
       .select('first_name, surname')
@@ -314,7 +308,6 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
 
     if (!driver) return null;
 
-    // Calculate days unreturned
     const drawDate = new Date(lastDraw.created_at);
     const today = new Date();
     const daysUnreturned = Math.floor((today.getTime() - drawDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -910,7 +903,6 @@ export default function DrawVehicle({ organizationId, driverId, onBack }: DrawVe
                       }
 
                       setPrdpWarning(false);
-                      await loadExpectedOdometer(selectedVehicle.id);
                       setStep('enter-odometer');
                     } finally {
                       setLoading(false);

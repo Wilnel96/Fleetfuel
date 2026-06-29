@@ -122,15 +122,24 @@ function App() {
   const pendingViewRef = useRef<typeof currentView>(null);
   const driverSessionPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Validates a driver token against the DB. Returns true if still valid.
+  // Validates a driver token via edge function (uses service role to bypass RLS).
   const validateDriverSession = async (token: string): Promise<boolean> => {
-    const { data } = await supabase
-      .from('driver_sessions')
-      .select('id')
-      .eq('token', token)
-      .gt('expires_at', new Date().toISOString())
-      .maybeSingle();
-    return !!data;
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/validate-driver-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({ token }),
+      });
+      const data = await res.json();
+      return data.valid === true;
+    } catch {
+      return true; // On network error, keep session alive rather than force-logout
+    }
   };
 
   const handleDriverSessionExpired = () => {
